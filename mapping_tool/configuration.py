@@ -6,6 +6,10 @@ from imap_processing.ena_maps.utils.naming import MapDescriptor, MappableInstrum
 
 from pathlib import Path
 
+from jsonschema import validate
+
+from mapping_tool import config_schema
+
 
 @dataclass
 class CanonicalMapPeriod:
@@ -32,6 +36,8 @@ class Configuration:
     def from_json(cls, config_path: Path):
         with open(str(config_path), 'r') as f:
             config = json.load(f)
+            schema = config_schema.schema
+            validate(config, schema)
             config["canonical_map_period"] = CanonicalMapPeriod(**config["canonical_map_period"])
             return cls(**config)
 
@@ -73,5 +79,5 @@ class Configuration:
             species=self.lo_species or 'h',
             survival_corrected="sp" if self.survival_corrected else "nsp",
             spin_phase=spin_phase[self.spin_phase.lower()],
-            coordinate_system=self.coordinate_system
+            coordinate_system=self.coordinate_system.lower()
         )

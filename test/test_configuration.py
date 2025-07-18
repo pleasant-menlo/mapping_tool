@@ -1,15 +1,41 @@
-from unittest import TestCase
+from copy import deepcopy
 
+import jsonschema.exceptions
+from pathlib import Path
+from typing import Dict
+from unittest import TestCase
+from unittest.mock import patch
+
+from mapping_tool import config_schema
 from mapping_tool.configuration import Configuration, CanonicalMapPeriod
-from test.test_builders import create_configuration
+from test.test_builders import create_configuration, create_config_dict
 from test.test_helpers import get_example_config_path
 from imap_processing.ena_maps.utils.naming import MapDescriptor, MappableInstrumentShortName
 
 
 class TestConfiguration(TestCase):
-    def test_from_json(self):
+    @patch("mapping_tool.configuration.validate")
+    def test_from_json(self, mock_validate):
         example_config_path = get_example_config_path() / "example_config.json"
         config: Configuration = Configuration.from_json(example_config_path)
+
+        config_json: Dict = {
+            "canonical_map_period": CanonicalMapPeriod(
+                year=2025,
+                quarter=1,
+                map_period=6,
+                number_of_maps=1
+            ),
+            "instrument": "Hi 90",
+            "spin_phase": "Ram",
+            "reference_frame": "spacecraft",
+            "survival_corrected": True,
+            "coordinate_system": "hae",
+            "pixelation_scheme": "square",
+            "pixel_parameter": 2,
+            "map_data_type": "ENA Intensity",
+            "lo_species": "h"
+        }
 
         expected_config: Configuration = Configuration(
             canonical_map_period=CanonicalMapPeriod(year=2025, quarter=1, map_period=6, number_of_maps=1),
@@ -25,6 +51,47 @@ class TestConfiguration(TestCase):
         )
 
         self.assertEqual(expected_config, config)
+        mock_validate.assert_called_with(config_json, config_schema.schema)
+
+    @patch("mapping_tool.configuration.validate")
+    def test_from_json_calls_validate_with_the_configuration_schema(self, mock_validate):
+        example_config_path = get_example_config_path() / "example_config.json"
+        Configuration.from_json(example_config_path)
+
+        config_json: Dict = {
+            "canonical_map_period": CanonicalMapPeriod(
+                year=2025,
+                quarter=1,
+                map_period=6,
+                number_of_maps=1
+            ),
+            "instrument": "Hi 90",
+            "spin_phase": "Ram",
+            "reference_frame": "spacecraft",
+            "survival_corrected": True,
+            "coordinate_system": "hae",
+            "pixelation_scheme": "square",
+            "pixel_parameter": 2,
+            "map_data_type": "ENA Intensity",
+            "lo_species": "h"
+        }
+
+        mock_validate.assert_called_with(config_json, config_schema.schema)
+
+    @patch("mapping_tool.configuration.json.load")
+    def test_from_json_fails_validation_with_invalid_config(self, mock_load):
+        validation_error_cases = [
+            ("invalid instrument", {"instrument": "90"}),
+            ("invalid spin phase", {"spin_phase": "none"}),
+            ("invalid reference frame", {"reference_frame": "spacecraft kinematic"}),
+            ("invalid survival probability corrected", {"survival_corrected": "YES"}),
+            ("invalid map_data_type", {"map_data_type": "Directions"})
+        ]
+        for name, case in validation_error_cases:
+            with self.subTest(name):
+                mock_load.return_value = create_config_dict(case)
+                with self.assertRaises(jsonschema.exceptions.ValidationError):
+                    Configuration.from_json(get_example_config_path() / "example_config.json")
 
     def test_get_map_descriptor(self):
         config: Configuration = Configuration(
@@ -97,6 +164,18 @@ class TestConfiguration(TestCase):
                 input_config = create_configuration(spin_phase=case)
                 descriptor = input_config.get_map_descriptors()
                 self.assertEqual(expected, descriptor.spin_phase)
+
+    def test_get_map_descriptors_coordinate_system(self):
+        cases = [
+            ("HAE", "hae"),
+            ("hae", "hae"),
+        ]
+
+        for case, expected in cases:
+            with self.subTest(f"{case}, {expected}"):
+                input_config = create_configuration(coordinate_system=case)
+                descriptor = input_config.get_map_descriptors()
+                self.assertEqual(expected, descriptor.coordinate_system)
 
     def test_get_map_descriptors_resolution(self):
         cases = [

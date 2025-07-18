@@ -1,3 +1,5 @@
+from typing import Dict
+
 from mapping_tool.configuration import Configuration, CanonicalMapPeriod
 
 
@@ -30,3 +32,25 @@ def create_configuration(
         map_data_type=map_data_type,
         lo_species=lo_species,
     )
+
+
+def create_config_dict(args: Dict):
+    config = {
+        "canonical_map_period": {
+            "year": 2025,
+            "quarter": 1,
+            "map_period": 6,
+            "number_of_maps": 1
+        },
+        "instrument": "Hi 90",
+        "spin_phase": "Ram",
+        "reference_frame": "spacecraft",
+        "survival_corrected": True,
+        "coordinate_system": "hae",
+        "pixelation_scheme": "square",
+        "pixel_parameter": 2,
+        "map_data_type": "ENA Intensity",
+        "lo_species": "h"
+    }
+    config.update(args)
+    return config
