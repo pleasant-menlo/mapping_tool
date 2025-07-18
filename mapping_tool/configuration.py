@@ -1,3 +1,4 @@
+import datetime
 import json
 from dataclasses import dataclass
 from typing import Optional
@@ -17,6 +18,13 @@ class CanonicalMapPeriod:
     quarter: int
     map_period: int
     number_of_maps: int
+
+    def calculate_date_range(self):
+        one_year = datetime.timedelta(days=365.25)
+        jan_1 = datetime.datetime(year=self.year, month=1, day=1)
+        start = jan_1 + (one_year * (self.quarter - 1) / 4)
+        end = start + (one_year * self.map_period / 12)
+        return start, end
 
 
 @dataclass

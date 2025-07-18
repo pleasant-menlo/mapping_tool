@@ -1,3 +1,4 @@
+import datetime
 from copy import deepcopy
 
 import jsonschema.exceptions
@@ -8,7 +9,7 @@ from unittest.mock import patch
 
 from mapping_tool import config_schema
 from mapping_tool.configuration import Configuration, CanonicalMapPeriod
-from test.test_builders import create_configuration, create_config_dict
+from test.test_builders import create_configuration, create_config_dict, create_cannonical_map_period
 from test.test_helpers import get_example_config_path
 from imap_processing.ena_maps.utils.naming import MapDescriptor, MappableInstrumentShortName
 
@@ -213,3 +214,29 @@ class TestConfiguration(TestCase):
                 self.assertEqual(instrument, descriptor.instrument)
                 self.assertEqual(sensor, descriptor.sensor)
                 self.assertEqual(instrument_descriptor, descriptor.instrument_descriptor)
+
+
+class TestCanonicalMapPeriod(TestCase):
+    def test_calculate_date_range(self):
+        cases = [
+            (2010, 1, 3, (datetime.datetime(2010, 1, 1, 0, 0), datetime.datetime(2010, 4, 2, 7, 30))),
+            (2012, 2, 3, (datetime.datetime(2012, 4, 1, 7, 30), datetime.datetime(2012, 7, 1, 15, 0))),
+            (2013, 3, 3, (datetime.datetime(2013, 7, 2, 15, 0), datetime.datetime(2013, 10, 1, 22, 30))),
+            (2017, 4, 3, (datetime.datetime(2017, 10, 1, 22, 30), datetime.datetime(2018, 1, 1, 6, 0))),
+
+            (2010, 1, 6, (datetime.datetime(2010, 1, 1, 0, 0), datetime.datetime(2010, 7, 2, 15, 0))),
+            (2012, 2, 6, (datetime.datetime(2012, 4, 1, 7, 30), datetime.datetime(2012, 9, 30, 22, 30))),
+            (2013, 3, 6, (datetime.datetime(2013, 7, 2, 15, 0), datetime.datetime(2014, 1, 1, 6, 0))),
+            (2017, 4, 6, (datetime.datetime(2017, 10, 1, 22, 30), datetime.datetime(2018, 4, 2, 13, 30))),
+
+            (2010, 1, 12, (datetime.datetime(2010, 1, 1, 0, 0), datetime.datetime(2011, 1, 1, 6, 0))),
+            (2012, 2, 12, (datetime.datetime(2012, 4, 1, 7, 30), datetime.datetime(2013, 4, 1, 13, 30))),
+            (2013, 3, 12, (datetime.datetime(2013, 7, 2, 15, 0), datetime.datetime(2014, 7, 2, 21, 0))),
+            (2017, 4, 12, (datetime.datetime(2017, 10, 1, 22, 30), datetime.datetime(2018, 10, 2, 4, 30))),
+        ]
+        for year, quarter, period, expected in cases:
+            with self.subTest(f"year: {year}, quarter: {quarter}, period: {period}"):
+                cannonical_map_period = create_cannonical_map_period(year=year, quarter=quarter, map_period=period)
+                date_range = cannonical_map_period.calculate_date_range()
+
+                self.assertEqual(expected, date_range)
