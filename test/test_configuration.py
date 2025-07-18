@@ -85,8 +85,11 @@ class TestConfiguration(TestCase):
     def test_get_map_descriptors_spin_phase(self):
         cases = [
             ("Ram", "ram"),
+            ("ram", "ram"),
             ("Anti-ram", "anti"),
-            ("Full spin", "full")
+            ("anti-ram", "anti"),
+            ("Full spin", "full"),
+            ("full spin", "full")
         ]
 
         for case, expected in cases:
@@ -98,7 +101,9 @@ class TestConfiguration(TestCase):
     def test_get_map_descriptors_resolution(self):
         cases = [
             ("square", 2, "2deg"),
+            ("Square", 2, "2deg"),
             ("HEALPIX", 128, "nside128"),
+            ("healpix", 128, "nside128"),
         ]
 
         for scheme, parameter, expected in cases:
@@ -109,15 +114,18 @@ class TestConfiguration(TestCase):
 
     def test_get_map_descriptors_instrument_and_sensor(self):
         cases = [
-            ("Hi 45", MappableInstrumentShortName.HI, "45", "h45"),
+            ("hi 45", MappableInstrumentShortName.HI, "45", "h45"),
             ("Hi 90", MappableInstrumentShortName.HI, "90", "h90"),
-            ("Hi combined", MappableInstrumentShortName.HI, "combined", "hic"),
+            ("hi combined", MappableInstrumentShortName.HI, "combined", "hic"),
             ("Ultra 45", MappableInstrumentShortName.ULTRA, "45", "u45"),
-            ("Ultra 90", MappableInstrumentShortName.ULTRA, "90", "u90"),
+            ("ultra 90", MappableInstrumentShortName.ULTRA, "90", "u90"),
             ("Ultra combined", MappableInstrumentShortName.ULTRA, "combined", "ulc"),
             ("Lo", MappableInstrumentShortName.LO, "", "ilo"),
+            ("lo", MappableInstrumentShortName.LO, "", "ilo"),
             ("GLOWS", MappableInstrumentShortName.GLOWS, "", "glx"),
+            ("glows", MappableInstrumentShortName.GLOWS, "", "glx"),
             ("IDEX", MappableInstrumentShortName.IDEX, "", "idx"),
+            ("idex", MappableInstrumentShortName.IDEX, "", "idx"),
         ]
         for case, instrument, sensor, instrument_descriptor in cases:
             with self.subTest(f"{case}, {instrument}, {sensor}"):

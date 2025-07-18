@@ -48,12 +48,12 @@ class Configuration:
         }
 
         spin_phase = {
-            "Ram": "ram",
-            "Anti-ram": "anti",
-            "Full spin": "full"
+            "ram": "ram",
+            "anti-ram": "anti",
+            "full spin": "full"
         }
 
-        resolution = f"{self.pixel_parameter}deg" if self.pixelation_scheme == "square" else f"nside{self.pixel_parameter}"
+        resolution = f"{self.pixel_parameter}deg" if self.pixelation_scheme.lower() == "square" else f"nside{self.pixel_parameter}"
         duration = str(self.canonical_map_period.map_period) + "mo"
         instrument_split = self.instrument.split(' ')
         instrument = instrument_split[0]
@@ -72,6 +72,6 @@ class Configuration:
             principal_data=principal_data[self.map_data_type],
             species=self.lo_species or 'h',
             survival_corrected="sp" if self.survival_corrected else "nsp",
-            spin_phase=spin_phase[self.spin_phase],
+            spin_phase=spin_phase[self.spin_phase.lower()],
             coordinate_system=self.coordinate_system
         )
