@@ -1,7 +1,7 @@
 import argparse
 from pathlib import Path
 
-from configuration import Configuration
+from mapping_tool.configuration import Configuration
 
 
 def create_maps():
