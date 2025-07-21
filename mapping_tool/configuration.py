@@ -1,4 +1,4 @@
-import datetime
+from datetime import timedelta, datetime, timezone
 import json
 from dataclasses import dataclass
 from typing import Optional
@@ -21,11 +21,11 @@ class CanonicalMapPeriod:
     number_of_maps: int
 
     def calculate_date_range(self):
-        one_year = datetime.timedelta(days=365.25)
-        jan_1 = datetime.datetime(year=self.year, month=1, day=1)
+        one_year = timedelta(days=365.25)
+        jan_1 = datetime(year=self.year, month=1, day=1)
         start = jan_1 + (one_year * (self.quarter - 1) / 4)
         end = start + (one_year * self.map_period / 12)
-        return start, end
+        return start.replace(tzinfo=timezone.utc), end.replace(tzinfo=timezone.utc)
 
 
 @dataclass
@@ -90,52 +90,3 @@ class Configuration:
             spin_phase=spin_phase[self.spin_phase.lower()],
             coordinate_system=self.coordinate_system.lower()
         )
-
-
-def get_pointing_sets(descriptor: MapDescriptor, start_date: datetime.datetime, end_date: datetime.datetime):
-    map_instrument_pset_descriptors = []
-
-    if descriptor.instrument == MappableInstrumentShortName.HI:
-        if descriptor.sensor in ["45", "combined"]:
-            map_instrument_pset_descriptors.append(f"45sensor-pset")
-        if descriptor.sensor in ["90", "combined"]:
-            map_instrument_pset_descriptors.append(f"90sensor-pset")
-
-    elif descriptor.instrument == MappableInstrumentShortName.LO:
-        map_instrument_pset_descriptors.append("pset")
-
-    elif descriptor.instrument == MappableInstrumentShortName.ULTRA:
-        pset_string = "spacecraftpset" if descriptor.frame_descriptor == "sf" else "heliopset"
-        if descriptor.sensor in ["45", "combined"]:
-            map_instrument_pset_descriptors.append(f"45sensor-{pset_string}")
-        if descriptor.sensor in ["90", "combined"]:
-            map_instrument_pset_descriptors.append(f"90sensor-{pset_string}")
-
-    assert len(map_instrument_pset_descriptors) > 0
-    instrument_for_query = descriptor.instrument.name.lower()
-    start_date = start_date.strftime("%Y%m%d")
-    end_date = end_date.strftime("%Y%m%d")
-
-    def filter_files_by_highest_version(files: list):
-        dates_to_files = {}
-        for file in files:
-            if file["start_date"] not in dates_to_files or file["version"] > dates_to_files[file["start_date"]][
-                "version"]:
-                dates_to_files[file["start_date"]] = file
-        return dates_to_files.values()
-
-    files = []
-    for pset_descriptor in map_instrument_pset_descriptors:
-        files.extend(filter_files_by_highest_version(imap_data_access.query(instrument=instrument_for_query,
-                                                                            start_date=start_date, end_date=end_date,
-                                                                            data_level="l1c",
-                                                                            descriptor=pset_descriptor)))
-
-    if descriptor.survival_corrected == "sp":
-        files.extend(filter_files_by_highest_version(imap_data_access.query(instrument="glows",
-                                                                            start_date=start_date,
-                                                                            end_date=end_date,
-                                                                            data_level="l3e",
-                                                                            descriptor=f"survival-probability-{instrument_for_query[:2]}")))
-
-    return [pset['file_path'] for pset in files]

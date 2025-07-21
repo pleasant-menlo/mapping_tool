@@ -1,4 +1,5 @@
 import unittest
+from datetime import datetime
 from pathlib import Path
 from unittest.mock import patch
 
@@ -14,18 +15,20 @@ class TestHiMapGenerator(unittest.TestCase):
         config = Configuration.from_json(Path("./example_configuration_files/example_config.json"))
         hi_map_generator = HiMapGenerator(config)
 
+        start_date = datetime(2025, 1, 1)
+
         descriptor = "h90-ena-h-sf-sp-ram-hae-2deg-6mo"
         dependencies = ProcessingInputCollection()
-        hi_map_generator.make_map(descriptor, dependencies)
+        hi_map_generator.make_map(descriptor, start_date, dependencies)
 
         mock_imap_cli_hi.assert_called_with(
-        "l2",
-        descriptor,
-        "[]",
-        "20000101",
-        None,
-        "0",
-        False,
+            "l2",
+            descriptor,
+            "[]",
+            "20250101",
+            None,
+            "0",
+            False,
         )
 
         mock_imap_cli_hi.return_value.process.assert_called()
