@@ -30,4 +30,7 @@ if __name__ == "__main__":
     processing_input_collection = ProcessingInputCollection(*[ScienceInput(Path(pset).name) for pset in psets])
 
     if descriptor.instrument == MappableInstrumentShortName.HI:
-        HiMapGenerator(config).make_map(descriptor.to_string(), start_date, processing_input_collection)
+        if "h45-ena-h-sf-full-hae-4deg" in descriptor.to_string() or "h90-ena-h-sf-full-hae-4deg" in descriptor.to_string():
+            HiMapGenerator(config).make_map(descriptor.to_string(), start_date, processing_input_collection)
+        else:
+            raise Exception(f"L2 processing code not implemented for map: {descriptor.to_string()}")
