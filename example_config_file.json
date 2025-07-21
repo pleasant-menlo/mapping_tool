@@ -1,11 +1,11 @@
 {
   "canonical_map_period": {
-    "year": 2025,
+    "year": 2026,
     "quarter": 1,
     "map_period": 6,
     "number_of_maps": 1
   },
-  "instrument": "Hi 90",
+  "instrument": "Hi 45",
   "spin_phase": "ram",
   "reference_frame": "spacecraft",
   "survival_corrected": true,
