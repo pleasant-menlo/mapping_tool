@@ -116,17 +116,26 @@ def get_pointing_sets(descriptor: MapDescriptor, start_date: datetime.datetime, 
     start_date = start_date.strftime("%Y%m%d")
     end_date = end_date.strftime("%Y%m%d")
 
+    def filter_files_by_highest_version(files: list):
+        dates_to_files = {}
+        for file in files:
+            if file["start_date"] not in dates_to_files or file["version"] > dates_to_files[file["start_date"]][
+                "version"]:
+                dates_to_files[file["start_date"]] = file
+        return dates_to_files.values()
+
     files = []
     for pset_descriptor in map_instrument_pset_descriptors:
-        files.extend(imap_data_access.query(instrument=instrument_for_query,
-                                            start_date=start_date, end_date=end_date,
-                                            data_level="l1c", descriptor=pset_descriptor))
+        files.extend(filter_files_by_highest_version(imap_data_access.query(instrument=instrument_for_query,
+                                                                            start_date=start_date, end_date=end_date,
+                                                                            data_level="l1c",
+                                                                            descriptor=pset_descriptor)))
 
     if descriptor.survival_corrected == "sp":
-        files.extend(imap_data_access.query(instrument="glows",
-                                            start_date=start_date,
-                                            end_date=end_date,
-                                            data_level="l3e",
-                                            descriptor=f"survival-probability-{instrument_for_query[:2]}"))
+        files.extend(filter_files_by_highest_version(imap_data_access.query(instrument="glows",
+                                                                            start_date=start_date,
+                                                                            end_date=end_date,
+                                                                            data_level="l3e",
+                                                                            descriptor=f"survival-probability-{instrument_for_query[:2]}")))
 
     return [pset['file_path'] for pset in files]

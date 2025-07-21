@@ -27,11 +27,11 @@ schema = {
         "instrument": {
             "type": "string",
             "enum": [
-                "hi 45",
+                "Hi 45",
                 "Hi 90",
-                "hi combined",
+                "Hi combined",
                 "Ultra 45",
-                "ultra 90",
+                "Ultra 90",
                 "Ultra combined",
                 "Lo",
                 "lo",

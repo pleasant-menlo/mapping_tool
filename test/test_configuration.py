@@ -219,7 +219,8 @@ class TestConfiguration(TestCase):
     @patch('mapping_tool.configuration.imap_data_access.query')
     def test_get_pointing_sets(self, mock_query):
         expected_pointing_sets = ["pset_1", "pset_2", "pset_3"]
-        mock_query.return_value = [{"file_path": file_name} for file_name in expected_pointing_sets]
+        mock_query.return_value = [{"file_path": file_name, "start_date": file_name, "version": "v000"} for file_name in
+                                   expected_pointing_sets]
 
         start_date = datetime(2025, 1, 1)
         end_date = datetime(2025, 2, 1)
@@ -265,9 +266,12 @@ class TestConfiguration(TestCase):
         expected_pointing_sets = ["u45-pset1", "u45-pset2", "u90-pset1", "u90-pset2", "glows_ultra_pset1",
                                   "glows_ultra_pset2"]
         mock_query.side_effect = [
-            [{"file_path": "u45-pset1"}, {"file_path": "u45-pset2"}],
-            [{"file_path": "u90-pset1"}, {"file_path": "u90-pset2"}],
-            [{"file_path": "glows_ultra_pset1"}, {"file_path": "glows_ultra_pset2"}]
+            [{"file_path": "u45-pset1", "start_date": "u45-pset1", "version": "v000"},
+             {"file_path": "u45-pset2", "start_date": "u45-pset2", "version": "v000"}],
+            [{"file_path": "u90-pset1", "start_date": "u90-pset1", "version": "v000"},
+             {"file_path": "u90-pset2", "start_date": "u90-pset2", "version": "v000"}],
+            [{"file_path": "glows_ultra_pset1", "start_date": "glows_ultra_pset1", "version": "v000"},
+             {"file_path": "glows_ultra_pset2", "start_date": "glows_ultra_pset2", "version": "v000"}]
         ]
 
         descriptor = MapDescriptor(
@@ -305,9 +309,12 @@ class TestConfiguration(TestCase):
         ]
 
         mock_query.side_effect = [
-            [{"file_path": "h45-pset1"}, {"file_path": "h45-pset2"}],
-            [{"file_path": "h90-pset1"}, {"file_path": "h90-pset2"}],
-            [{"file_path": "glows_hi_pset1"}, {"file_path": "glows_hi_pset2"}]
+            [{"file_path": "h45-pset1", "start_date": "h45-pset1", "version": "v000"},
+             {"file_path": "h45-pset2", "start_date": "h45-pset2", "version": "v000"}],
+            [{"file_path": "h90-pset1", "start_date": "h90-pset1", "version": "v000"},
+             {"file_path": "h90-pset2", "start_date": "h90-pset2", "version": "v000"}],
+            [{"file_path": "glows_hi_pset1", "start_date": "glows_hi_pset1", "version": "v000"},
+             {"file_path": "glows_hi_pset2", "start_date": "glows_hi_pset2", "version": "v000"}]
         ]
 
         descriptor = MapDescriptor(
@@ -335,6 +342,74 @@ class TestConfiguration(TestCase):
         ])
 
         self.assertEqual(expected_pointing_sets, pointing_sets)
+
+    @patch('mapping_tool.configuration.imap_data_access.query')
+    def test_get_pointing_sets_for_lo_survival_corrected(self, mock_query):
+        expected_pointing_sets = [
+            "l90-pset1", "l90-pset2",
+            "glows_lo_pset1", "glows_lo_pset2",
+        ]
+
+        mock_query.side_effect = [
+            [{"file_path": "l90-pset1", "start_date": "l90-pset1", "version": "v000"},
+             {"file_path": "l90-pset2", "start_date": "l90-pset2", "version": "v000"}],
+            [{"file_path": "glows_lo_pset1", "start_date": "glows_lo_pset1", "version": "v000"},
+             {"file_path": "glows_lo_pset2", "start_date": "glows_lo_pset2", "version": "v000"}]
+        ]
+
+        descriptor = MapDescriptor(
+            frame_descriptor="sf",
+            resolution_str="nside2",
+            duration=2,
+            instrument=MappableInstrumentShortName.LO,
+            sensor="90",
+            principal_data="ena",
+            species='h',
+            survival_corrected="sp",
+            spin_phase="ram",
+            coordinate_system="hae"
+        )
+
+        pointing_sets = get_pointing_sets(descriptor, start_date=datetime(2025, 1, 1), end_date=datetime(2025, 2, 1))
+
+        mock_query.assert_has_calls([
+            call(instrument="lo", data_level="l1c", descriptor="pset", start_date="20250101",
+                 end_date="20250201"),
+            call(instrument="glows", data_level="l3e", descriptor="survival-probability-lo", start_date="20250101",
+                 end_date="20250201")
+        ])
+
+        self.assertEqual(expected_pointing_sets, pointing_sets)
+
+    @patch('mapping_tool.configuration.imap_data_access.query')
+    def test_get_files_returns_latest_file_versions(self, mock_query):
+        mock_query.side_effect = [
+            [{"file_path": "imap_hi_l1c_45sensor-pset_20260101_v001.cdf", "version": "v001", "start_date": "20260101"},
+             {"file_path": "imap_hi_l1c_45sensor-pset_20260101_v002.cdf", "version": "v002", "start_date": "20260101"},
+             {"file_path": "imap_hi_l1c_45sensor-pset_20260102_v001.cdf", "version": "v001", "start_date": "20260102"}],
+            [{"file_path": "imap_glows_l3e_survival-probability-hi_20260101_v000.cdf", "version": "v000",
+              "start_date": "20260101"}]
+        ]
+        descriptor = MapDescriptor(
+            frame_descriptor="sf",
+            resolution_str="nside2",
+            duration=2,
+            instrument=MappableInstrumentShortName.LO,
+            sensor="90",
+            principal_data="ena",
+            species='h',
+            survival_corrected="sp",
+            spin_phase="ram",
+            coordinate_system="hae"
+        )
+        start_date = datetime(2026, 1, 1)
+        end_date = datetime(2026, 2, 1)
+
+        psets = get_pointing_sets(descriptor, start_date, end_date)
+
+        expected_psets = ["imap_hi_l1c_45sensor-pset_20260101_v002.cdf", "imap_hi_l1c_45sensor-pset_20260102_v001.cdf",
+                          "imap_glows_l3e_survival-probability-hi_20260101_v000.cdf"]
+        self.assertEqual(expected_psets, psets)
 
 
 class TestCanonicalMapPeriod(TestCase):
