@@ -8,7 +8,7 @@ from unittest.mock import patch
 
 from mapping_tool import config_schema
 from mapping_tool.configuration import Configuration, CanonicalMapPeriod
-from test.test_builders import create_configuration, create_config_dict, create_cannonical_map_period
+from test.test_builders import create_configuration, create_config_dict, create_canonical_map_period
 from test.test_helpers import get_example_config_path
 from imap_processing.ena_maps.utils.naming import MapDescriptor, MappableInstrumentShortName
 
@@ -216,38 +216,37 @@ class TestConfiguration(TestCase):
 
 
 class TestCanonicalMapPeriod(TestCase):
-    def test_calculate_date_range(self):
+    def test_calculate_date_ranges(self):
+        # @formatter:off
         cases = [
-            (2010, 1, 3,
-             (datetime(2010, 1, 1, 0, 0, tzinfo=timezone.utc), datetime(2010, 4, 2, 7, 30, tzinfo=timezone.utc))),
-            (2012, 2, 3,
-             (datetime(2012, 4, 1, 7, 30, tzinfo=timezone.utc), datetime(2012, 7, 1, 15, 0, tzinfo=timezone.utc))),
-            (2013, 3, 3,
-             (datetime(2013, 7, 2, 15, 0, tzinfo=timezone.utc), datetime(2013, 10, 1, 22, 30, tzinfo=timezone.utc))),
-            (2017, 4, 3,
-             (datetime(2017, 10, 1, 22, 30, tzinfo=timezone.utc), datetime(2018, 1, 1, 6, 0, tzinfo=timezone.utc))),
+            (2010, 1, 3, 1, [(datetime(2010, 1, 1, 0, 0, tzinfo=timezone.utc), datetime(2010, 4, 2, 7, 30, tzinfo=timezone.utc))]),
+            (2012, 2, 3, 1, [(datetime(2012, 4, 1, 7, 30, tzinfo=timezone.utc), datetime(2012, 7, 1, 15, 0, tzinfo=timezone.utc))]),
+            (2013, 3, 3, 1, [(datetime(2013, 7, 2, 15, 0, tzinfo=timezone.utc), datetime(2013, 10, 1, 22, 30, tzinfo=timezone.utc))]),
+            (2017, 4, 3, 1, [(datetime(2017, 10, 1, 22, 30, tzinfo=timezone.utc), datetime(2018, 1, 1, 6, 0, tzinfo=timezone.utc))]),
 
-            (2010, 1, 6,
-             (datetime(2010, 1, 1, 0, 0, tzinfo=timezone.utc), datetime(2010, 7, 2, 15, 0, tzinfo=timezone.utc))),
-            (2012, 2, 6,
-             (datetime(2012, 4, 1, 7, 30, tzinfo=timezone.utc), datetime(2012, 9, 30, 22, 30, tzinfo=timezone.utc))),
-            (2013, 3, 6,
-             (datetime(2013, 7, 2, 15, 0, tzinfo=timezone.utc), datetime(2014, 1, 1, 6, 0, tzinfo=timezone.utc))),
-            (2017, 4, 6,
-             (datetime(2017, 10, 1, 22, 30, tzinfo=timezone.utc), datetime(2018, 4, 2, 13, 30, tzinfo=timezone.utc))),
+            (2010, 1, 6, 1, [(datetime(2010, 1, 1, 0, 0, tzinfo=timezone.utc), datetime(2010, 7, 2, 15, 0, tzinfo=timezone.utc))]),
+            (2012, 2, 6, 1, [(datetime(2012, 4, 1, 7, 30, tzinfo=timezone.utc), datetime(2012, 9, 30, 22, 30, tzinfo=timezone.utc))]),
+            (2013, 3, 6, 1, [(datetime(2013, 7, 2, 15, 0, tzinfo=timezone.utc), datetime(2014, 1, 1, 6, 0, tzinfo=timezone.utc))]),
+            (2017, 4, 6, 1, [(datetime(2017, 10, 1, 22, 30, tzinfo=timezone.utc), datetime(2018, 4, 2, 13, 30, tzinfo=timezone.utc))]),
 
-            (2010, 1, 12,
-             (datetime(2010, 1, 1, 0, 0, tzinfo=timezone.utc), datetime(2011, 1, 1, 6, 0, tzinfo=timezone.utc))),
-            (2012, 2, 12,
-             (datetime(2012, 4, 1, 7, 30, tzinfo=timezone.utc), datetime(2013, 4, 1, 13, 30, tzinfo=timezone.utc))),
-            (2013, 3, 12,
-             (datetime(2013, 7, 2, 15, 0, tzinfo=timezone.utc), datetime(2014, 7, 2, 21, 0, tzinfo=timezone.utc))),
-            (2017, 4, 12,
-             (datetime(2017, 10, 1, 22, 30, tzinfo=timezone.utc), datetime(2018, 10, 2, 4, 30, tzinfo=timezone.utc))),
+            (2010, 1, 12, 1, [(datetime(2010, 1, 1, 0, 0, tzinfo=timezone.utc), datetime(2011, 1, 1, 6, 0, tzinfo=timezone.utc))]),
+            (2012, 2, 12, 1, [(datetime(2012, 4, 1, 7, 30, tzinfo=timezone.utc), datetime(2013, 4, 1, 13, 30, tzinfo=timezone.utc))]),
+            (2013, 3, 12, 1, [(datetime(2013, 7, 2, 15, 0, tzinfo=timezone.utc), datetime(2014, 7, 2, 21, 0, tzinfo=timezone.utc))]),
+            (2017, 4, 12, 1, [(datetime(2017, 10, 1, 22, 30, tzinfo=timezone.utc), datetime(2018, 10, 2, 4, 30, tzinfo=timezone.utc))]),
+
+            (2010, 1, 3, 2, [(datetime(2010, 1, 1, 0, 0, tzinfo=timezone.utc), datetime(2010, 4, 2, 7, 30, tzinfo=timezone.utc)),
+                             (datetime(2010, 4, 2, 7, 30, tzinfo=timezone.utc), datetime(2010, 7, 2, 15, 0, tzinfo=timezone.utc))]),
+            (2010, 2, 12, 2, [(datetime(2010, 4, 2, 7, 30, tzinfo=timezone.utc), datetime(2011, 4, 2, 13, 30, tzinfo=timezone.utc)),
+                              (datetime(2011, 4, 2, 13, 30, tzinfo=timezone.utc), datetime(2012, 4, 1, 19, 30, tzinfo=timezone.utc))]),
+            (2012, 4, 6, 3, [(datetime(2012, 9, 30, 22, 30, tzinfo=timezone.utc), datetime(2013, 4, 1, 13, 30, tzinfo=timezone.utc)),
+                             (datetime(2013, 4, 1, 13, 30, tzinfo=timezone.utc), datetime(2013, 10, 1, 4, 30, tzinfo=timezone.utc)),
+                             (datetime(2013, 10, 1, 4, 30, tzinfo=timezone.utc), datetime(2014, 4, 1, 19, 30, tzinfo=timezone.utc))]),
         ]
-        for year, quarter, period, expected in cases:
-            with self.subTest(f"year: {year}, quarter: {quarter}, period: {period}"):
-                cannonical_map_period = create_cannonical_map_period(year=year, quarter=quarter, map_period=period)
-                date_range = cannonical_map_period.calculate_date_range()
+        # @formatter:on
+        for year, quarter, period, number_of_maps, expected in cases:
+            with self.subTest(f"year: {year}, quarter: {quarter}, period: {period}, num_maps: {number_of_maps}"):
+                canonical_map_period = create_canonical_map_period(year=year, quarter=quarter, map_period=period,
+                                                                   number_of_maps=number_of_maps)
+                date_range = canonical_map_period.calculate_date_ranges()
 
                 self.assertEqual(expected, date_range)

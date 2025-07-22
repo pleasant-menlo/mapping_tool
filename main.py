@@ -18,19 +18,15 @@ if __name__ == "__main__":
     parser.add_argument('config_file', type=Path)
     args = parser.parse_args()
     config = Configuration.from_json(args.config_file)
+
     descriptor = config.get_map_descriptors()
-    start_date, end_date = config.canonical_map_period.calculate_date_range()
+    for start_date, end_date in config.canonical_map_period.calculate_date_ranges():
+        DependencyCollector.furnish_spice(start_date, end_date)
+        psets = DependencyCollector.get_pointing_sets(descriptor, start_date, end_date)
 
-    psets = DependencyCollector.get_pointing_sets(descriptor, start_date, end_date)
-    DependencyCollector.furnish_spice(start_date, end_date)
+        print("Generating map: " + descriptor.to_string())
+        print('\n'.join([pset.split('/')[-1] for pset in psets]))
 
-    print("Generating map: " + descriptor.to_string())
-    print('\n'.join([pset.split('/')[-1] for pset in psets]))
-
-    processing_input_collection = ProcessingInputCollection(*[ScienceInput(Path(pset).name) for pset in psets])
-
-    if descriptor.instrument == MappableInstrumentShortName.HI:
-        if "h45-ena-h-sf-full-hae-4deg" in descriptor.to_string() or "h90-ena-h-sf-full-hae-4deg" in descriptor.to_string():
+        processing_input_collection = ProcessingInputCollection(*[ScienceInput(Path(pset).name) for pset in psets])
+        if descriptor.instrument == MappableInstrumentShortName.HI:
             HiMapGenerator(config).make_map(descriptor.to_string(), start_date, processing_input_collection)
-        else:
-            raise Exception(f"L2 processing code not implemented for map: {descriptor.to_string()}")

@@ -20,12 +20,17 @@ class CanonicalMapPeriod:
     map_period: int
     number_of_maps: int
 
-    def calculate_date_range(self):
+    def calculate_date_ranges(self) -> list[tuple[datetime, datetime]]:
+        dates = []
+
         one_year = timedelta(days=365.25)
         jan_1 = datetime(year=self.year, month=1, day=1)
         start = jan_1 + (one_year * (self.quarter - 1) / 4)
-        end = start + (one_year * self.map_period / 12)
-        return start.replace(tzinfo=timezone.utc), end.replace(tzinfo=timezone.utc)
+        for _ in range(self.number_of_maps):
+            end = start + (one_year * self.map_period / 12)
+            dates.append((start.replace(tzinfo=timezone.utc), end.replace(tzinfo=timezone.utc)))
+            start = end
+        return dates
 
 
 @dataclass

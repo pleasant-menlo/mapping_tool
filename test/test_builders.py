@@ -3,7 +3,7 @@ from typing import Dict
 from mapping_tool.configuration import Configuration, CanonicalMapPeriod
 
 
-def create_cannonical_map_period(year=2025, quarter=1, map_period=6, number_of_maps=1):
+def create_canonical_map_period(year=2025, quarter=1, map_period=6, number_of_maps=1):
     return CanonicalMapPeriod(year=year, quarter=quarter, map_period=map_period, number_of_maps=number_of_maps)
 
 
@@ -19,9 +19,9 @@ def create_configuration(
         map_data_type: str = "ENA Intensity",
         lo_species: str = "h",
 ):
-    cannonical_period = canonical_map_period if canonical_map_period is not None else create_cannonical_map_period()
+    canonical_period = canonical_map_period if canonical_map_period is not None else create_canonical_map_period()
     return Configuration(
-        canonical_map_period=cannonical_period,
+        canonical_map_period=canonical_period,
         instrument=instrument,
         spin_phase=spin_phase,
         reference_frame=reference_frame,
