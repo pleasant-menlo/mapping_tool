@@ -61,10 +61,10 @@ class DependencyCollector:
         return [pset['file_path'] for pset in files]
 
     @classmethod
-    def furnish_spice(cls, start_date: datetime, end_date: datetime):
+    def collect_spice_kernels(cls, start_date: datetime, end_date: datetime):
+        file_names = []
         for kernel_type in ["leapseconds", "spacecraft_clock", "pointing_attitude", "imap_frames", "science_frames"]:
             file_json = requests.get(cls.IMAP_API + f"spice-query?type={kernel_type}&start_time=0").json()
-            file_names = []
             for spice_file in file_json:
                 spice_start_date = datetime.strptime(spice_file["min_date_datetime"], "%Y-%m-%d, %H:%M:%S")
                 spice_start_date = spice_start_date.replace(tzinfo=timezone.utc)
@@ -72,7 +72,4 @@ class DependencyCollector:
                 spice_end_date = spice_end_date.replace(tzinfo=timezone.utc)
                 if spice_start_date <= end_date and start_date < spice_end_date:
                     file_names.append(Path(spice_file["file_name"]).name)
-
-            spice_files = [imap_data_access.download(file_name) for file_name in file_names]
-            for kernel in spice_files:
-                spiceypy.furnsh(str(kernel))
+        return file_names
