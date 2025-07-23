@@ -62,7 +62,7 @@ class DependencyCollector:
 
     @classmethod
     def furnish_spice(cls, start_date: datetime, end_date: datetime):
-        for kernel_type in ["leapseconds", "spacecraft_clock", "pointing_attitude", "imap_frames"]:
+        for kernel_type in ["leapseconds", "spacecraft_clock", "pointing_attitude", "imap_frames", "science_frames"]:
             file_json = requests.get(cls.IMAP_API + f"spice-query?type={kernel_type}&start_time=0").json()
             file_names = []
             for spice_file in file_json:

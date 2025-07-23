@@ -1,17 +1,17 @@
 {
   "canonical_map_period": {
-    "year": 2026,
-    "quarter": 1,
-    "map_period": 6,
+    "year": 2025,
+    "quarter": 4,
+    "map_period": 3,
     "number_of_maps": 1
   },
-  "instrument": "Hi 45",
-  "spin_phase": "ram",
+  "instrument": "Lo",
+  "spin_phase": "full spin",
   "reference_frame": "spacecraft",
   "survival_corrected": true,
   "coordinate_system": "hae",
   "pixelation_scheme": "square",
-  "pixel_parameter": 2,
+  "pixel_parameter": 4,
   "map_data_type": "ENA Intensity",
   "lo_species": "h"
 }

@@ -250,7 +250,7 @@ class TestDependencyCollector(unittest.TestCase):
             },
         ]
 
-        mock_frame_json = [
+        mock_imap_frame_json = [
             {
                 "file_name": "fk/imap_001.tf",
                 "min_date_datetime": "2024-12-01, 00:00:00",
@@ -258,23 +258,34 @@ class TestDependencyCollector(unittest.TestCase):
             },
         ]
 
+        mock_science_frame_json = [
+            {
+                "file_name": "fk/imap_science_0001.tf",
+                "min_date_datetime": "2024-12-01, 00:00:00",
+                "max_date_datetime": "2025-05-01, 00:00:00"
+            }
+        ]
+
         mock_naif_response = Mock(json=Mock(return_value=mock_naif_json))
         mock_sclk_response = Mock(json=Mock(return_value=mock_sclk_json))
         mock_dps_response = Mock(json=Mock(return_value=mock_dps_json))
-        mock_frame_response = Mock(json=Mock(return_value=mock_frame_json))
+        mock_imap_frame_response = Mock(json=Mock(return_value=mock_imap_frame_json))
+        mock_science_frame_response = Mock(json=Mock(return_value=mock_science_frame_json))
 
         mock_requests.get.side_effect = [
             mock_naif_response,
             mock_sclk_response,
             mock_dps_response,
-            mock_frame_response
+            mock_imap_frame_response,
+            mock_science_frame_response
         ]
         mock_download.side_effect = [
             Path("path/to/naif"),
             Path("path/to/sclk"),
             Path("path/to/dps1"),
             Path("path/to/dps2"),
-            Path("path/to/frame")
+            Path("path/to/imap_frame"),
+            Path("path/to/science_frame")
         ]
 
         DependencyCollector.furnish_spice(desired_spice_start, desired_spice_end)
@@ -284,18 +295,21 @@ class TestDependencyCollector(unittest.TestCase):
             call("imap_sclk_0000.tsc"),
             call("imap_dps_2024_335_2025_031_01.ah.bc"),
             call("imap_dps_2025_031_2025_120_01.ah.bc"),
-            call("imap_001.tf")
+            call("imap_001.tf"),
+            call("imap_science_0001.tf")
         ])
         mock_requests.get.assert_has_calls([
             call("https://api.dev.imap-mission.com/spice-query?type=leapseconds&start_time=0"),
             call("https://api.dev.imap-mission.com/spice-query?type=spacecraft_clock&start_time=0"),
             call("https://api.dev.imap-mission.com/spice-query?type=pointing_attitude&start_time=0"),
-            call("https://api.dev.imap-mission.com/spice-query?type=imap_frames&start_time=0")
+            call("https://api.dev.imap-mission.com/spice-query?type=imap_frames&start_time=0"),
+            call("https://api.dev.imap-mission.com/spice-query?type=science_frames&start_time=0")
         ])
         mock_spiceypy.furnsh.assert_has_calls([
             call(str(Path("path/to/naif"))),
             call(str(Path("path/to/sclk"))),
             call(str(Path("path/to/dps1"))),
             call(str(Path("path/to/dps2"))),
-            call(str(Path("path/to/frame")))
+            call(str(Path("path/to/imap_frame"))),
+            call(str(Path("path/to/science_frame")))
         ])
