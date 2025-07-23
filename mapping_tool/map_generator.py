@@ -1,32 +1,32 @@
-import json
-from datetime import datetime
+import tempfile
+from pathlib import Path
 
-from imap_data_access import ProcessingInputCollection
-from imap_processing.cli import Hi, Lo, Ultra
+import imap_data_access
+from imap_processing.cli import ProcessInstrument
 
-
-def make_hi_map(descriptor: str, start_date: datetime, dependencies: ProcessingInputCollection):
-    hi_processor = Hi(data_level="l2", data_descriptor=descriptor, dependency_str=dependencies.serialize(),
-                      start_date=start_date.strftime("%Y%m%d"),
-                      repointing=None,
-                      version="0",
-                      upload_to_sdc=False)
-    hi_processor.process()
+from mapping_tool.configuration import Configuration
 
 
-def make_lo_map(descriptor: str, start_date: datetime, dependencies: ProcessingInputCollection):
-    lo_processor = Lo(data_level="l2", data_descriptor=descriptor, dependency_str=dependencies.serialize(),
-                      start_date=start_date.strftime("%Y%m%d"),
-                      repointing=None,
-                      version="0",
-                      upload_to_sdc=False)
-    lo_processor.process()
+def process(processor: ProcessInstrument, config: Configuration) -> list[Path]:
+    downloaded_deps = processor.pre_processing()
+    results = processor.do_processing(downloaded_deps)
+    with tempfile.TemporaryDirectory() as temp_dir:
+        old_data_dir = imap_data_access.config["DATA_DIR"]
+        try:
+            imap_data_access.config["DATA_DIR"] = Path(temp_dir)
+            processor.post_processing(results, downloaded_deps)
+            files = Path(temp_dir).rglob("*.cdf")
+            for file in files:
+                if (config.output_directory / file.name).exists():
+                    overwrite = input(f"File {file.name} already exists. Would you like to overwrite it? (Y/n) ")
+                    if overwrite not in ["Y", "y", ""]:
+                        continue
 
-
-def make_ultra_map(descriptor: str, start_date: datetime, dependencies: ProcessingInputCollection):
-    ultra_processor = Ultra(data_level="l2", data_descriptor=descriptor, dependency_str=dependencies.serialize(),
-                            start_date=start_date.strftime("%Y%m%d"),
-                            repointing=None,
-                            version="0",
-                            upload_to_sdc=False)
-    ultra_processor.process()
+                print("Writing to: ", config.output_directory / file.name)
+                file.replace(config.output_directory / file.name)
+        except Exception as e:
+            raise e
+        finally:
+            imap_data_access.config["DATA_DIR"] = old_data_dir
+    processor.cleanup()
+    return files

@@ -1,12 +1,15 @@
+import os
+
 import argparse
 from pathlib import Path
 
 from imap_data_access import ProcessingInputCollection, ScienceInput, SPICEInput
+from imap_processing.cli import Hi, Lo, Ultra
 from imap_processing.ena_maps.utils.naming import MappableInstrumentShortName
 
 from mapping_tool.configuration import Configuration
 from mapping_tool.dependency_collector import DependencyCollector
-from mapping_tool.map_generator import make_hi_map, make_lo_map, make_ultra_map
+from mapping_tool.map_generator import process
 
 
 def create_maps():
@@ -33,10 +36,17 @@ if __name__ == "__main__":
         processing_input_collection = ProcessingInputCollection(
             *[ScienceInput(Path(pset).name) for pset in psets],
             *[SPICEInput(name) for name in spice_kernel_names])
-        match descriptor.instrument:
-            case MappableInstrumentShortName.HI:
-                make_hi_map(descriptor.to_string(), start_date, processing_input_collection)
-            case MappableInstrumentShortName.LO:
-                make_lo_map(descriptor.to_string(), start_date, processing_input_collection)
-            case MappableInstrumentShortName.ULTRA:
-                make_ultra_map(descriptor.to_string(), start_date, processing_input_collection)
+        processor_classes = {
+            MappableInstrumentShortName.HI: Hi,
+            MappableInstrumentShortName.LO: Lo,
+            MappableInstrumentShortName.ULTRA: Ultra,
+        }
+        processor = processor_classes[descriptor.instrument](
+            data_level="l2", data_descriptor=descriptor.to_string(),
+            dependency_str=processing_input_collection.serialize(),
+            start_date=start_date.strftime("%Y%m%d"),
+            repointing=None,
+            version="0",
+            upload_to_sdc=False
+        )
+        process(processor, config)
