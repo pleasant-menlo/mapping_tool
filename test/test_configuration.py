@@ -1,5 +1,6 @@
 import datetime
 from datetime import datetime, timezone
+from pathlib import Path
 
 import jsonschema.exceptions
 from typing import Dict
@@ -14,28 +15,9 @@ from imap_processing.ena_maps.utils.naming import MapDescriptor, MappableInstrum
 
 
 class TestConfiguration(TestCase):
-    @patch("mapping_tool.configuration.validate")
-    def test_from_json(self, mock_validate):
+    def test_from_json(self):
         example_config_path = get_example_config_path() / "example_config.json"
         config: Configuration = Configuration.from_json(example_config_path)
-
-        config_json: Dict = {
-            "canonical_map_period": CanonicalMapPeriod(
-                year=2025,
-                quarter=1,
-                map_period=6,
-                number_of_maps=1
-            ),
-            "instrument": "Hi 90",
-            "spin_phase": "Ram",
-            "reference_frame": "spacecraft",
-            "survival_corrected": True,
-            "coordinate_system": "hae",
-            "pixelation_scheme": "square",
-            "pixel_parameter": 2,
-            "map_data_type": "ENA Intensity",
-            "lo_species": "h"
-        }
 
         expected_config: Configuration = Configuration(
             canonical_map_period=CanonicalMapPeriod(year=2025, quarter=1, map_period=6, number_of_maps=1),
@@ -47,11 +29,11 @@ class TestConfiguration(TestCase):
             pixelation_scheme="square",
             pixel_parameter=2,
             map_data_type="ENA Intensity",
-            lo_species="h"
+            lo_species="h",
+            output_directory=Path('.')
         )
 
         self.assertEqual(expected_config, config)
-        mock_validate.assert_called_with(config_json, config_schema.schema)
 
     @patch("mapping_tool.configuration.validate")
     def test_from_json_calls_validate_with_the_configuration_schema(self, mock_validate):
@@ -73,7 +55,8 @@ class TestConfiguration(TestCase):
             "pixelation_scheme": "square",
             "pixel_parameter": 2,
             "map_data_type": "ENA Intensity",
-            "lo_species": "h"
+            "lo_species": "h",
+            "output_directory": Path('.')
         }
 
         mock_validate.assert_called_with(config_json, config_schema.schema)

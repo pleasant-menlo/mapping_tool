@@ -108,6 +108,9 @@ schema = {
                 "O",
                 "o"
             ]
+        },
+        "output_directory": {
+            "type": "string"
         }
     },
     "required": [
@@ -119,7 +122,6 @@ schema = {
         "coordinate_system",
         "pixelation_scheme",
         "pixel_parameter",
-        "map_data_type",
-        "lo_species"
+        "map_data_type"
     ]
 }

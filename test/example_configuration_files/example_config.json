@@ -13,5 +13,6 @@
   "pixelation_scheme": "square",
   "pixel_parameter": 2,
   "map_data_type": "ENA Intensity",
-  "lo_species": "h"
+  "lo_species": "h",
+  "output_directory": "."
 }

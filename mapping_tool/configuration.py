@@ -45,6 +45,7 @@ class Configuration:
     pixel_parameter: int
     map_data_type: str
     lo_species: Optional[str] = None
+    output_directory: Optional[Path] = Path('.')
 
     @classmethod
     def from_json(cls, config_path: Path):
@@ -53,6 +54,7 @@ class Configuration:
             schema = config_schema.schema
             validate(config, schema)
             config["canonical_map_period"] = CanonicalMapPeriod(**config["canonical_map_period"])
+            config["output_directory"] = Path(config["output_directory"])
             return cls(**config)
 
     def get_map_descriptors(self) -> MapDescriptor:
