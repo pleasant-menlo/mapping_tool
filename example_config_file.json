@@ -3,9 +3,12 @@
     "year": 2025,
     "quarter": 4,
     "map_period": 3,
-    "number_of_maps": 1
+    "number_of_maps": 2
   },
-  "instrument": "Lo",
+  "instrument": [
+    "Lo",
+    "Hi 90"
+  ],
   "spin_phase": "full spin",
   "reference_frame": "spacecraft",
   "survival_corrected": true,
@@ -13,5 +16,6 @@
   "pixelation_scheme": "square",
   "pixel_parameter": 4,
   "map_data_type": "ENA Intensity",
-  "lo_species": "h"
+  "lo_species": "h",
+  "output_directory": "."
 }

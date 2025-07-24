@@ -25,21 +25,26 @@ schema = {
             ]
         },
         "instrument": {
-            "type": "string",
-            "enum": [
-                "Hi 45",
-                "Hi 90",
-                "Hi combined",
-                "Ultra 45",
-                "Ultra 90",
-                "Ultra combined",
-                "Lo",
-                "lo",
-                "GLOWS",
-                "glows",
-                "IDEX",
-                "idex"
-            ]
+            "type": "array",
+            "minItems": 1,
+            "uniqueItems": True,
+            "items": {
+                "type": "string",
+                "enum": [
+                    "Hi 45",
+                    "Hi 90",
+                    "Hi combined",
+                    "Ultra 45",
+                    "Ultra 90",
+                    "Ultra combined",
+                    "Lo",
+                    "lo",
+                    "GLOWS",
+                    "glows",
+                    "IDEX",
+                    "idex"
+                ]
+            }
         },
         "spin_phase": {
             "type": "string",

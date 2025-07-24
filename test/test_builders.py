@@ -1,4 +1,4 @@
-from typing import Dict
+from typing import Dict, Optional
 
 from mapping_tool.configuration import Configuration, CanonicalMapPeriod
 
@@ -9,7 +9,7 @@ def create_canonical_map_period(year=2025, quarter=1, map_period=6, number_of_ma
 
 def create_configuration(
         canonical_map_period: CanonicalMapPeriod = None,
-        instrument: str = "Hi 90",
+        instrument: Optional[list[str]] = None,
         spin_phase: str = "Ram",
         reference_frame: str = "spacecraft",
         survival_corrected: bool = True,
@@ -20,6 +20,7 @@ def create_configuration(
         lo_species: str = "h",
 ):
     canonical_period = canonical_map_period if canonical_map_period is not None else create_canonical_map_period()
+    instrument = instrument or ["Hi 90"]
     return Configuration(
         canonical_map_period=canonical_period,
         instrument=instrument,

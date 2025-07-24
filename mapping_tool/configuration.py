@@ -36,7 +36,7 @@ class CanonicalMapPeriod:
 @dataclass
 class Configuration:
     canonical_map_period: CanonicalMapPeriod
-    instrument: str
+    instrument: list[str]
     spin_phase: str
     reference_frame: str
     survival_corrected: bool
@@ -77,23 +77,28 @@ class Configuration:
 
         resolution = f"{self.pixel_parameter}deg" if self.pixelation_scheme.lower() == "square" else f"nside{self.pixel_parameter}"
         duration = str(self.canonical_map_period.map_period) + "mo"
-        instrument_split = self.instrument.split(' ')
-        instrument = instrument_split[0]
-        if len(instrument_split) > 1:
-            sensor = instrument_split[1]
-        else:
-            sensor = ""
-        instrument = MappableInstrumentShortName[instrument.upper()]
 
-        return MapDescriptor(
-            frame_descriptor=frame_descriptors[self.reference_frame],
-            resolution_str=resolution,
-            duration=duration,
-            instrument=instrument,
-            sensor=sensor,
-            principal_data=principal_data[self.map_data_type],
-            species=self.lo_species or 'h',
-            survival_corrected="sp" if self.survival_corrected else "nsp",
-            spin_phase=spin_phase[self.spin_phase.lower()],
-            coordinate_system=self.coordinate_system.lower()
-        )
+        descriptors = []
+        for instrument_sensor in self.instrument:
+            instrument_split = instrument_sensor.split(' ')
+            instrument = instrument_split[0]
+            if len(instrument_split) > 1:
+                sensor = instrument_split[1]
+            else:
+                sensor = ""
+            instrument = MappableInstrumentShortName[instrument.upper()]
+
+            descriptor = MapDescriptor(
+                frame_descriptor=frame_descriptors[self.reference_frame],
+                resolution_str=resolution,
+                duration=duration,
+                instrument=instrument,
+                sensor=sensor,
+                principal_data=principal_data[self.map_data_type],
+                species=self.lo_species or 'h',
+                survival_corrected="sp" if self.survival_corrected else "nsp",
+                spin_phase=spin_phase[self.spin_phase.lower()],
+                coordinate_system=self.coordinate_system.lower()
+            )
+            descriptors.append(descriptor)
+        return descriptors
