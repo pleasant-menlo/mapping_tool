@@ -1,6 +1,34 @@
-from typing import Dict, Optional
+from typing import Dict, Optional, Literal
+
+from imap_processing.ena_maps.utils.naming import MappableInstrumentShortName, MapDescriptor
 
 from mapping_tool.configuration import Configuration, CanonicalMapPeriod
+
+
+def create_map_descriptor(
+        frame_descriptor: Literal["sf", "hf", "hk"] = "sf",
+        resolution_str: str = "2deg",
+        duration: str = "6mo",
+        instrument: MappableInstrumentShortName = MappableInstrumentShortName["HI"],
+        sensor: str = "90",
+        principal_data: str = "ena",
+        species: str = "h",
+        survival_corrected: str = "sp",
+        spin_phase: str = "ram",
+        coordinate_system: str = "hae",
+):
+    return MapDescriptor(
+        frame_descriptor=frame_descriptor,
+        resolution_str=resolution_str,
+        duration=duration,
+        instrument=instrument,
+        sensor=sensor,
+        principal_data=principal_data,
+        species=species,
+        survival_corrected=survival_corrected,
+        spin_phase=spin_phase,
+        coordinate_system=coordinate_system,
+    )
 
 
 def create_canonical_map_period(year=2025, quarter=1, map_period=6, number_of_maps=1):
