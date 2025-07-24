@@ -5,7 +5,9 @@
     "map_period": 6,
     "number_of_maps": 1
   },
-  "instrument": "Hi 90",
+  "instrument": [
+    "Hi 90"
+  ],
   "spin_phase": "Ram",
   "reference_frame": "spacecraft",
   "survival_corrected": true,

@@ -13,7 +13,7 @@ from test.test_helpers import get_example_config_path
 class TestMapGenerator(unittest.TestCase):
     def test_process(self):
         mock_processor = Mock()
-        example_config_path = get_example_config_path() / "example_config.json"
+        example_config_path = get_example_config_path() / "test_config.json"
         config: Configuration = Configuration.from_json(example_config_path)
         process(mock_processor, config)
 

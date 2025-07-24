@@ -16,12 +16,12 @@ from imap_processing.ena_maps.utils.naming import MapDescriptor, MappableInstrum
 
 class TestConfiguration(TestCase):
     def test_from_json(self):
-        example_config_path = get_example_config_path() / "example_config.json"
+        example_config_path = get_example_config_path() / "test_config.json"
         config: Configuration = Configuration.from_json(example_config_path)
 
         expected_config: Configuration = Configuration(
             canonical_map_period=CanonicalMapPeriod(year=2025, quarter=1, map_period=6, number_of_maps=1),
-            instrument="Hi 90",
+            instrument=["Hi 90"],
             spin_phase="Ram",
             reference_frame="spacecraft",
             survival_corrected=True,
@@ -37,7 +37,7 @@ class TestConfiguration(TestCase):
 
     @patch("mapping_tool.configuration.validate")
     def test_from_json_calls_validate_with_the_configuration_schema(self, mock_validate):
-        example_config_path = get_example_config_path() / "example_config.json"
+        example_config_path = get_example_config_path() / "test_config.json"
         Configuration.from_json(example_config_path)
 
         config_json: Dict = {
@@ -47,7 +47,7 @@ class TestConfiguration(TestCase):
                 map_period=6,
                 number_of_maps=1
             ),
-            "instrument": "Hi 90",
+            "instrument": ["Hi 90"],
             "spin_phase": "Ram",
             "reference_frame": "spacecraft",
             "survival_corrected": True,
@@ -74,7 +74,7 @@ class TestConfiguration(TestCase):
             with self.subTest(name):
                 mock_load.return_value = create_config_dict(case)
                 with self.assertRaises(jsonschema.exceptions.ValidationError):
-                    Configuration.from_json(get_example_config_path() / "example_config.json")
+                    Configuration.from_json(get_example_config_path() / "test_config.json")
 
     def test_get_map_descriptors_returns_descriptors_for_each_instrument(self):
         config: Configuration = Configuration(
