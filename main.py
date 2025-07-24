@@ -1,3 +1,4 @@
+import logging
 import os
 
 import argparse
@@ -11,10 +12,8 @@ from mapping_tool.configuration import Configuration
 from mapping_tool.dependency_collector import DependencyCollector
 from mapping_tool.map_generator import process
 
-
-def create_maps():
-    pass
-
+logging.getLogger("imap_processing").setLevel(logging.WARNING)
+logging.getLogger("imap_data_access").setLevel(logging.WARNING)
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
