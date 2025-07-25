@@ -1,4 +1,5 @@
 import logging
+from typing import Optional
 
 logger = logging.getLogger(__name__)
 
@@ -11,7 +12,17 @@ from imap_processing.cli import ProcessInstrument
 from mapping_tool.configuration import Configuration
 
 
-def process(processor: ProcessInstrument, config: Configuration) -> list[Path]:
+class MapPrinter:
+    def __init__(self, configuration: Configuration):
+        self.output_directory = configuration.output_directory
+        self.output_file_names = iter(configuration.output_files)
+
+    def print(self, processor: ProcessInstrument):
+        pass
+
+
+def process(processor: ProcessInstrument, output_directory: Path, output_file_name: Optional[str] = None) -> \
+        list[Path]:
     downloaded_deps = processor.pre_processing()
     try:
         results = processor.do_processing(downloaded_deps)
@@ -28,17 +39,19 @@ def process(processor: ProcessInstrument, config: Configuration) -> list[Path]:
         try:
             imap_data_access.config["DATA_DIR"] = Path(temp_dir)
             processor.post_processing(results, downloaded_deps)
-            files = list(Path(temp_dir).rglob("*.cdf"))
-            for file in files:
-                output_file_path = config.output_directory / file.name
-                if output_file_path.exists():
-                    overwrite = input(f"File {file.name} already exists. Would you like to overwrite it? (Y/n) ")
-                    if overwrite not in ["Y", "y", ""]:
-                        continue
-
-                logger.info(f"Writing to: {output_file_path}")
-                file.replace(output_file_path)
-                files_written.append(output_file_path)
+            match list(Path(temp_dir).rglob("*.cdf")):
+                case [file]:
+                    filename = output_file_name or file.name
+                    output_file_path = output_directory / filename
+                    if output_file_path.exists():
+                        overwrite = input(f"File {filename} already exists. Would you like to overwrite it? (Y/n) ")
+                        if overwrite not in ["Y", "y", ""]:
+                            return []
+                    logger.info(f"Writing to: {output_file_path}")
+                    file.replace(output_file_path)
+                    files_written.append(output_file_path)
+                case [_, _, *_]:
+                    raise ValueError("Expected to write up to one map CDF")
         except Exception as e:
             raise e
         finally:

@@ -21,7 +21,28 @@ class TestConfiguration(TestCase):
 
         expected_config: Configuration = Configuration(
             canonical_map_period=CanonicalMapPeriod(year=2025, quarter=1, map_period=6, number_of_maps=1),
-            instrument=["Hi 90"],
+            instruments=["Hi 90"],
+            spin_phase="Ram",
+            reference_frame="spacecraft",
+            survival_corrected=True,
+            coordinate_system="hae",
+            pixelation_scheme="square",
+            pixel_parameter=2,
+            map_data_type="ENA Intensity",
+            lo_species=None,
+            output_directory=Path('.'),
+            output_files=None
+        )
+
+        self.assertEqual(expected_config, config)
+
+    def test_from_json_with_optional_config_fields(self):
+        example_config_path = get_example_config_path() / "test_config_with_optionals.json"
+        config: Configuration = Configuration.from_json(example_config_path)
+
+        expected_config: Configuration = Configuration(
+            canonical_map_period=CanonicalMapPeriod(year=2025, quarter=1, map_period=6, number_of_maps=1),
+            instruments=["Hi 90", 'Ultra 45'],
             spin_phase="Ram",
             reference_frame="spacecraft",
             survival_corrected=True,
@@ -30,7 +51,10 @@ class TestConfiguration(TestCase):
             pixel_parameter=2,
             map_data_type="ENA Intensity",
             lo_species="h",
-            output_directory=Path('.')
+            output_directory=Path('path/to/output'),
+            output_files={
+                (MappableInstrumentShortName.HI, "90"): ['hi90_map.cdf']
+            }
         )
 
         self.assertEqual(expected_config, config)
@@ -47,7 +71,7 @@ class TestConfiguration(TestCase):
                 map_period=6,
                 number_of_maps=1
             ),
-            "instrument": ["Hi 90"],
+            "instruments": ["Hi 90"],
             "spin_phase": "Ram",
             "reference_frame": "spacecraft",
             "survival_corrected": True,
@@ -55,8 +79,6 @@ class TestConfiguration(TestCase):
             "pixelation_scheme": "square",
             "pixel_parameter": 2,
             "map_data_type": "ENA Intensity",
-            "lo_species": "h",
-            "output_directory": Path('.')
         }
 
         mock_validate.assert_called_with(config_json, config_schema.schema)
@@ -64,7 +86,7 @@ class TestConfiguration(TestCase):
     @patch("mapping_tool.configuration.json.load")
     def test_from_json_fails_validation_with_invalid_config(self, mock_load):
         validation_error_cases = [
-            ("invalid instrument", {"instrument": "90"}),
+            ("invalid instrument", {"instruments": "90"}),
             ("invalid spin phase", {"spin_phase": "none"}),
             ("invalid reference frame", {"reference_frame": "spacecraft kinematic"}),
             ("invalid survival probability corrected", {"survival_corrected": "YES"}),
@@ -76,10 +98,34 @@ class TestConfiguration(TestCase):
                 with self.assertRaises(jsonschema.exceptions.ValidationError):
                     Configuration.from_json(get_example_config_path() / "test_config.json")
 
+    @patch("mapping_tool.configuration.json.load")
+    def test_config_creation_fails_when_output_files_and_number_of_output_maps_differ(self, mock_load):
+
+        test_cases = [
+            ({'Hi 90': ['hi90_map.cdf'], 'Ultra 45': ['ultra45_map.cdf']}, ['Hi 90'], 1,
+             "Specified output file names for an instrument that won't be generated: Ultra 45"),
+
+            ({'Hi 90': ['hi90_map_1.cdf', 'hi90_map_2.cdf'], 'Ultra 45': ['ultra45_map.cdf']},
+             ['Hi 90', 'Ultra 45'], 1,
+             f"More Hi 90 filenames specified (2) than will be generated (1)"),
+        ]
+
+        for (output_files, instruments, number_of_maps, expected_message) in test_cases:
+            with self.subTest(expected_message):
+                config = create_config_dict({})
+                config['output_files'] = output_files
+                config['instruments'] = instruments
+                config['canonical_map_period']['number_of_maps'] = number_of_maps
+                mock_load.return_value = config
+                with self.assertRaises(ValueError) as context:
+                    Configuration.from_json(get_example_config_path() / "test_config.json")
+
+                self.assertEqual(expected_message, str(context.exception))
+
     def test_get_map_descriptors_returns_descriptors_for_each_instrument(self):
         config: Configuration = Configuration(
             canonical_map_period=CanonicalMapPeriod(year=2025, quarter=1, map_period=6, number_of_maps=2),
-            instrument=["hi 90", "Lo"],
+            instruments=["hi 90", "Lo"],
             spin_phase="Ram",
             reference_frame="spacecraft",
             survival_corrected=True,
@@ -205,7 +251,7 @@ class TestConfiguration(TestCase):
         ]
         for case, instrument, sensor, instrument_descriptor in cases:
             with self.subTest(f"{case}, {instrument}, {sensor}"):
-                input_config = create_configuration(instrument=case)
+                input_config = create_configuration(instruments=case)
                 [descriptor] = input_config.get_map_descriptors()
                 self.assertEqual(instrument, descriptor.instrument)
                 self.assertEqual(sensor, descriptor.sensor)

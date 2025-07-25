@@ -44,14 +44,19 @@ class TestMain(unittest.TestCase):
         mock_configuration = mock_configuration_from_json.return_value
         mock_processing_input_collection = mock_processing_input_collection_class.return_value
 
-        hi_descriptor = create_map_descriptor(instrument=MappableInstrumentShortName.HI)
-        lo_descriptor = create_map_descriptor(instrument=MappableInstrumentShortName.LO)
-        ultra_descriptor = create_map_descriptor(instrument=MappableInstrumentShortName.ULTRA)
+        hi_descriptor = create_map_descriptor(instrument=MappableInstrumentShortName.HI, sensor="90")
+        lo_descriptor = create_map_descriptor(instrument=MappableInstrumentShortName.LO, sensor="")
+        ultra_descriptor = create_map_descriptor(instrument=MappableInstrumentShortName.ULTRA, sensor="45")
 
         mock_configuration.get_map_descriptors.return_value = [hi_descriptor, lo_descriptor, ultra_descriptor]
         mock_configuration.canonical_map_period.calculate_date_ranges.return_value = [
             (datetime(2025, 1, 1), datetime(2026, 1, 1)),
             (datetime(2026, 1, 1), datetime(2027, 1, 1))]
+        mock_configuration.output_directory = Path("path/to/output")
+        mock_configuration.output_files = {(MappableInstrumentShortName.HI, "90"): ["hi_map_1.cdf", "hi_map_2.cdf"],
+                                           (MappableInstrumentShortName.LO, ""): ["lo_map_1.cdf", "lo_map_2.cdf"],
+                                           (MappableInstrumentShortName.ULTRA, "45"): ["ultra_map_1.cdf",
+                                                                                       "ultra_map_2.cdf"]}
 
         science_input_mocks = defaultdict(Mock)
         spice_input_mocks = defaultdict(Mock)
@@ -98,22 +103,22 @@ class TestMain(unittest.TestCase):
         )
 
         main.logger.info.assert_has_calls([
-            call('Generating map: h90-ena-h-sf-sp-ram-hae-2deg-6mo 2025-01-01 00:00:00 2026-01-01 00:00:00'),
+            call('Generating map: h90-ena-h-sf-sp-ram-hae-2deg-6mo 2025-01-01 to 2026-01-01'),
             call('imap_hi_l1c_pset_20250101_v001.cdf'),
             call('imap_hi_l1c_pset_20250102_v001.cdf'),
-            call('Generating map: h90-ena-h-sf-sp-ram-hae-2deg-6mo 2026-01-01 00:00:00 2027-01-01 00:00:00'),
+            call('Generating map: h90-ena-h-sf-sp-ram-hae-2deg-6mo 2026-01-01 to 2027-01-01'),
             call('imap_hi_l1c_pset_20250101_v001.cdf'),
             call('imap_hi_l1c_pset_20250102_v001.cdf'),
-            call('Generating map: ilo90-ena-h-sf-sp-ram-hae-2deg-6mo 2025-01-01 00:00:00 2026-01-01 00:00:00'),
+            call('Generating map: ilo-ena-h-sf-sp-ram-hae-2deg-6mo 2025-01-01 to 2026-01-01'),
             call('imap_hi_l1c_pset_20250101_v001.cdf'),
             call('imap_hi_l1c_pset_20250102_v001.cdf'),
-            call('Generating map: ilo90-ena-h-sf-sp-ram-hae-2deg-6mo 2026-01-01 00:00:00 2027-01-01 00:00:00'),
+            call('Generating map: ilo-ena-h-sf-sp-ram-hae-2deg-6mo 2026-01-01 to 2027-01-01'),
             call('imap_hi_l1c_pset_20250101_v001.cdf'),
             call('imap_hi_l1c_pset_20250102_v001.cdf'),
-            call('Generating map: u90-ena-h-sf-sp-ram-hae-2deg-6mo 2025-01-01 00:00:00 2026-01-01 00:00:00'),
+            call('Generating map: u45-ena-h-sf-sp-ram-hae-2deg-6mo 2025-01-01 to 2026-01-01'),
             call('imap_hi_l1c_pset_20250101_v001.cdf'),
             call('imap_hi_l1c_pset_20250102_v001.cdf'),
-            call('Generating map: u90-ena-h-sf-sp-ram-hae-2deg-6mo 2026-01-01 00:00:00 2027-01-01 00:00:00'),
+            call('Generating map: u45-ena-h-sf-sp-ram-hae-2deg-6mo 2026-01-01 to 2027-01-01'),
             call('imap_hi_l1c_pset_20250101_v001.cdf'),
             call('imap_hi_l1c_pset_20250102_v001.cdf')
         ])
@@ -164,15 +169,15 @@ class TestMain(unittest.TestCase):
         self.assertEqual(6, mock_process.call_count)
 
         mock_process.assert_has_calls([
-            call(mock_hi_processor_class.return_value, mock_configuration),
-            call(mock_hi_processor_class.return_value, mock_configuration),
-            call(mock_lo_processor_class.return_value, mock_configuration),
-            call(mock_lo_processor_class.return_value, mock_configuration),
-            call(mock_ultra_processor_class.return_value, mock_configuration),
-            call(mock_ultra_processor_class.return_value, mock_configuration),
+            call(mock_hi_processor_class.return_value, Path('path/to/output'), "hi_map_1.cdf"),
+            call(mock_hi_processor_class.return_value, Path('path/to/output'), "hi_map_2.cdf"),
+            call(mock_lo_processor_class.return_value, Path('path/to/output'), "lo_map_1.cdf"),
+            call(mock_lo_processor_class.return_value, Path('path/to/output'), "lo_map_2.cdf"),
+            call(mock_ultra_processor_class.return_value, Path('path/to/output'), "ultra_map_1.cdf"),
+            call(mock_ultra_processor_class.return_value, Path('path/to/output'), "ultra_map_2.cdf"),
         ])
 
-    @run_periodically(timedelta(days=1))
+    @run_periodically(timedelta(hours=1))
     def test_main_integration(self):
         config_json = {
             "canonical_map_period": {
@@ -181,7 +186,7 @@ class TestMain(unittest.TestCase):
                 "map_period": 1,
                 "number_of_maps": 1
             },
-            "instrument": [
+            "instruments": [
                 "Hi 90",
                 "Lo",
                 "Ultra 90"
@@ -194,7 +199,11 @@ class TestMain(unittest.TestCase):
             "pixel_parameter": 2,
             "map_data_type": "ENA Intensity",
             "lo_species": "h",
-            "output_directory": "."
+            "output_directory": ".",
+            "output_files": {
+                "Hi 90": ["hi90 map.cdf"],
+                "Lo": ["lo map.cdf"],
+            }
         }
 
         with tempfile.TemporaryDirectory() as temporary_directory:
@@ -206,16 +215,21 @@ class TestMain(unittest.TestCase):
             process_result = subprocess.run([sys.executable, main.__file__, "config.json"], cwd=temporary_directory,
                                             text=True, capture_output=True)
 
+            if process_result.returncode != 0:
+                self.fail("Process failed:\n" + process_result.stderr)
+
             expected_stderr_messages = [
-                'Generating map: h90-ena-h-sf-sp-ram-hae-2deg-1mo 2025-07-02 15:00:00+00:00 2025-08-02 01:30:00+00:00',
+                'Generating map: h90-ena-h-sf-sp-ram-hae-2deg-1mo 2025-07-02 to 2025-08-02',
                 'imap_hi_l1c_90sensor-pset_20250702_v001.cdf',
-                'No pointing sets found for ilo-ena-h-sf-sp-ram-hae-2deg-1mo 2025-07-02 15:00:00+00:00 2025-08-02 01:30:00+00:00',
-                'Generating map: u90-ena-h-sf-sp-ram-hae-2deg-1mo 2025-07-02 15:00:00+00:00 2025-08-02 01:30:00+00:00',
-                'imap_ultra_l1c_90sensor-spacecraftpset_20250715-repoint00062_v001.cdf'
+                'Writing to: hi90 map.cdf',
+                'No pointing sets found for ilo-ena-h-sf-sp-ram-hae-2deg-1mo 2025-07-02 to 2025-08-02',
+                'Generating map: u90-ena-h-sf-sp-ram-hae-2deg-1mo 2025-07-02 to 2025-08-02',
+                'imap_ultra_l1c_90sensor-spacecraftpset_20250715-repoint00062_v001.cdf',
+                'Writing to: ultra90 map.cdf'
             ]
 
             for message in expected_stderr_messages:
                 self.assertIn(message, process_result.stderr)
 
-            self.assertTrue((tmp_dir / "imap_hi_l2_h90-ena-h-sf-sp-ram-hae-2deg-1mo_20250702_v000.cdf").exists())
-            self.assertTrue((tmp_dir / "imap_ultra_l2_u90-ena-h-sf-nsp-full-hae-2deg-0mo_20250702_v000.cdf").exists())
+            self.assertTrue((tmp_dir / "hi90 map.cdf").exists())
+            self.assertTrue((tmp_dir / "ultra90 map.cdf").exists())

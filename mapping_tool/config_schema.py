@@ -24,7 +24,7 @@ schema = {
                 "number_of_maps"
             ]
         },
-        "instrument": {
+        "instruments": {
             "type": "array",
             "minItems": 1,
             "uniqueItems": True,
@@ -116,11 +116,88 @@ schema = {
         },
         "output_directory": {
             "type": "string"
+        },
+        "output_files": {
+            "type": "object",
+            "properties": {
+                "Hi 45": {
+                    "type": "array",
+                    "item": {
+                        "type": "string"
+                    }
+                },
+                "Hi 90": {
+                    "type": "array",
+                    "item": {
+                        "type": "string"
+                    }
+                },
+                "Hi combined": {
+                    "type": "array",
+                    "item": {
+                        "type": "string"
+                    }
+                },
+                "Ultra 45": {
+                    "type": "array",
+                    "item": {
+                        "type": "string"
+                    }
+                },
+                "Ultra 90": {
+                    "type": "array",
+                    "item": {
+                        "type": "string"
+                    }
+                },
+                "Ultra combined": {
+                    "type": "array",
+                    "item": {
+                        "type": "string"
+                    }
+                },
+                "Lo": {
+                    "type": "array",
+                    "item": {
+                        "type": "string"
+                    }
+                },
+                "lo": {
+                    "type": "array",
+                    "item": {
+                        "type": "string"
+                    }
+                },
+                "GLOWS": {
+                    "type": "array",
+                    "item": {
+                        "type": "string"
+                    }
+                },
+                "glows": {
+                    "type": "array",
+                    "item": {
+                        "type": "string"
+                    }
+                },
+                "IDEX": {
+                    "type": "array",
+                    "item": {
+                        "type": "string"
+                    }
+                },
+                "idex": {
+                    "type": "array",
+                    "item": {
+                        "type": "string"
+                    }
+                }
+            }
         }
     },
     "required": [
         "canonical_map_period",
-        "instrument",
+        "instruments",
         "spin_phase",
         "reference_frame",
         "survival_corrected",

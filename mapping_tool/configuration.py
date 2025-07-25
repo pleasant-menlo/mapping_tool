@@ -36,7 +36,7 @@ class CanonicalMapPeriod:
 @dataclass
 class Configuration:
     canonical_map_period: CanonicalMapPeriod
-    instrument: list[str]
+    instruments: list[str]
     spin_phase: str
     reference_frame: str
     survival_corrected: bool
@@ -46,6 +46,7 @@ class Configuration:
     map_data_type: str
     lo_species: Optional[str] = None
     output_directory: Optional[Path] = Path('.')
+    output_files: Optional[dict[(MappableInstrumentShortName, str), list]] = None
 
     @classmethod
     def from_json(cls, config_path: Path):
@@ -54,8 +55,35 @@ class Configuration:
             schema = config_schema.schema
             validate(config, schema)
             config["canonical_map_period"] = CanonicalMapPeriod(**config["canonical_map_period"])
-            config["output_directory"] = Path(config["output_directory"])
+            if config.get("output_directory") is not None:
+                config["output_directory"] = Path(config["output_directory"])
+
+            if "output_files" in config:
+                remapped_output_filenames = {}
+                lowercase_instruments = [instrument.lower() for instrument in config["instruments"]]
+                for instrument, output_filenames in config['output_files'].items():
+                    if instrument.lower() not in lowercase_instruments:
+                        raise ValueError(
+                            f"Specified output file names for an instrument that won't be generated: {instrument}")
+                    if len(output_filenames) > config["canonical_map_period"].number_of_maps:
+                        raise ValueError(
+                            f"More {instrument} filenames specified ({len(output_filenames)}) than will be generated ({config['canonical_map_period'].number_of_maps})")
+                    remapped_output_filenames[cls.parse_instrument(instrument)] = output_filenames
+                config["output_files"] = remapped_output_filenames
+
             return cls(**config)
+
+    @classmethod
+    def parse_instrument(cls, instrument_sensor: str):
+        instrument_split = instrument_sensor.split(' ')
+        instrument = instrument_split[0]
+        if len(instrument_split) > 1:
+            sensor = instrument_split[1]
+        else:
+            sensor = ""
+        instrument = MappableInstrumentShortName[instrument.upper()]
+
+        return instrument, sensor
 
     def get_map_descriptors(self) -> MapDescriptor:
         frame_descriptors = {
@@ -79,14 +107,8 @@ class Configuration:
         duration = str(self.canonical_map_period.map_period) + "mo"
 
         descriptors = []
-        for instrument_sensor in self.instrument:
-            instrument_split = instrument_sensor.split(' ')
-            instrument = instrument_split[0]
-            if len(instrument_split) > 1:
-                sensor = instrument_split[1]
-            else:
-                sensor = ""
-            instrument = MappableInstrumentShortName[instrument.upper()]
+        for instrument_sensor in self.instruments:
+            instrument, sensor = self.parse_instrument(instrument_sensor)
 
             descriptor = MapDescriptor(
                 frame_descriptor=frame_descriptors[self.reference_frame],

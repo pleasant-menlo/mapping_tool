@@ -5,7 +5,7 @@
     "map_period": 3,
     "number_of_maps": 2
   },
-  "instrument": [
+  "instruments": [
     "Lo",
     "Hi 90"
   ],
@@ -17,5 +17,15 @@
   "pixel_parameter": 4,
   "map_data_type": "ENA Intensity",
   "lo_species": "h",
-  "output_directory": "."
+  "output_directory": ".",
+  "output_files": {
+    "Lo": [
+      "lo_map_1.cdf",
+      "lo_map_2.cdf"
+    ],
+    "HI 90": [
+      "hi90_map_1.cdf",
+      "hi90_map_2.cdf"
+    ]
+  }
 }

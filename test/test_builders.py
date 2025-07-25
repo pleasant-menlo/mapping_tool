@@ -37,7 +37,7 @@ def create_canonical_map_period(year=2025, quarter=1, map_period=6, number_of_ma
 
 def create_configuration(
         canonical_map_period: CanonicalMapPeriod = None,
-        instrument: Optional[list[str]] = None,
+        instruments: Optional[list[str]] = None,
         spin_phase: str = "Ram",
         reference_frame: str = "spacecraft",
         survival_corrected: bool = True,
@@ -48,10 +48,10 @@ def create_configuration(
         lo_species: str = "h",
 ):
     canonical_period = canonical_map_period if canonical_map_period is not None else create_canonical_map_period()
-    instrument = instrument or ["Hi 90"]
+    instruments = instruments or ["Hi 90"]
     return Configuration(
         canonical_map_period=canonical_period,
-        instrument=instrument,
+        instruments=instruments,
         spin_phase=spin_phase,
         reference_frame=reference_frame,
         survival_corrected=survival_corrected,
@@ -71,7 +71,7 @@ def create_config_dict(args: Dict):
             "map_period": 6,
             "number_of_maps": 1
         },
-        "instrument": "Hi 90",
+        "instruments": ["Hi 90"],
         "spin_phase": "Ram",
         "reference_frame": "spacecraft",
         "survival_corrected": True,

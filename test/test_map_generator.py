@@ -18,9 +18,7 @@ class TestMapGenerator(unittest.TestCase):
         self.assertTrue(hasattr(map_generator, "logger"))
 
         mock_processor = Mock()
-        example_config_path = get_example_config_path() / "test_config.json"
-        config: Configuration = Configuration.from_json(example_config_path)
-        process(mock_processor, config)
+        process(mock_processor, Path("output/dir"))
 
         pre_processing = mock_processor.pre_processing
         do_processing = mock_processor.do_processing
@@ -32,60 +30,62 @@ class TestMapGenerator(unittest.TestCase):
         mock_processor.cleanup.assert_called_once()
 
     @patch('mapping_tool.map_generator.input')
-    def test_process_prompts_user_to_overwrite_already_existing_file(self, mock_input):
+    def test_process_overwrites_existing(self, mock_input):
         mock_processor = Mock()
         map_generator.logger = Mock()
 
-        config: Configuration = Mock(spec=Configuration)
-
-        hi_map_that_gets_overwritten = "hi_map.cdf"
-        ultra_map_that_is_not_overwritten = "ultra_map.cdf"
-        some_new_map = "some_new_map.cdf"
-
+        map_file_name = "hi_map.cdf"
         original_data_dir = imap_data_access.config['DATA_DIR']
 
         def write_cdf_files_to_data_dir(results, downloaded_deps):
             self.assertNotEqual(imap_data_access.config["DATA_DIR"], original_data_dir)
-            (imap_data_access.config["DATA_DIR"] / hi_map_that_gets_overwritten).write_text("new hi map data")
-            (imap_data_access.config["DATA_DIR"] / ultra_map_that_is_not_overwritten).write_text("should be ignored")
-            (imap_data_access.config["DATA_DIR"] / some_new_map).write_text("brand new map")
+            (imap_data_access.config["DATA_DIR"] / map_file_name).write_text("new hi map data")
 
         mock_processor.post_processing.side_effect = write_cdf_files_to_data_dir
 
-        mock_input.side_effect = ["y", "n"]
+        mock_input.return_value = "y"
 
         with tempfile.TemporaryDirectory() as temp_dir:
             output_directory = Path(temp_dir)
-            hi_output_path = output_directory / hi_map_that_gets_overwritten
-            ultra_output_path = output_directory / ultra_map_that_is_not_overwritten
-            some_new_map_output_path = output_directory / some_new_map
 
-            hi_output_path.write_text("old hi map data")
-            ultra_output_path.write_text("ultra data")
+            expected_output_path = output_directory / map_file_name
+            expected_output_path.write_text("old hi map data")
 
-            config.output_directory = output_directory
+            output_cdfs = process(mock_processor, output_directory)
 
-            output_cdfs = process(mock_processor, config)
+            mock_input.assert_called_once_with(
+                f"File {map_file_name} already exists. Would you like to overwrite it? (Y/n) ")
+            map_generator.logger.info.assert_called_once_with(f"Writing to: {expected_output_path}")
 
-            mock_input.assert_has_calls([
-                call(f"File {hi_map_that_gets_overwritten} already exists. Would you like to overwrite it? (Y/n) "),
-                call(f"File {ultra_map_that_is_not_overwritten} already exists. Would you like to overwrite it? (Y/n) ")
-            ])
-
-            map_generator.logger.info.assert_has_calls([
-                call(f"Writing to: {hi_output_path}"),
-                call(f"Writing to: {some_new_map_output_path}"),
-            ])
-
-            self.assertEqual("new hi map data", hi_output_path.read_text())
-            self.assertEqual("ultra data", ultra_output_path.read_text())
-            self.assertEqual("brand new map", some_new_map_output_path.read_text())
-
+            self.assertEqual("new hi map data", expected_output_path.read_text())
+            self.assertEqual([expected_output_path], output_cdfs)
             self.assertEqual(original_data_dir, imap_data_access.config["DATA_DIR"])
 
-            expected_output_files = [hi_output_path,
-                                     some_new_map_output_path]
-            self.assertEqual(expected_output_files, output_cdfs)
+    @patch('mapping_tool.map_generator.input')
+    def test_process_overwrite_is_refused(self, mock_input):
+        mock_processor = Mock()
+        map_generator.logger = Mock()
+
+        mock_input.return_value = 'n'
+
+        def write_cdf_files_to_data_dir(results, downloaded_deps):
+            (imap_data_access.config["DATA_DIR"] / "ultra_map.cdf").write_text("should be ignored")
+
+        mock_processor.post_processing.side_effect = write_cdf_files_to_data_dir
+
+        with tempfile.TemporaryDirectory() as temp_dir:
+            output_directory = Path(temp_dir)
+            ultra_output_path = output_directory / 'ultra_map_filename'
+
+            ultra_output_path.write_text("ultra data")
+
+            output_cdfs = process(mock_processor, output_directory, 'ultra_map_filename')
+
+            mock_input.assert_called_once_with(
+                f"File ultra_map_filename already exists. Would you like to overwrite it? (Y/n) ")
+
+            self.assertEqual("ultra data", ultra_output_path.read_text())
+            self.assertEqual([], output_cdfs)
 
     def test_process_gracefully_handles_processing_exceptions(self):
         map_generator.logger = Mock()
@@ -99,3 +99,22 @@ class TestMapGenerator(unittest.TestCase):
         mock_processor.cleanup.assert_called_once()
         map_generator.logger.warning.assert_called_once_with(
             f" Processor failed when trying to generate map: some_map_descriptor! Skipping\nexception: test")
+
+    def test_specifying_output_files_generates_files_with_those_names(self):
+        mock_processor = Mock()
+        output_file_name = 'hi_map.cdf'
+
+        def write_cdf_files_to_data_dir(results, downloaded_deps):
+            (imap_data_access.config["DATA_DIR"] / "long_hi_cdf_name.cdf").write_text("hi map data")
+
+        mock_processor.post_processing.side_effect = write_cdf_files_to_data_dir
+
+        with tempfile.TemporaryDirectory() as temp_dir:
+            output_directory = Path(temp_dir)
+
+            output_cdfs = process(mock_processor, output_directory, output_file_name)
+
+            expected_output_path = output_directory / output_file_name
+            self.assertEqual("hi map data", expected_output_path.read_text())
+
+            self.assertEqual([expected_output_path], output_cdfs)

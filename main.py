@@ -28,13 +28,16 @@ def do_mapping_tool():
                             map_date_ranges]
 
     for descriptor in config.get_map_descriptors():
+        filenames_iterator = iter(config.output_files.get((descriptor.instrument, descriptor.sensor)) or [])
         for start_date, end_date, spice_kernel_names in date_range_and_spice:
+            filename = next(filenames_iterator, None)
+            map_details = f"{descriptor.to_string()} {start_date.strftime("%Y-%m-%d")} to {end_date.strftime("%Y-%m-%d")}"
             psets = DependencyCollector.get_pointing_sets(descriptor, start_date, end_date)
             if len(psets) == 0:
-                logger.warning(f"No pointing sets found for {descriptor.to_string()} {start_date} {end_date}")
+                logger.warning(f"No pointing sets found for {map_details}")
                 continue
 
-            logger.info(f"Generating map: {descriptor.to_string()} {start_date} {end_date}")
+            logger.info(f"Generating map: {map_details}")
             for pset in psets:
                 logger.info(Path(pset).name)
 
@@ -54,7 +57,7 @@ def do_mapping_tool():
                 version="0",
                 upload_to_sdc=False
             )
-            process(processor, config)
+            process(processor, config.output_directory, filename)
 
 
 if __name__ == "__main__":

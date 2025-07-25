@@ -33,10 +33,11 @@ def run_periodically(frequency: timedelta):
             try:
                 test_item(*args)
                 periodically_run_tests[test_item.__name__] = datetime.now().isoformat()
+                periodically_run_tests_path.write_text(json.dumps(periodically_run_tests))
             except Exception as e:
                 periodically_run_tests[test_item.__name__] = None
-
-            periodically_run_tests_path.write_text(json.dumps(periodically_run_tests))
+                periodically_run_tests_path.write_text(json.dumps(periodically_run_tests))
+                raise e
 
         return test_thing
 
