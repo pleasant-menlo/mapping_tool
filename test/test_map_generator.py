@@ -1,17 +1,22 @@
 import tempfile
 import unittest
 from pathlib import Path
+from unittest import skip
 from unittest.mock import Mock, patch, call
 
 import imap_data_access
 
+from mapping_tool import map_generator
 from mapping_tool.configuration import Configuration
 from mapping_tool.map_generator import process
+from test.test_builders import create_configuration
 from test.test_helpers import get_example_config_path
 
 
 class TestMapGenerator(unittest.TestCase):
     def test_process(self):
+        self.assertTrue(hasattr(map_generator, "logger"))
+
         mock_processor = Mock()
         example_config_path = get_example_config_path() / "test_config.json"
         config: Configuration = Configuration.from_json(example_config_path)
@@ -29,6 +34,7 @@ class TestMapGenerator(unittest.TestCase):
     @patch('mapping_tool.map_generator.input')
     def test_process_prompts_user_to_overwrite_already_existing_file(self, mock_input):
         mock_processor = Mock()
+        map_generator.logger = Mock()
 
         config: Configuration = Mock(spec=Configuration)
 
@@ -50,8 +56,12 @@ class TestMapGenerator(unittest.TestCase):
 
         with tempfile.TemporaryDirectory() as temp_dir:
             output_directory = Path(temp_dir)
-            (output_directory / hi_map_that_gets_overwritten).write_text("old hi map data")
-            (output_directory / ultra_map_that_is_not_overwritten).write_text("ultra data")
+            hi_output_path = output_directory / hi_map_that_gets_overwritten
+            ultra_output_path = output_directory / ultra_map_that_is_not_overwritten
+            some_new_map_output_path = output_directory / some_new_map
+
+            hi_output_path.write_text("old hi map data")
+            ultra_output_path.write_text("ultra data")
 
             config.output_directory = output_directory
 
@@ -62,12 +72,30 @@ class TestMapGenerator(unittest.TestCase):
                 call(f"File {ultra_map_that_is_not_overwritten} already exists. Would you like to overwrite it? (Y/n) ")
             ])
 
-            self.assertEqual("new hi map data", (output_directory / hi_map_that_gets_overwritten).read_text())
-            self.assertEqual("ultra data", (output_directory / ultra_map_that_is_not_overwritten).read_text())
-            self.assertEqual("brand new map", (output_directory / some_new_map).read_text())
+            map_generator.logger.info.assert_has_calls([
+                call(f"Writing to: {hi_output_path}"),
+                call(f"Writing to: {some_new_map_output_path}"),
+            ])
+
+            self.assertEqual("new hi map data", hi_output_path.read_text())
+            self.assertEqual("ultra data", ultra_output_path.read_text())
+            self.assertEqual("brand new map", some_new_map_output_path.read_text())
 
             self.assertEqual(original_data_dir, imap_data_access.config["DATA_DIR"])
 
-            expected_output_files = [output_directory / hi_map_that_gets_overwritten,
-                                     output_directory / some_new_map]
+            expected_output_files = [hi_output_path,
+                                     some_new_map_output_path]
             self.assertEqual(expected_output_files, output_cdfs)
+
+    def test_process_gracefully_handles_processing_exceptions(self):
+        map_generator.logger = Mock()
+
+        mock_processor = Mock()
+        mock_processor.descriptor = "some_map_descriptor"
+
+        mock_processor.do_processing.side_effect = Exception("test")
+        files_written = process(mock_processor, create_configuration())
+        self.assertEqual([], files_written)
+        mock_processor.cleanup.assert_called_once()
+        map_generator.logger.warning.assert_called_once_with(
+            f" Processor failed when trying to generate map: some_map_descriptor! Skipping\nexception: test")

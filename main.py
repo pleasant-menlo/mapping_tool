@@ -1,5 +1,6 @@
 import logging
-import os
+
+logger = logging.getLogger(__name__)
 
 logging.getLogger("imap_processing").setLevel(logging.WARNING)
 logging.getLogger("imap_data_access").setLevel(logging.WARNING)
@@ -30,11 +31,12 @@ def do_mapping_tool():
         for start_date, end_date, spice_kernel_names in date_range_and_spice:
             psets = DependencyCollector.get_pointing_sets(descriptor, start_date, end_date)
             if len(psets) == 0:
-                print("No pointing sets found for", descriptor.to_string(), start_date, end_date)
+                logger.warning(f"No pointing sets found for {descriptor.to_string()} {start_date} {end_date}")
                 continue
 
-            print("Generating map: ", descriptor.to_string(), start_date, end_date)
-            print('\n'.join([Path(pset).name for pset in psets]))
+            logger.info(f"Generating map: {descriptor.to_string()} {start_date} {end_date}")
+            for pset in psets:
+                logger.info(Path(pset).name)
 
             processing_input_collection = ProcessingInputCollection(
                 *[ScienceInput(Path(pset).name) for pset in psets],
@@ -57,6 +59,3 @@ def do_mapping_tool():
 
 if __name__ == "__main__":
     do_mapping_tool()
-
-# '', (), {'data_level': 'l2', 'data_descriptor': 'h90-ena-h-sf-sp-ram-hae-2deg-6mo', 'dependency_str': <MagicMock name='ProcessingInputCollection().serialize()' id='2250096815680'>, 'start_date': '20250101', 'repointing': None, 'version': '0', 'upload_to_sdc': False})
-# data_level='l2', data_descriptor='h90-ena-h-sf-sp-ram-hae-2deg-6mo', dependency_str=<MagicMock name='ProcessingInputCollection().serialize()' id='2250096815680'>, start_date='20250101', repointing=None, version='0', upload_to_sdc=False)

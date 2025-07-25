@@ -3,6 +3,7 @@ from dataclasses import dataclass
 from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Optional
+from unittest import skip, skipIf, SkipTest
 
 
 def get_example_config_path():
@@ -16,22 +17,27 @@ class PeriodicallyRunTest:
     last_run: Optional[str]
 
 
-def run_periodically(test_to_decorate):
-    periodically_run_tests_path = Path(__file__).parent / "periodically_run_tests.json"
-    periodically_run_tests = json.loads(periodically_run_tests_path.read_text())
+def run_periodically(frequency: timedelta):
+    def run_periodically_decorator(test_item):
+        periodically_run_tests_path = Path(__file__).parent / "periodically_run_tests.json"
+        periodically_run_tests = json.loads(periodically_run_tests_path.read_text())
 
-    current_test = periodically_run_tests.get(test_to_decorate.__name__)
-    if current_test is None:
-        raise ValueError("Could not find test name in periodically run tests")
+        last_run = periodically_run_tests.get(test_item.__name__)
 
-    def test_thing(*args):
-        if current_test["last_run"] is not None:
-            next_run_time = datetime.fromisoformat(current_test["last_run"]) + timedelta(
-                days=int(current_test["frequency"]))
-            if current_test["last_run"] and datetime.now() < next_run_time:
-                return
-        test_to_decorate(*args)
-        current_test["last_run"] = datetime.now().isoformat()
-        periodically_run_tests_path.write_text(json.dumps(periodically_run_tests))
+        def test_thing(*args):
+            if last_run is not None:
+                last_run_time = datetime.fromisoformat(last_run) + frequency
+                if datetime.now() < last_run_time:
+                    raise SkipTest(f'Skipping expensive test, {test_item.__name__}, because it passed recently')
 
-    return test_thing
+            try:
+                test_item(*args)
+                periodically_run_tests[test_item.__name__] = datetime.now().isoformat()
+            except Exception as e:
+                periodically_run_tests[test_item.__name__] = None
+
+            periodically_run_tests_path.write_text(json.dumps(periodically_run_tests))
+
+        return test_thing
+
+    return run_periodically_decorator

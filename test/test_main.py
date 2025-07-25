@@ -5,8 +5,9 @@ import sys
 import tempfile
 import unittest
 from collections import defaultdict
-from datetime import datetime
+from datetime import datetime, timedelta
 from pathlib import Path
+from unittest import skipIf
 from unittest.mock import patch, call, sentinel, Mock
 
 from imap_data_access import ScienceInput, SPICEInput
@@ -33,9 +34,11 @@ class TestMain(unittest.TestCase):
     @patch('main.argparse.ArgumentParser')
     def test_do_mapping_tool(self, mock_argument_parser_class, mock_configuration_from_json, mock_get_pointing_sets,
                              mock_collect_spice_kernels, mock_hi_processor_class, mock_lo_processor_class,
-                             mock_ultra_processor_class,
-                             mock_processing_input_collection_class, mock_process, mock_science_input_class,
-                             mock_spice_input_class):
+                             mock_ultra_processor_class, mock_processing_input_collection_class, mock_process,
+                             mock_science_input_class, mock_spice_input_class):
+        self.assertTrue(hasattr(main, "logger"))
+        main.logger = Mock()
+
         mock_argument_parser = mock_argument_parser_class.return_value
         mock_args = mock_argument_parser.parse_args.return_value
         mock_configuration = mock_configuration_from_json.return_value
@@ -94,6 +97,27 @@ class TestMain(unittest.TestCase):
             spice_input_mocks["imap_sclk_0000.tsc"],
         )
 
+        main.logger.info.assert_has_calls([
+            call('Generating map: h90-ena-h-sf-sp-ram-hae-2deg-6mo 2025-01-01 00:00:00 2026-01-01 00:00:00'),
+            call('imap_hi_l1c_pset_20250101_v001.cdf'),
+            call('imap_hi_l1c_pset_20250102_v001.cdf'),
+            call('Generating map: h90-ena-h-sf-sp-ram-hae-2deg-6mo 2026-01-01 00:00:00 2027-01-01 00:00:00'),
+            call('imap_hi_l1c_pset_20250101_v001.cdf'),
+            call('imap_hi_l1c_pset_20250102_v001.cdf'),
+            call('Generating map: ilo90-ena-h-sf-sp-ram-hae-2deg-6mo 2025-01-01 00:00:00 2026-01-01 00:00:00'),
+            call('imap_hi_l1c_pset_20250101_v001.cdf'),
+            call('imap_hi_l1c_pset_20250102_v001.cdf'),
+            call('Generating map: ilo90-ena-h-sf-sp-ram-hae-2deg-6mo 2026-01-01 00:00:00 2027-01-01 00:00:00'),
+            call('imap_hi_l1c_pset_20250101_v001.cdf'),
+            call('imap_hi_l1c_pset_20250102_v001.cdf'),
+            call('Generating map: u90-ena-h-sf-sp-ram-hae-2deg-6mo 2025-01-01 00:00:00 2026-01-01 00:00:00'),
+            call('imap_hi_l1c_pset_20250101_v001.cdf'),
+            call('imap_hi_l1c_pset_20250102_v001.cdf'),
+            call('Generating map: u90-ena-h-sf-sp-ram-hae-2deg-6mo 2026-01-01 00:00:00 2027-01-01 00:00:00'),
+            call('imap_hi_l1c_pset_20250101_v001.cdf'),
+            call('imap_hi_l1c_pset_20250102_v001.cdf')
+        ])
+
         mock_hi_processor_class.assert_has_calls([
             call(data_level="l2", data_descriptor=hi_descriptor.to_string(),
                  dependency_str=mock_processing_input_collection.serialize.return_value,
@@ -148,7 +172,7 @@ class TestMain(unittest.TestCase):
             call(mock_ultra_processor_class.return_value, mock_configuration),
         ])
 
-    @run_periodically
+    @run_periodically(timedelta(days=1))
     def test_main_integration(self):
         config_json = {
             "canonical_map_period": {
@@ -179,8 +203,19 @@ class TestMain(unittest.TestCase):
             with open(tmp_dir / "config.json", "w") as config_file:
                 json.dump(config_json, config_file)
 
-            subprocess.run([sys.executable, main.__file__, "config.json"], cwd=temporary_directory)
+            process_result = subprocess.run([sys.executable, main.__file__, "config.json"], cwd=temporary_directory,
+                                            text=True, capture_output=True)
 
-            self.assertTrue((tmp_dir / "imap_hi_l2_h90-ena-h-sf-sp-full-hae-4deg-1mo-20250101_v000.cdf").exists())
-            self.assertTrue((tmp_dir / "imap_lo_l2_l090-ena-h-sf-sp-full-hae-4deg-1mo-20250101_v000.cdf").exists())
-            self.assertTrue((tmp_dir / "imap_ultra_l2_u90-ena-h-sf-sp-full-hae-4deg-1mo-20250101_v000.cdf").exists())
+            expected_stderr_messages = [
+                'Generating map: h90-ena-h-sf-sp-ram-hae-2deg-1mo 2025-07-02 15:00:00+00:00 2025-08-02 01:30:00+00:00',
+                'imap_hi_l1c_90sensor-pset_20250702_v001.cdf',
+                'No pointing sets found for ilo-ena-h-sf-sp-ram-hae-2deg-1mo 2025-07-02 15:00:00+00:00 2025-08-02 01:30:00+00:00',
+                'Generating map: u90-ena-h-sf-sp-ram-hae-2deg-1mo 2025-07-02 15:00:00+00:00 2025-08-02 01:30:00+00:00',
+                'imap_ultra_l1c_90sensor-spacecraftpset_20250715-repoint00062_v001.cdf'
+            ]
+
+            for message in expected_stderr_messages:
+                self.assertIn(message, process_result.stderr)
+
+            self.assertTrue((tmp_dir / "imap_hi_l2_h90-ena-h-sf-sp-ram-hae-2deg-1mo_20250702_v000.cdf").exists())
+            self.assertTrue((tmp_dir / "imap_ultra_l2_u90-ena-h-sf-nsp-full-hae-2deg-0mo_20250702_v000.cdf").exists())
