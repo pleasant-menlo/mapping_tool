@@ -28,7 +28,11 @@ def do_mapping_tool():
                             map_date_ranges]
 
     for descriptor in config.get_map_descriptors():
-        filenames_iterator = iter(config.output_files.get((descriptor.instrument, descriptor.sensor)) or [])
+        if config.output_files is not None and (descriptor.instrument, descriptor.sensor) in config.output_files:
+            filenames_iterator = iter(config.output_files[(descriptor.instrument, descriptor.sensor)])
+        else:
+            filenames_iterator = iter([])
+
         for start_date, end_date, spice_kernel_names in date_range_and_spice:
             filename = next(filenames_iterator, None)
             map_details = f"{descriptor.to_string()} {start_date.strftime("%Y-%m-%d")} to {end_date.strftime("%Y-%m-%d")}"

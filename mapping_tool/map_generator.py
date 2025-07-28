@@ -48,6 +48,7 @@ def process(processor: ProcessInstrument, output_directory: Path, output_file_na
                         if overwrite not in ["Y", "y", ""]:
                             return []
                     logger.info(f"Writing to: {output_file_path}")
+                    output_file_path.parent.mkdir(parents=True, exist_ok=True)
                     file.replace(output_file_path)
                     files_written.append(output_file_path)
                 case [_, _, *_]:

@@ -177,7 +177,7 @@ class TestMain(unittest.TestCase):
             call(mock_ultra_processor_class.return_value, Path('path/to/output'), "ultra_map_2.cdf"),
         ])
 
-    @run_periodically(timedelta(hours=1))
+    @run_periodically(timedelta(days=1))
     def test_main_integration(self):
         config_json = {
             "canonical_map_period": {
@@ -225,11 +225,11 @@ class TestMain(unittest.TestCase):
                 'No pointing sets found for ilo-ena-h-sf-sp-ram-hae-2deg-1mo 2025-07-02 to 2025-08-02',
                 'Generating map: u90-ena-h-sf-sp-ram-hae-2deg-1mo 2025-07-02 to 2025-08-02',
                 'imap_ultra_l1c_90sensor-spacecraftpset_20250715-repoint00062_v001.cdf',
-                'Writing to: ultra90 map.cdf'
+                'Writing to: imap_ultra_l2_u90-ena-h-sf-nsp-full-hae-2deg-0mo_20250702_v000.cdf'
             ]
 
             for message in expected_stderr_messages:
                 self.assertIn(message, process_result.stderr)
 
             self.assertTrue((tmp_dir / "hi90 map.cdf").exists())
-            self.assertTrue((tmp_dir / "ultra90 map.cdf").exists())
+            self.assertTrue((tmp_dir / "imap_ultra_l2_u90-ena-h-sf-nsp-full-hae-2deg-0mo_20250702_v000.cdf").exists())

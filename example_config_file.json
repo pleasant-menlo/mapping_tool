@@ -1,17 +1,16 @@
 {
   "canonical_map_period": {
-    "year": 2025,
-    "quarter": 4,
+    "year": 2026,
+    "quarter": 1,
     "map_period": 3,
-    "number_of_maps": 2
+    "number_of_maps": 1
   },
   "instruments": [
-    "Lo",
-    "Hi 90"
+    "Hi 45"
   ],
   "spin_phase": "full spin",
   "reference_frame": "spacecraft",
-  "survival_corrected": true,
+  "survival_corrected": false,
   "coordinate_system": "hae",
   "pixelation_scheme": "square",
   "pixel_parameter": 4,
@@ -19,13 +18,8 @@
   "lo_species": "h",
   "output_directory": ".",
   "output_files": {
-    "Lo": [
-      "lo_map_1.cdf",
-      "lo_map_2.cdf"
-    ],
-    "HI 90": [
-      "hi90_map_1.cdf",
-      "hi90_map_2.cdf"
+    "HI 45": [
+      "cdf_output_dir/hi90_map_1.cdf"
     ]
   }
 }
