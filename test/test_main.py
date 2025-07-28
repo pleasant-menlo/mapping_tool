@@ -15,6 +15,7 @@ from imap_processing.ena_maps.utils.naming import MappableInstrumentShortName
 
 import main
 from main import do_mapping_tool
+from mapping_tool.configuration import DataLevel
 from test.test_builders import create_map_descriptor
 from test.test_helpers import run_periodically
 
@@ -48,7 +49,7 @@ class TestMain(unittest.TestCase):
         lo_descriptor = create_map_descriptor(instrument=MappableInstrumentShortName.LO, sensor="")
         ultra_descriptor = create_map_descriptor(instrument=MappableInstrumentShortName.ULTRA, sensor="45")
 
-        mock_configuration.get_map_descriptors.return_value = [hi_descriptor, lo_descriptor, ultra_descriptor]
+        mock_configuration.get_map_descriptors.return_value = [(hi_descriptor, DataLevel.L2), (lo_descriptor, DataLevel.L2), (ultra_descriptor, DataLevel.L2)]
         mock_configuration.canonical_map_period.calculate_date_ranges.return_value = [
             (datetime(2025, 1, 1), datetime(2026, 1, 1)),
             (datetime(2026, 1, 1), datetime(2027, 1, 1))]

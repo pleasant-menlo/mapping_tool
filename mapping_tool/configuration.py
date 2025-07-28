@@ -1,3 +1,4 @@
+import enum
 from datetime import timedelta, datetime, timezone
 import json
 from dataclasses import dataclass
@@ -31,6 +32,12 @@ class CanonicalMapPeriod:
             dates.append((start.replace(tzinfo=timezone.utc), end.replace(tzinfo=timezone.utc)))
             start = end
         return dates
+
+
+class DataLevel(enum.StrEnum):
+    L2 = 'l2'
+    L3 = 'l3'
+    NA = 'no applicable level'
 
 
 @dataclass
@@ -85,7 +92,7 @@ class Configuration:
 
         return instrument, sensor
 
-    def get_map_descriptors(self) -> MapDescriptor:
+    def get_map_descriptors(self) -> list[tuple[MapDescriptor, DataLevel]]:
         frame_descriptors = {
             "spacecraft": "sf",
             "heliospheric": "hf",
@@ -122,5 +129,10 @@ class Configuration:
                 spin_phase=spin_phase[self.spin_phase.lower()],
                 coordinate_system=self.coordinate_system.lower()
             )
-            descriptors.append(descriptor)
+            data_level = DataLevel.L2
+            if self.survival_corrected or "combined" in sensor.lower() or self.map_data_type.lower() == "spectral index":
+                data_level = DataLevel.L3
+            elif instrument == MappableInstrumentShortName.GLOWS:
+                data_level = DataLevel.NA
+            descriptors.append((descriptor, data_level))
         return descriptors

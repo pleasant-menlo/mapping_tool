@@ -7,10 +7,8 @@ from unittest.mock import Mock, patch, call
 import imap_data_access
 
 from mapping_tool import map_generator
-from mapping_tool.configuration import Configuration
 from mapping_tool.map_generator import process
 from test.test_builders import create_configuration
-from test.test_helpers import get_example_config_path
 
 
 class TestMapGenerator(unittest.TestCase):

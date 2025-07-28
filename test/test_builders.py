@@ -40,7 +40,7 @@ def create_configuration(
         instruments: Optional[list[str]] = None,
         spin_phase: str = "Ram",
         reference_frame: str = "spacecraft",
-        survival_corrected: bool = True,
+        survival_corrected: bool = False,
         coordinate_system: str = "hae",
         pixelation_scheme: str = "square",
         pixel_parameter: int = 4,

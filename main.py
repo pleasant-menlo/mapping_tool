@@ -27,7 +27,7 @@ def do_mapping_tool():
     date_range_and_spice = [(*date_range, DependencyCollector.collect_spice_kernels(*date_range)) for date_range in
                             map_date_ranges]
 
-    for descriptor in config.get_map_descriptors():
+    for descriptor, _ in config.get_map_descriptors():
         if config.output_files is not None and (descriptor.instrument, descriptor.sensor) in config.output_files:
             filenames_iterator = iter(config.output_files[(descriptor.instrument, descriptor.sensor)])
         else:
