@@ -14,6 +14,17 @@
 ```shell
     python3.13 -m venv venv
     source venv/bin/activate
+```
+
+3. Download dependencies
+
+For SciPy, the OpenBLAS linear algebra C package needs to be installed
+first: https://docs.scipy.org/doc/scipy-1.16.0/building/index.html
+
+```shell
+    brew install gfortran openblas pkg-config
+    brew info openblas | grep PKG_CONFIG_PATH
+    export PKG_CONFIG_PATH=<path from above command>
     pip install -r requirements.txt
 ```
 
