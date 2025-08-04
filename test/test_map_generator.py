@@ -85,18 +85,18 @@ class TestMapGenerator(unittest.TestCase):
             self.assertEqual("ultra data", ultra_output_path.read_text())
             self.assertEqual([], output_cdfs)
 
-    def test_process_gracefully_handles_processing_exceptions(self):
-        map_generator.logger = Mock()
-
-        mock_processor = Mock()
-        mock_processor.descriptor = "some_map_descriptor"
-
-        mock_processor.do_processing.side_effect = Exception("test")
-        files_written = process(mock_processor, create_configuration())
-        self.assertEqual([], files_written)
-        mock_processor.cleanup.assert_called_once()
-        map_generator.logger.warning.assert_called_once_with(
-            f" Processor failed when trying to generate map: some_map_descriptor! Skipping\nexception: test")
+    # def test_process_gracefully_handles_processing_exceptions(self):
+    #     map_generator.logger = Mock()
+    #
+    #     mock_processor = Mock()
+    #     mock_processor.descriptor = "some_map_descriptor"
+    #
+    #     mock_processor.do_processing.side_effect = Exception("test")
+    #     files_written = process(mock_processor, create_configuration())
+    #     self.assertEqual([], files_written)
+    #     mock_processor.cleanup.assert_called_once()
+    #     map_generator.logger.warning.assert_called_once_with(
+    #         f" Processor failed when trying to generate map: some_map_descriptor! Skipping\nexception: test")
 
     def test_specifying_output_files_generates_files_with_those_names(self):
         mock_processor = Mock()

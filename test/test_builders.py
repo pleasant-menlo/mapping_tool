@@ -31,6 +31,29 @@ def create_map_descriptor(
     )
 
 
+def create_l2_map_descriptor(
+        frame_descriptor: Literal["sf", "hf", "hk"] = "sf",
+        resolution_str: str = "2deg",
+        duration: str = "6mo",
+        instrument: MappableInstrumentShortName = MappableInstrumentShortName["HI"],
+        sensor: str = "90",
+        species: str = "h",
+        spin_phase: str = "ram",
+        coordinate_system: str = "hae"
+):
+    return create_map_descriptor(
+        frame_descriptor=frame_descriptor,
+        resolution_str=resolution_str,
+        duration=duration,
+        instrument=instrument,
+        sensor=sensor,
+        species=species,
+        spin_phase=spin_phase,
+        coordinate_system=coordinate_system,
+        survival_corrected="nsp"
+    )
+
+
 def create_canonical_map_period(year=2025, quarter=1, map_period=6, number_of_maps=1):
     return CanonicalMapPeriod(year=year, quarter=quarter, map_period=map_period, number_of_maps=number_of_maps)
 

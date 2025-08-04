@@ -61,7 +61,7 @@ class DependencyCollector:
         return [pset['file_path'] for pset in files]
 
     @classmethod
-    def collect_spice_kernels(cls, start_date: datetime, end_date: datetime):
+    def collect_spice_kernels(cls, start_date: datetime, end_date: datetime) -> list[Path]:
         file_names = []
         for kernel_type in ["leapseconds", "spacecraft_clock", "pointing_attitude", "imap_frames", "science_frames"]:
             file_json = requests.get(cls.IMAP_API + f"spice-query?type={kernel_type}&start_time=0").json()

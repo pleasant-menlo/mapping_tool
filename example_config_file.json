@@ -1,25 +1,19 @@
 {
   "canonical_map_period": {
-    "year": 2026,
+    "year": 2025,
     "quarter": 1,
-    "map_period": 3,
+    "map_period": 6,
     "number_of_maps": 1
   },
   "instruments": [
-    "Hi 45"
+    "Hi 90"
   ],
-  "spin_phase": "full spin",
+  "spin_phase": "ram",
   "reference_frame": "spacecraft",
-  "survival_corrected": false,
+  "survival_corrected": true,
   "coordinate_system": "hae",
   "pixelation_scheme": "square",
   "pixel_parameter": 4,
-  "map_data_type": "ENA Intensity",
-  "lo_species": "h",
-  "output_directory": ".",
-  "output_files": {
-    "HI 45": [
-      "cdf_output_dir/hi90_map_1.cdf"
-    ]
-  }
+  "map_data_type": "Spectral Index",
+  "lo_species": "h"
 }

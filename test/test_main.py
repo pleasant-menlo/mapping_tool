@@ -22,52 +22,36 @@ from test.test_helpers import run_periodically
 
 class TestMain(unittest.TestCase):
 
-    @patch('main.SPICEInput')
-    @patch('main.ScienceInput')
-    @patch('main.process')
-    @patch('main.ProcessingInputCollection')
-    @patch('main.Ultra')
-    @patch('main.Lo')
-    @patch('main.Hi')
-    @patch('main.DependencyCollector.collect_spice_kernels')
-    @patch('main.DependencyCollector.get_pointing_sets')
+    @patch('main.generate_map')
     @patch('main.Configuration.from_json')
     @patch('main.argparse.ArgumentParser')
-    def test_do_mapping_tool(self, mock_argument_parser_class, mock_configuration_from_json, mock_get_pointing_sets,
-                             mock_collect_spice_kernels, mock_hi_processor_class, mock_lo_processor_class,
-                             mock_ultra_processor_class, mock_processing_input_collection_class, mock_process,
-                             mock_science_input_class, mock_spice_input_class):
+    def test_do_mapping_tool(self, mock_argument_parser_class, mock_configuration_from_json, mock_generate_map):
         self.assertTrue(hasattr(main, "logger"))
         main.logger = Mock()
 
         mock_argument_parser = mock_argument_parser_class.return_value
         mock_args = mock_argument_parser.parse_args.return_value
         mock_configuration = mock_configuration_from_json.return_value
-        mock_processing_input_collection = mock_processing_input_collection_class.return_value
 
         hi_descriptor = create_map_descriptor(instrument=MappableInstrumentShortName.HI, sensor="90")
         lo_descriptor = create_map_descriptor(instrument=MappableInstrumentShortName.LO, sensor="")
         ultra_descriptor = create_map_descriptor(instrument=MappableInstrumentShortName.ULTRA, sensor="45")
 
-        mock_configuration.get_map_descriptors.return_value = [(hi_descriptor, DataLevel.L2), (lo_descriptor, DataLevel.L2), (ultra_descriptor, DataLevel.L2)]
-        mock_configuration.canonical_map_period.calculate_date_ranges.return_value = [
+        mock_configuration.get_map_descriptors.return_value = [(hi_descriptor, DataLevel.L2),
+                                                               (lo_descriptor, DataLevel.L2),
+                                                               (ultra_descriptor, DataLevel.L2)]
+
+        map_date_ranges = [
             (datetime(2025, 1, 1), datetime(2026, 1, 1)),
-            (datetime(2026, 1, 1), datetime(2027, 1, 1))]
+            (datetime(2026, 1, 1), datetime(2027, 1, 1))
+        ]
+
+        mock_configuration.canonical_map_period.calculate_date_ranges.return_value = map_date_ranges
         mock_configuration.output_directory = Path("path/to/output")
         mock_configuration.output_files = {(MappableInstrumentShortName.HI, "90"): ["hi_map_1.cdf", "hi_map_2.cdf"],
                                            (MappableInstrumentShortName.LO, ""): ["lo_map_1.cdf", "lo_map_2.cdf"],
                                            (MappableInstrumentShortName.ULTRA, "45"): ["ultra_map_1.cdf",
                                                                                        "ultra_map_2.cdf"]}
-
-        science_input_mocks = defaultdict(Mock)
-        spice_input_mocks = defaultdict(Mock)
-        mock_science_input_class.side_effect = science_input_mocks.__getitem__
-        mock_spice_input_class.side_effect = spice_input_mocks.__getitem__
-
-        mock_get_pointing_sets.return_value = ["some/path/to/imap_hi_l1c_pset_20250101_v001.cdf",
-                                               "some/path/to/imap_hi_l1c_pset_20250102_v001.cdf"]
-
-        mock_collect_spice_kernels.return_value = ["naif0012.tls", "imap_sclk_0000.tsc"]
 
         do_mapping_tool()
 
@@ -81,101 +65,22 @@ class TestMain(unittest.TestCase):
         mock_configuration.get_map_descriptors.assert_called_once()
         mock_configuration.canonical_map_period.calculate_date_ranges.assert_called_once()
 
-        mock_get_pointing_sets.assert_has_calls([
-            call(hi_descriptor, datetime(2025, 1, 1), datetime(2026, 1, 1)),
-            call(hi_descriptor, datetime(2026, 1, 1), datetime(2027, 1, 1)),
-            call(lo_descriptor, datetime(2025, 1, 1), datetime(2026, 1, 1)),
-            call(lo_descriptor, datetime(2026, 1, 1), datetime(2027, 1, 1)),
-            call(ultra_descriptor, datetime(2025, 1, 1), datetime(2026, 1, 1)),
-            call(ultra_descriptor, datetime(2026, 1, 1), datetime(2027, 1, 1))
-        ])
-
-        mock_collect_spice_kernels.assert_has_calls([
-            call(datetime(2025, 1, 1), datetime(2026, 1, 1)),
-            call(datetime(2026, 1, 1), datetime(2027, 1, 1))
-        ])
-
-        self.assertEqual(6, mock_processing_input_collection_class.call_count)
-        mock_processing_input_collection_class.assert_called_with(
-            science_input_mocks["imap_hi_l1c_pset_20250101_v001.cdf"],
-            science_input_mocks["imap_hi_l1c_pset_20250102_v001.cdf"],
-            spice_input_mocks["naif0012.tls"],
-            spice_input_mocks["imap_sclk_0000.tsc"],
-        )
-
         main.logger.info.assert_has_calls([
             call('Generating map: h90-ena-h-sf-sp-ram-hae-2deg-6mo 2025-01-01 to 2026-01-01'),
-            call('imap_hi_l1c_pset_20250101_v001.cdf'),
-            call('imap_hi_l1c_pset_20250102_v001.cdf'),
             call('Generating map: h90-ena-h-sf-sp-ram-hae-2deg-6mo 2026-01-01 to 2027-01-01'),
-            call('imap_hi_l1c_pset_20250101_v001.cdf'),
-            call('imap_hi_l1c_pset_20250102_v001.cdf'),
             call('Generating map: ilo-ena-h-sf-sp-ram-hae-2deg-6mo 2025-01-01 to 2026-01-01'),
-            call('imap_hi_l1c_pset_20250101_v001.cdf'),
-            call('imap_hi_l1c_pset_20250102_v001.cdf'),
             call('Generating map: ilo-ena-h-sf-sp-ram-hae-2deg-6mo 2026-01-01 to 2027-01-01'),
-            call('imap_hi_l1c_pset_20250101_v001.cdf'),
-            call('imap_hi_l1c_pset_20250102_v001.cdf'),
             call('Generating map: u45-ena-h-sf-sp-ram-hae-2deg-6mo 2025-01-01 to 2026-01-01'),
-            call('imap_hi_l1c_pset_20250101_v001.cdf'),
-            call('imap_hi_l1c_pset_20250102_v001.cdf'),
             call('Generating map: u45-ena-h-sf-sp-ram-hae-2deg-6mo 2026-01-01 to 2027-01-01'),
-            call('imap_hi_l1c_pset_20250101_v001.cdf'),
-            call('imap_hi_l1c_pset_20250102_v001.cdf')
         ])
 
-        mock_hi_processor_class.assert_has_calls([
-            call(data_level="l2", data_descriptor=hi_descriptor.to_string(),
-                 dependency_str=mock_processing_input_collection.serialize.return_value,
-                 start_date="20250101",
-                 repointing=None,
-                 version="0",
-                 upload_to_sdc=False),
-            call(data_level="l2", data_descriptor=hi_descriptor.to_string(),
-                 dependency_str=mock_processing_input_collection.serialize.return_value,
-                 start_date="20260101",
-                 repointing=None,
-                 version="0",
-                 upload_to_sdc=False)
-        ])
-        mock_lo_processor_class.assert_has_calls([
-            call(data_level="l2", data_descriptor=lo_descriptor.to_string(),
-                 dependency_str=mock_processing_input_collection.serialize.return_value,
-                 start_date="20250101",
-                 repointing=None,
-                 version="0",
-                 upload_to_sdc=False),
-            call(data_level="l2", data_descriptor=lo_descriptor.to_string(),
-                 dependency_str=mock_processing_input_collection.serialize.return_value,
-                 start_date="20260101",
-                 repointing=None,
-                 version="0",
-                 upload_to_sdc=False)
-        ])
-        mock_ultra_processor_class.assert_has_calls([
-            call(data_level="l2", data_descriptor=ultra_descriptor.to_string(),
-                 dependency_str=mock_processing_input_collection.serialize.return_value,
-                 start_date="20250101",
-                 repointing=None,
-                 version="0",
-                 upload_to_sdc=False),
-            call(data_level="l2", data_descriptor=ultra_descriptor.to_string(),
-                 dependency_str=mock_processing_input_collection.serialize.return_value,
-                 start_date="20260101",
-                 repointing=None,
-                 version="0",
-                 upload_to_sdc=False)
-        ])
-
-        self.assertEqual(6, mock_process.call_count)
-
-        mock_process.assert_has_calls([
-            call(mock_hi_processor_class.return_value, Path('path/to/output'), "hi_map_1.cdf"),
-            call(mock_hi_processor_class.return_value, Path('path/to/output'), "hi_map_2.cdf"),
-            call(mock_lo_processor_class.return_value, Path('path/to/output'), "lo_map_1.cdf"),
-            call(mock_lo_processor_class.return_value, Path('path/to/output'), "lo_map_2.cdf"),
-            call(mock_ultra_processor_class.return_value, Path('path/to/output'), "ultra_map_1.cdf"),
-            call(mock_ultra_processor_class.return_value, Path('path/to/output'), "ultra_map_2.cdf"),
+        mock_generate_map.assert_has_calls([
+            call(hi_descriptor, map_date_ranges[0][0], map_date_ranges[0][1]),
+            call(hi_descriptor, map_date_ranges[1][0], map_date_ranges[1][1]),
+            call(lo_descriptor, map_date_ranges[0][0], map_date_ranges[0][1]),
+            call(lo_descriptor, map_date_ranges[1][0], map_date_ranges[1][1]),
+            call(ultra_descriptor, map_date_ranges[0][0], map_date_ranges[0][1]),
+            call(ultra_descriptor, map_date_ranges[1][0], map_date_ranges[1][1]),
         ])
 
     @run_periodically(timedelta(days=1))
