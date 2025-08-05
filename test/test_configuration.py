@@ -56,7 +56,7 @@ class TestConfiguration(TestCase):
                     spin_phase="Ram",
                     reference_frame="spacecraft",
                     survival_corrected=True,
-                    coordinate_system="hae",
+                    coordinate_system="hnu",
                     pixelation_scheme="square",
                     pixel_parameter=2,
                     map_data_type="ENA Intensity",
@@ -199,7 +199,7 @@ class TestConfiguration(TestCase):
     def test_get_map_descriptors_coordinate_system(self):
         cases = [
             ("HAE", "hae"),
-            ("hae", "hae"),
+            ("hae", "hae")
         ]
 
         for case, expected in cases:
