@@ -33,7 +33,7 @@ class TestConfiguration(TestCase):
                     map_data_type="ENA Intensity",
                     lo_species=None,
                     output_directory=Path('.'),
-                    output_files=None
+                    quantity_suffix=""
                 )
 
                 self.assertEqual(expected_config, config)
@@ -62,9 +62,7 @@ class TestConfiguration(TestCase):
                     map_data_type="ENA Intensity",
                     lo_species="h",
                     output_directory=Path('path/to/output'),
-                    output_files={
-                        (MappableInstrumentShortName.HI, "90"): ['hi90_map.cdf']
-                    }
+                    quantity_suffix="custom"
                 )
 
                 self.assertEqual(expected_config, config)
@@ -109,30 +107,6 @@ class TestConfiguration(TestCase):
                 mock_load.return_value = create_config_dict(case)
                 with self.assertRaises(jsonschema.exceptions.ValidationError):
                     Configuration.from_file(get_example_config_path() / "test_l2_config.json")
-
-    @patch("mapping_tool.configuration.json.load")
-    def test_config_creation_fails_when_output_files_and_number_of_output_maps_differ(self, mock_load):
-
-        test_cases = [
-            ({'Hi 90': ['hi90_map.cdf'], 'Ultra 45': ['ultra45_map.cdf']}, ['Hi 90'], 1,
-             "Specified output file names for an instrument that won't be generated: Ultra 45"),
-
-            ({'Hi 90': ['hi90_map_1.cdf', 'hi90_map_2.cdf'], 'Ultra 45': ['ultra45_map.cdf']},
-             ['Hi 90', 'Ultra 45'], 1,
-             f"More Hi 90 filenames specified (2) than will be generated (1)"),
-        ]
-
-        for (output_files, instruments, number_of_maps, expected_message) in test_cases:
-            with self.subTest(expected_message):
-                config = create_config_dict({})
-                config['output_files'] = output_files
-                config['instruments'] = instruments
-                config['canonical_map_period']['number_of_maps'] = number_of_maps
-                mock_load.return_value = config
-                with self.assertRaises(ValueError) as context:
-                    Configuration.from_file(get_example_config_path() / "test_l2_config.json")
-
-                self.assertEqual(expected_message, str(context.exception))
 
     def test_get_map_descriptors_returns_descriptors_for_each_instrument(self):
         config: Configuration = Configuration(

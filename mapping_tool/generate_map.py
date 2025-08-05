@@ -1,8 +1,7 @@
-import dataclasses
+from dataclasses import replace
 import logging
 from datetime import datetime
 from pathlib import Path
-from typing import Optional
 
 import imap_data_access
 
@@ -22,19 +21,19 @@ import spiceypy
 def get_dependencies_for_l3_map(map_descriptor: MapDescriptor) -> list[MapDescriptor]:
     match map_descriptor:
         case MapDescriptor(principal_data="spx"):
-            return [dataclasses.replace(map_descriptor, principal_data="ena")]
+            return [replace(map_descriptor, principal_data="ena")]
         case MapDescriptor(sensor="combined"):
             return [
-                dataclasses.replace(map_descriptor, sensor="90"),
-                dataclasses.replace(map_descriptor, sensor="45"),
+                replace(map_descriptor, sensor="90"),
+                replace(map_descriptor, sensor="45"),
             ]
         case MapDescriptor(survival_corrected="sp", spin_phase="full"):
             return [
-                dataclasses.replace(map_descriptor, spin_phase="ram", survival_corrected="nsp"),
-                dataclasses.replace(map_descriptor, spin_phase="anti", survival_corrected="nsp"),
+                replace(map_descriptor, spin_phase="ram", survival_corrected="nsp"),
+                replace(map_descriptor, spin_phase="anti", survival_corrected="nsp"),
             ]
         case MapDescriptor(survival_corrected="sp", spin_phase="ram" | "anti"):
-            return [dataclasses.replace(map_descriptor, survival_corrected="nsp")]
+            return [replace(map_descriptor, survival_corrected="nsp")]
         case _:
             return []
 
@@ -48,7 +47,7 @@ def get_data_level_for_descriptor(descriptor: MapDescriptor):
         return DataLevel.L2
 
 
-def generate_map(descriptor: MapDescriptor, start: datetime, end: datetime) -> Optional[Path]:
+def generate_map(descriptor: MapDescriptor, start: datetime, end: datetime) -> Path:
     data_level = get_data_level_for_descriptor(descriptor)
     if data_level == DataLevel.L2:
         return generate_l2_map(descriptor, start, end)
@@ -74,7 +73,7 @@ def generate_l3_map(descriptor: MapDescriptor, start: datetime, end: datetime, i
         start_date=start,
         end_date=end,
         version='v000',
-        descriptor=descriptor.to_string(),
+        descriptor=replace(descriptor).to_string(),
     )
 
     spice_kernel_paths = DependencyCollector.collect_spice_kernels(start_date=start, end_date=end)

@@ -54,7 +54,7 @@ class Configuration:
     map_data_type: str
     lo_species: Optional[str] = None
     output_directory: Optional[Path] = Path('.')
-    output_files: Optional[dict[(MappableInstrumentShortName, str), list]] = None
+    quantity_suffix: str = ''
 
     @classmethod
     def from_file(cls, config_path: Path):
@@ -70,20 +70,6 @@ class Configuration:
             config["canonical_map_period"] = CanonicalMapPeriod(**config["canonical_map_period"])
             if config.get("output_directory") is not None:
                 config["output_directory"] = Path(config["output_directory"])
-
-            if "output_files" in config:
-                remapped_output_filenames = {}
-                lowercase_instruments = [instrument.lower() for instrument in config["instruments"]]
-                for instrument, output_filenames in config['output_files'].items():
-                    if instrument.lower() not in lowercase_instruments:
-                        raise ValueError(
-                            f"Specified output file names for an instrument that won't be generated: {instrument}")
-                    if len(output_filenames) > config["canonical_map_period"].number_of_maps:
-                        raise ValueError(
-                            f"More {instrument} filenames specified ({len(output_filenames)}) than will be generated ({config['canonical_map_period'].number_of_maps})")
-                    remapped_output_filenames[cls.parse_instrument(instrument)] = output_filenames
-                config["output_files"] = remapped_output_filenames
-
             return cls(**config)
 
     @classmethod

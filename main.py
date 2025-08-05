@@ -1,14 +1,12 @@
 import logging
+import shutil
 
-from mapping_tool.dependency_collector import DependencyCollector
 from mapping_tool.generate_map import generate_map
 
 logger = logging.getLogger(__name__)
 
 logging.getLogger("imap_processing").setLevel(logging.WARNING)
 
-import imap_data_access
-import spiceypy
 import argparse
 from pathlib import Path
 
@@ -29,7 +27,9 @@ def do_mapping_tool():
 
             logger.info(f"Generating map: {map_details}")
 
-            generate_map(descriptor, start_date, end_date)
+            generated_map_path = generate_map(descriptor, start_date, end_date)
+            output_path = config.output_directory / generated_map_path.name
+            shutil.copy(generated_map_path, output_path)
 
 
 if __name__ == "__main__":

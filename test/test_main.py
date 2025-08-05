@@ -22,10 +22,12 @@ from test.test_helpers import run_periodically
 
 class TestMain(unittest.TestCase):
 
+    @patch('main.shutil.copy')
     @patch('main.generate_map')
     @patch('main.Configuration.from_file')
     @patch('main.argparse.ArgumentParser')
-    def test_do_mapping_tool(self, mock_argument_parser_class, mock_configuration_from_file, mock_generate_map):
+    def test_do_mapping_tool(self, mock_argument_parser_class, mock_configuration_from_file, mock_generate_map,
+                             mock_copy_file):
         self.assertTrue(hasattr(main, "logger"))
         main.logger = Mock()
 
@@ -41,6 +43,15 @@ class TestMain(unittest.TestCase):
                                                                (lo_descriptor, DataLevel.L2),
                                                                (ultra_descriptor, DataLevel.L2)]
 
+        mock_generate_map.side_effect = [
+            Path('path/to/cdf/imap_hi_l3_h90-ena-h-sf-sp-ram-hae-2deg-6mo_20250101_v000.cdf'),
+            Path('path/to/cdf/imap_hi_l3_h90-ena-h-sf-sp-ram-hae-2deg-6mo_20260101_v000.cdf'),
+            Path('path/to/cdf/imap_lo_l3_ilo-ena-h-sf-sp-ram-hae-2deg-6mo_20250101_v000.cdf'),
+            Path('path/to/cdf/imap_lo_l3_ilo-ena-h-sf-sp-ram-hae-2deg-6mo_20260101_v000.cdf'),
+            Path('path/to/cdf/imap_ultra_l3_u45-ena-h-sf-sp-ram-hae-2deg-6mo_20250101_v000.cdf'),
+            Path('path/to/cdf/imap_ultra_l3_u45-ena-h-sf-sp-ram-hae-2deg-6mo_20260101_v000.cdf')
+        ]
+
         map_date_ranges = [
             (datetime(2025, 1, 1, tzinfo=timezone.utc), datetime(2026, 1, 1, tzinfo=timezone.utc)),
             (datetime(2026, 1, 1, tzinfo=timezone.utc), datetime(2027, 1, 1, tzinfo=timezone.utc))
@@ -48,10 +59,6 @@ class TestMain(unittest.TestCase):
 
         mock_configuration.canonical_map_period.calculate_date_ranges.return_value = map_date_ranges
         mock_configuration.output_directory = Path("path/to/output")
-        mock_configuration.output_files = {(MappableInstrumentShortName.HI, "90"): ["hi_map_1.cdf", "hi_map_2.cdf"],
-                                           (MappableInstrumentShortName.LO, ""): ["lo_map_1.cdf", "lo_map_2.cdf"],
-                                           (MappableInstrumentShortName.ULTRA, "45"): ["ultra_map_1.cdf",
-                                                                                       "ultra_map_2.cdf"]}
 
         do_mapping_tool()
 
@@ -83,6 +90,21 @@ class TestMain(unittest.TestCase):
             call(ultra_descriptor, map_date_ranges[1][0], map_date_ranges[1][1]),
         ])
 
+        mock_copy_file.assert_has_calls([
+            call(Path('path/to/cdf/imap_hi_l3_h90-ena-h-sf-sp-ram-hae-2deg-6mo_20250101_v000.cdf'),
+                 Path('path/to/output/imap_hi_l3_h90-ena-h-sf-sp-ram-hae-2deg-6mo_20250101_v000.cdf')),
+            call(Path('path/to/cdf/imap_hi_l3_h90-ena-h-sf-sp-ram-hae-2deg-6mo_20260101_v000.cdf'),
+                 Path('path/to/output/imap_hi_l3_h90-ena-h-sf-sp-ram-hae-2deg-6mo_20260101_v000.cdf')),
+            call(Path('path/to/cdf/imap_lo_l3_ilo-ena-h-sf-sp-ram-hae-2deg-6mo_20250101_v000.cdf'),
+                 Path('path/to/output/imap_lo_l3_ilo-ena-h-sf-sp-ram-hae-2deg-6mo_20250101_v000.cdf')),
+            call(Path('path/to/cdf/imap_lo_l3_ilo-ena-h-sf-sp-ram-hae-2deg-6mo_20260101_v000.cdf'),
+                 Path('path/to/output/imap_lo_l3_ilo-ena-h-sf-sp-ram-hae-2deg-6mo_20260101_v000.cdf')),
+            call(Path('path/to/cdf/imap_ultra_l3_u45-ena-h-sf-sp-ram-hae-2deg-6mo_20250101_v000.cdf'),
+                 Path('path/to/output/imap_ultra_l3_u45-ena-h-sf-sp-ram-hae-2deg-6mo_20250101_v000.cdf')),
+            call(Path('path/to/cdf/imap_ultra_l3_u45-ena-h-sf-sp-ram-hae-2deg-6mo_20260101_v000.cdf'),
+                 Path('path/to/output/imap_ultra_l3_u45-ena-h-sf-sp-ram-hae-2deg-6mo_20260101_v000.cdf'))
+        ])
+
     @skip
     @run_periodically(timedelta(days=1))
     def test_main_integration(self):
@@ -105,9 +127,7 @@ class TestMain(unittest.TestCase):
             "map_data_type": "ENA Intensity",
             "lo_species": "h",
             "output_directory": ".",
-            "output_files": {
-                "Hi 90": ["hi90 map.cdf"]
-            }
+            "quantity_suffix": "test"
         }
 
         with tempfile.TemporaryDirectory() as temporary_directory:
