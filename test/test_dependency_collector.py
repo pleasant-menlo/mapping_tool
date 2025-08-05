@@ -11,10 +11,11 @@ from mapping_tool.dependency_collector import DependencyCollector
 
 
 class TestDependencyCollector(unittest.TestCase):
-    @patch('mapping_tool.configuration.imap_data_access.query')
+    @patch('mapping_tool.dependency_collector.imap_data_access.query')
     def test_get_pointing_sets(self, mock_query):
         expected_pointing_sets = ["pset_1", "pset_2", "pset_3"]
-        mock_query.return_value = [{"file_path": file_name, "start_date": file_name, "version": "v000"} for file_name in
+        mock_query.return_value = [{"file_path": f"path/to/{file_name}", "start_date": file_name, "version": "v000"} for
+                                   file_name in
                                    expected_pointing_sets]
 
         start_date = datetime(2025, 1, 1)
@@ -56,7 +57,7 @@ class TestDependencyCollector(unittest.TestCase):
                 )
                 self.assertEqual(expected_pointing_sets, pointing_sets)
 
-    @patch('mapping_tool.configuration.imap_data_access.query')
+    @patch('mapping_tool.dependency_collector.imap_data_access.query')
     def test_get_pointing_sets_for_ultra_combined(self, mock_query):
         expected_pointing_sets = ["u45-pset1", "u45-pset2", "u90-pset1", "u90-pset2", "glows_ultra_pset1",
                                   "glows_ultra_pset2"]
@@ -96,7 +97,7 @@ class TestDependencyCollector(unittest.TestCase):
 
         self.assertEqual(expected_pointing_sets, pointing_sets)
 
-    @patch('mapping_tool.configuration.imap_data_access.query')
+    @patch('mapping_tool.dependency_collector.imap_data_access.query')
     def test_get_pointing_sets_for_hi_combined(self, mock_query):
         expected_pointing_sets = [
             "h45-pset1", "h45-pset2",
@@ -140,7 +141,7 @@ class TestDependencyCollector(unittest.TestCase):
 
         self.assertEqual(expected_pointing_sets, pointing_sets)
 
-    @patch('mapping_tool.configuration.imap_data_access.query')
+    @patch('mapping_tool.dependency_collector.imap_data_access.query')
     def test_get_pointing_sets_for_lo_survival_corrected(self, mock_query):
         expected_pointing_sets = [
             "l90-pset1", "l90-pset2",
@@ -179,7 +180,7 @@ class TestDependencyCollector(unittest.TestCase):
 
         self.assertEqual(expected_pointing_sets, pointing_sets)
 
-    @patch('mapping_tool.configuration.imap_data_access.query')
+    @patch('mapping_tool.dependency_collector.imap_data_access.query')
     def test_get_files_returns_latest_file_versions(self, mock_query):
         mock_query.side_effect = [
             [{"file_path": "imap_hi_l1c_45sensor-pset_20260101_v001.cdf", "version": "v001", "start_date": "20260101"},

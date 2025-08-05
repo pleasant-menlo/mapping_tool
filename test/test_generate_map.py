@@ -1,4 +1,5 @@
 import dataclasses
+import logging
 import unittest
 from datetime import datetime, timezone
 from pathlib import Path
@@ -10,7 +11,7 @@ from imap_data_access import ProcessingInputCollection, ScienceInput, SPICEInput
 
 from mapping_tool.configuration import DataLevel
 from mapping_tool.generate_map import get_dependencies_for_l3_map, get_data_level_for_descriptor, generate_l3_map, \
-    generate_l2_map
+    generate_l2_map, generate_map
 from test.test_builders import create_map_descriptor, create_l2_map_descriptor
 
 
@@ -37,7 +38,7 @@ class TestGenerateMap(unittest.TestCase):
             (spectral_index_descriptor, [ena_descriptor]),
             (sp_ram_descriptor, [nsp_ram_descriptor]),
             (sp_anti_descriptor, [nsp_anti_descriptor]),
-            (sp_full_descriptor, [sp_ram_descriptor, sp_anti_descriptor]),
+            (sp_full_descriptor, [nsp_ram_descriptor, nsp_anti_descriptor]),
             (combined_descriptor, [sensor90_descriptor, sensor45_descriptor]),
             (descriptor_with_no_dependencies, []),
         ]
@@ -68,6 +69,52 @@ class TestGenerateMap(unittest.TestCase):
             with self.subTest(descriptor.to_string()):
                 actual_data_level = get_data_level_for_descriptor(descriptor)
                 self.assertEqual(expected_data_level, actual_data_level)
+
+    @patch('mapping_tool.generate_map.generate_l3_map')
+    @patch('mapping_tool.generate_map.generate_l2_map')
+    def test_generate_map(self, mock_generate_l2, mock_generate_l3):
+        map_descriptor = create_map_descriptor(principal_data="spx", spin_phase="full",
+                                               instrument=MappableInstrumentShortName.HI)
+
+        l2_ram_map = Path("ram")
+        l2_antiram_map = Path("anti")
+        l3_full_map = Path("full")
+        l3_spx_map = Path("spx")
+        mock_generate_l2.side_effect = [l2_ram_map, l2_antiram_map]
+        mock_generate_l3.side_effect = [l3_full_map, l3_spx_map]
+
+        start_date = datetime(2020, 1, 1)
+        end_date = datetime(2020, 7, 1)
+
+        output_map = generate_map(map_descriptor, start_date, end_date)
+
+        mock_generate_l2.assert_has_calls([
+            call(create_map_descriptor(spin_phase="ram", instrument=MappableInstrumentShortName.HI,
+                                       survival_corrected='nsp'), start_date, end_date),
+            call(create_map_descriptor(spin_phase="anti", instrument=MappableInstrumentShortName.HI,
+                                       survival_corrected='nsp'), start_date, end_date),
+        ])
+
+        mock_generate_l3.assert_has_calls([
+            call(create_map_descriptor(spin_phase="full", instrument=MappableInstrumentShortName.HI), start_date,
+                 end_date, [l2_ram_map, l2_antiram_map]),
+            call(create_map_descriptor(spin_phase="full", instrument=MappableInstrumentShortName.HI,
+                                       principal_data='spx'), start_date, end_date, [l3_full_map]),
+        ])
+
+        self.assertEqual(l3_spx_map, output_map)
+
+    def test_generate_l3_map_raises_exception_when_called_with_non_l2_or_l3_map(self):
+        map_descriptor = create_map_descriptor(principal_data="spx", spin_phase="full",
+                                               instrument=MappableInstrumentShortName.GLOWS)
+        start_date = datetime(2020, 1, 1)
+        end_date = datetime(2020, 7, 1)
+
+        with self.assertRaises(ValueError) as context:
+            generate_map(map_descriptor, start_date, end_date)
+
+        self.assertIn(f"Cannot produce map for instrument: {map_descriptor.instrument_descriptor}",
+                      str(context.exception))
 
     @patch('mapping_tool.generate_map.spiceypy.furnsh')
     @patch('mapping_tool.generate_map.imap_data_access.download')
@@ -143,8 +190,9 @@ class TestGenerateMap(unittest.TestCase):
     @patch("mapping_tool.generate_map.spiceypy.furnsh")
     @patch("mapping_tool.generate_map.imap_data_access.download")
     @patch("mapping_tool.generate_map.HiProcessor")
-    def test_generate_l3_map_raises_processing_failed_exception(self, mock_hi, mock_download, mock_furnsh,
-                                                                mock_collect_spice_kernels):
+    def test_generate_l3_map_raises_error_when_less_or_more_than_one_file_is_returned(self, mock_hi, mock_download,
+                                                                                      mock_furnsh,
+                                                                                      mock_collect_spice_kernels):
         mock_collect_spice_kernels.return_value = []
 
         error_cases = [
@@ -157,8 +205,10 @@ class TestGenerateMap(unittest.TestCase):
                 mock_hi.return_value.process.return_value = returned_paths
 
                 with self.assertRaises(ValueError) as e:
-                    generate_l3_map(create_map_descriptor(), datetime(2020, 1, 1, tzinfo=timezone.utc),
-                                    datetime(2020, 1, 2, tzinfo=timezone.utc), [])
+                    logger = logging.getLogger('generate_l2_map')
+                    with self.assertLogs(logger, logging.ERROR) as log_context:
+                        generate_l3_map(create_map_descriptor(), datetime(2020, 1, 1, tzinfo=timezone.utc),
+                                        datetime(2020, 1, 2, tzinfo=timezone.utc), [])
 
                 self.assertIn(err_string, str(e.exception))
 
@@ -173,9 +223,12 @@ class TestGenerateMap(unittest.TestCase):
 
         hi_descriptor = create_map_descriptor(instrument=MappableInstrumentShortName.HI)
         with self.assertRaises(ValueError) as e:
-            generate_l3_map(hi_descriptor, datetime(2020, 1, 1, tzinfo=timezone.utc),
-                            datetime(2020, 1, 2, tzinfo=timezone.utc), [])
-        self.assertEqual(f"Processing for {hi_descriptor.to_string()} failed: L3 processing failed", str(e.exception))
+            logger = logging.getLogger('generate_l2_map')
+            with self.assertLogs(logger, logging.ERROR) as log_context:
+                generate_l3_map(hi_descriptor, datetime(2020, 1, 1, tzinfo=timezone.utc),
+                                datetime(2020, 1, 2, tzinfo=timezone.utc), [])
+        self.assertIn(f"Processing for {hi_descriptor.to_string()} failed",
+                      str(e.exception.__notes__))
 
     @patch("mapping_tool.generate_map.DependencyCollector.collect_spice_kernels")
     @patch("mapping_tool.generate_map.DependencyCollector.get_pointing_sets")
@@ -183,14 +236,15 @@ class TestGenerateMap(unittest.TestCase):
     @patch("mapping_tool.generate_map.Lo")
     @patch("mapping_tool.generate_map.Ultra")
     def test_generate_l2_map(self, mock_ultra, mock_lo, mock_hi, mock_get_pointing_sets, mock_collect_spice_kernels):
-        mock_collect_spice_kernels.return_value = [Path("spice_file_1"), Path("spice_file_2")]
-        mock_get_pointing_sets.return_value = ["pset_1", "pset_2"]
+        mock_collect_spice_kernels.return_value = ["imap_science_0001.tf", "imap_sclk_0000.tsc"]
+        mock_get_pointing_sets.return_value = ["imap_hi_l1c_pset-1_20250101_v000.cdf",
+                                               "imap_hi_l1c_pset-2_20250101_v000.cdf"]
         hi_descriptor = create_l2_map_descriptor(instrument=MappableInstrumentShortName.HI)
         lo_descriptor = create_l2_map_descriptor(instrument=MappableInstrumentShortName.LO)
         ultra_descriptor = create_l2_map_descriptor(instrument=MappableInstrumentShortName.ULTRA)
 
         cases = [
-            (hi_descriptor, mock_hi),
+            (hi_descriptor, mock_hi,),
             (lo_descriptor, mock_lo),
             (ultra_descriptor, mock_ultra),
         ]
@@ -200,14 +254,20 @@ class TestGenerateMap(unittest.TestCase):
 
         for descriptor, mock_processor in cases:
             with self.subTest(descriptor.to_string()):
-                generate_l2_map(descriptor, start_date, end_date)
+                mock_collect_spice_kernels.reset_mock()
+                mock_get_pointing_sets.reset_mock()
+                expected_map = Mock()
+                mock_processor.return_value.post_processing.return_value = [expected_map]
+
+                actual_map = generate_l2_map(descriptor, start_date, end_date)
 
                 mock_collect_spice_kernels.assert_called_once_with(start_date=start_date, end_date=end_date)
                 mock_get_pointing_sets.assert_called_once_with(descriptor, start_date, end_date)
 
                 expected_dependency_str = ProcessingInputCollection(
-                    ScienceInput("pset_1"), ScienceInput("pset_2"),
-                    SPICEInput("spice_file_1"), SPICEInput("spice_file_2")
+                    ScienceInput("imap_hi_l1c_pset-1_20250101_v000.cdf"),
+                    ScienceInput("imap_hi_l1c_pset-2_20250101_v000.cdf"),
+                    SPICEInput("imap_science_0001.tf"), SPICEInput("imap_sclk_0000.tsc")
                 ).serialize()
 
                 mock_processor.assert_called_once_with(
@@ -227,3 +287,66 @@ class TestGenerateMap(unittest.TestCase):
                 do_processing_result = mock_processor.return_value.do_processing.return_value
                 mock_processor.return_value.post_processing.assert_called_once_with(
                     do_processing_result, pre_processing_result)
+
+                mock_processor.return_value.cleanup.assert_called_once()
+
+                self.assertEqual(expected_map, actual_map)
+
+    @patch("mapping_tool.generate_map.DependencyCollector.get_pointing_sets")
+    @patch("mapping_tool.generate_map.DependencyCollector.collect_spice_kernels")
+    @patch("mapping_tool.generate_map.Hi")
+    def test_generate_l2_map_raises_error_when_less_or_more_than_one_file_is_returned(self, mock_hi,
+                                                                                      mock_collect_spice_kernels,
+                                                                                      mock_get_pointing_sets):
+        mock_collect_spice_kernels.return_value = []
+        mock_get_pointing_sets.return_value = ["imap_hi_l1c_pset_20250101_v000.cdf"]
+
+        error_cases = [
+            ("L2 processing did not return any files!", []),
+            ("L2 processing returned too many files!", [Path(""), Path("")])
+        ]
+
+        for err_string, returned_paths in error_cases:
+            with self.subTest(err_string):
+                mock_hi.return_value.post_processing.return_value = returned_paths
+                with self.assertRaises(ValueError) as e:
+                    generate_l2_map(create_map_descriptor(), datetime(2020, 1, 1, tzinfo=timezone.utc),
+                                    datetime(2020, 1, 2, tzinfo=timezone.utc))
+
+                self.assertIn(err_string, str(e.exception))
+
+    @patch("mapping_tool.generate_map.DependencyCollector.get_pointing_sets")
+    @patch("mapping_tool.generate_map.DependencyCollector.collect_spice_kernels")
+    @patch("mapping_tool.generate_map.Hi")
+    def test_generate_l2_map_gracefully_handles_processing_exceptions(self, mock_hi,
+                                                                      mock_collect_spice_kernels,
+                                                                      mock_get_pointing_sets):
+        mock_collect_spice_kernels.return_value = []
+        mock_get_pointing_sets.return_value = ["imap_hi_l1c_pset_20250101_v000.cdf"]
+        mock_hi.return_value.do_processing.side_effect = ValueError("L2 processing failed")
+
+        hi_descriptor = create_map_descriptor(instrument=MappableInstrumentShortName.HI)
+        with self.assertRaises(ValueError) as e:
+            generate_l2_map(hi_descriptor, datetime(2020, 1, 1, tzinfo=timezone.utc),
+                            datetime(2020, 1, 2, tzinfo=timezone.utc))
+        self.assertIn(f"Processing for {hi_descriptor.to_string()} failed", e.exception.__notes__)
+
+    @patch("mapping_tool.generate_map.DependencyCollector.get_pointing_sets")
+    @patch("mapping_tool.generate_map.DependencyCollector.collect_spice_kernels")
+    @patch("mapping_tool.generate_map.Hi")
+    def test_generate_l2_map_raises_exception_if_called_with_no_psets(self, mock_hi,
+                                                                      mock_collect_spice_kernels,
+                                                                      mock_get_pointing_sets):
+        mock_collect_spice_kernels.return_value = []
+        mock_get_pointing_sets.return_value = []
+
+        start_date = datetime(2020, 1, 1, tzinfo=timezone.utc)
+        end_date = datetime(2020, 1, 2, tzinfo=timezone.utc)
+        hi_descriptor = create_map_descriptor(instrument=MappableInstrumentShortName.HI)
+        map_details = f'{hi_descriptor.to_string()} {start_date.strftime("%Y-%m-%d")} to {end_date.strftime("%Y-%m-%d")}'
+        with self.assertRaises(ValueError) as exception_context:
+            logger = logging.getLogger('generate_l2_map')
+            with self.assertLogs(logger, logging.ERROR) as log_context:
+                generate_l2_map(hi_descriptor, start_date, end_date)
+        self.assertIn(f"No pointing sets found for {map_details}", str(exception_context.exception))
+        self.assertIn(f"ERROR:generate_l2_map:No pointing sets found for {map_details}", log_context.output)

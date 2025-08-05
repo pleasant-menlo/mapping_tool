@@ -4,14 +4,13 @@ from pathlib import Path
 import imap_data_access
 import requests
 from imap_processing.ena_maps.utils.naming import MapDescriptor, MappableInstrumentShortName
-from spiceypy import spiceypy
 
 
 class DependencyCollector:
     IMAP_API = "https://api.dev.imap-mission.com/"
 
     @staticmethod
-    def get_pointing_sets(descriptor: MapDescriptor, start_date: datetime, end_date: datetime):
+    def get_pointing_sets(descriptor: MapDescriptor, start_date: datetime, end_date: datetime) -> list[str]:
         map_instrument_pset_descriptors = []
 
         if descriptor.instrument == MappableInstrumentShortName.HI:
@@ -58,10 +57,10 @@ class DependencyCollector:
                                                                                 data_level="l3e",
                                                                                 descriptor=f"survival-probability-{instrument_for_query[:2]}")))
 
-        return [pset['file_path'] for pset in files]
+        return [Path(pset['file_path']).name for pset in files]
 
     @classmethod
-    def collect_spice_kernels(cls, start_date: datetime, end_date: datetime) -> list[Path]:
+    def collect_spice_kernels(cls, start_date: datetime, end_date: datetime) -> list[str]:
         file_names = []
         for kernel_type in ["leapseconds", "spacecraft_clock", "pointing_attitude", "imap_frames", "science_frames"]:
             file_json = requests.get(cls.IMAP_API + f"spice-query?type={kernel_type}&start_time=0").json()
