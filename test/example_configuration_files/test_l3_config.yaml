@@ -1,0 +1,18 @@
+canonical_map_period:
+  year: 2025
+  quarter: 1
+  map_period: 6
+  number_of_maps: 1
+
+instruments:
+  - Hi combined
+
+spin_phase: Full spin
+reference_frame: spacecraft
+survival_corrected: true
+coordinate_system: hae
+pixelation_scheme: square
+pixel_parameter: 2
+map_data_type: Spectral Index
+lo_species: h
+output_directory: "."

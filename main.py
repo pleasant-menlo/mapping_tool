@@ -19,17 +19,12 @@ def do_mapping_tool():
     parser = argparse.ArgumentParser()
     parser.add_argument('config_file', type=Path)
     args = parser.parse_args()
-    config = Configuration.from_json(args.config_file)
+    config = Configuration.from_file(args.config_file)
 
     map_date_ranges = config.canonical_map_period.calculate_date_ranges()
 
     for descriptor, _ in config.get_map_descriptors():
         for start_date, end_date in map_date_ranges:
-            spice_kernel_paths = DependencyCollector.collect_spice_kernels(start_date=start_date, end_date=end_date)
-            for kernel in spice_kernel_paths:
-                kernel_path = imap_data_access.download(kernel)
-                spiceypy.furnsh(str(kernel_path))
-
             map_details = f'{descriptor.to_string()} {start_date.strftime("%Y-%m-%d")} to {end_date.strftime("%Y-%m-%d")}'
 
             logger.info(f"Generating map: {map_details}")

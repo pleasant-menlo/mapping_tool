@@ -4,12 +4,13 @@ import json
 from dataclasses import dataclass
 from typing import Optional
 
-import imap_data_access
 from imap_processing.ena_maps.utils.naming import MapDescriptor, MappableInstrumentShortName
 
 from pathlib import Path
 
 from jsonschema import validate
+
+import yaml
 
 from mapping_tool import config_schema
 
@@ -56,9 +57,14 @@ class Configuration:
     output_files: Optional[dict[(MappableInstrumentShortName, str), list]] = None
 
     @classmethod
-    def from_json(cls, config_path: Path):
+    def from_file(cls, config_path: Path):
+        if config_path.suffix not in ['.json', '.yaml']:
+            raise ValueError(f'Configuration file {config_path} must have .json or .yaml extension')
         with open(str(config_path), 'r') as f:
-            config = json.load(f)
+            if config_path.suffix == '.json':
+                config = json.load(f)
+            elif config_path.suffix == '.yaml':
+                config = yaml.safe_load(f)
             schema = config_schema.schema
             validate(config, schema)
             config["canonical_map_period"] = CanonicalMapPeriod(**config["canonical_map_period"])

@@ -15,76 +15,88 @@ from imap_processing.ena_maps.utils.naming import MapDescriptor, MappableInstrum
 
 
 class TestConfiguration(TestCase):
-    def test_from_json(self):
-        example_config_path = get_example_config_path() / "test_l2_config.json"
-        config: Configuration = Configuration.from_json(example_config_path)
+    def test_from_file(self):
+        for extension in ["json", "yaml"]:
+            with self.subTest(extension):
+                example_config_path = get_example_config_path() / f"test_l2_config.{extension}"
+                config: Configuration = Configuration.from_file(example_config_path)
 
-        expected_config: Configuration = Configuration(
-            canonical_map_period=CanonicalMapPeriod(year=2025, quarter=1, map_period=6, number_of_maps=1),
-            instruments=["Hi 90"],
-            spin_phase="Ram",
-            reference_frame="spacecraft",
-            survival_corrected=True,
-            coordinate_system="hae",
-            pixelation_scheme="square",
-            pixel_parameter=2,
-            map_data_type="ENA Intensity",
-            lo_species=None,
-            output_directory=Path('.'),
-            output_files=None
-        )
+                expected_config: Configuration = Configuration(
+                    canonical_map_period=CanonicalMapPeriod(year=2025, quarter=1, map_period=6, number_of_maps=1),
+                    instruments=["Hi 90"],
+                    spin_phase="Ram",
+                    reference_frame="spacecraft",
+                    survival_corrected=True,
+                    coordinate_system="hae",
+                    pixelation_scheme="square",
+                    pixel_parameter=2,
+                    map_data_type="ENA Intensity",
+                    lo_species=None,
+                    output_directory=Path('.'),
+                    output_files=None
+                )
 
-        self.assertEqual(expected_config, config)
+                self.assertEqual(expected_config, config)
 
-    def test_from_json_with_optional_config_fields(self):
-        example_config_path = get_example_config_path() / "test_config_with_optionals.json"
-        config: Configuration = Configuration.from_json(example_config_path)
+    def test_from_file_throws_error_if_passed_bad_file_type(self):
+        file_name = "test_l2_config.bad"
+        with self.assertRaises(ValueError) as context:
+            Configuration.from_file(Path(file_name))
+        self.assertIn(f'Configuration file {file_name} must have .json or .yaml extension', str(context.exception))
 
-        expected_config: Configuration = Configuration(
-            canonical_map_period=CanonicalMapPeriod(year=2025, quarter=1, map_period=6, number_of_maps=1),
-            instruments=["Hi 90", 'Ultra 45'],
-            spin_phase="Ram",
-            reference_frame="spacecraft",
-            survival_corrected=True,
-            coordinate_system="hae",
-            pixelation_scheme="square",
-            pixel_parameter=2,
-            map_data_type="ENA Intensity",
-            lo_species="h",
-            output_directory=Path('path/to/output'),
-            output_files={
-                (MappableInstrumentShortName.HI, "90"): ['hi90_map.cdf']
-            }
-        )
+    def test_from_file_with_optional_config_fields(self):
+        for extension in ["json", "yaml"]:
+            with self.subTest(extension):
+                example_config_path = get_example_config_path() / f"test_config_with_optionals.{extension}"
+                config: Configuration = Configuration.from_file(example_config_path)
 
-        self.assertEqual(expected_config, config)
+                expected_config: Configuration = Configuration(
+                    canonical_map_period=CanonicalMapPeriod(year=2025, quarter=1, map_period=6, number_of_maps=1),
+                    instruments=["Hi 90", 'Ultra 45'],
+                    spin_phase="Ram",
+                    reference_frame="spacecraft",
+                    survival_corrected=True,
+                    coordinate_system="hae",
+                    pixelation_scheme="square",
+                    pixel_parameter=2,
+                    map_data_type="ENA Intensity",
+                    lo_species="h",
+                    output_directory=Path('path/to/output'),
+                    output_files={
+                        (MappableInstrumentShortName.HI, "90"): ['hi90_map.cdf']
+                    }
+                )
+
+                self.assertEqual(expected_config, config)
 
     @patch("mapping_tool.configuration.validate")
-    def test_from_json_calls_validate_with_the_configuration_schema(self, mock_validate):
-        example_config_path = get_example_config_path() / "test_l2_config.json"
-        Configuration.from_json(example_config_path)
+    def test_from_file_calls_validate_with_the_configuration_schema(self, mock_validate):
+        for extension in ["json", "yaml"]:
+            with self.subTest(extension):
+                example_config_path = get_example_config_path() / f"test_l2_config.{extension}"
+                Configuration.from_file(example_config_path)
 
-        config_json: Dict = {
-            "canonical_map_period": CanonicalMapPeriod(
-                year=2025,
-                quarter=1,
-                map_period=6,
-                number_of_maps=1
-            ),
-            "instruments": ["Hi 90"],
-            "spin_phase": "Ram",
-            "reference_frame": "spacecraft",
-            "survival_corrected": True,
-            "coordinate_system": "hae",
-            "pixelation_scheme": "square",
-            "pixel_parameter": 2,
-            "map_data_type": "ENA Intensity",
-        }
+                expected_config: Dict = {
+                    "canonical_map_period": CanonicalMapPeriod(
+                        year=2025,
+                        quarter=1,
+                        map_period=6,
+                        number_of_maps=1
+                    ),
+                    "instruments": ["Hi 90"],
+                    "spin_phase": "Ram",
+                    "reference_frame": "spacecraft",
+                    "survival_corrected": True,
+                    "coordinate_system": "hae",
+                    "pixelation_scheme": "square",
+                    "pixel_parameter": 2,
+                    "map_data_type": "ENA Intensity",
+                }
 
-        mock_validate.assert_called_with(config_json, config_schema.schema)
+                mock_validate.assert_called_with(expected_config, config_schema.schema)
 
     @patch("mapping_tool.configuration.json.load")
-    def test_from_json_fails_validation_with_invalid_config(self, mock_load):
+    def test_from_file_fails_validation_with_invalid_config(self, mock_load):
         validation_error_cases = [
             ("invalid instrument", {"instruments": "90"}),
             ("invalid spin phase", {"spin_phase": "none"}),
@@ -96,7 +108,7 @@ class TestConfiguration(TestCase):
             with self.subTest(name):
                 mock_load.return_value = create_config_dict(case)
                 with self.assertRaises(jsonschema.exceptions.ValidationError):
-                    Configuration.from_json(get_example_config_path() / "test_l2_config.json")
+                    Configuration.from_file(get_example_config_path() / "test_l2_config.json")
 
     @patch("mapping_tool.configuration.json.load")
     def test_config_creation_fails_when_output_files_and_number_of_output_maps_differ(self, mock_load):
@@ -118,7 +130,7 @@ class TestConfiguration(TestCase):
                 config['canonical_map_period']['number_of_maps'] = number_of_maps
                 mock_load.return_value = config
                 with self.assertRaises(ValueError) as context:
-                    Configuration.from_json(get_example_config_path() / "test_l2_config.json")
+                    Configuration.from_file(get_example_config_path() / "test_l2_config.json")
 
                 self.assertEqual(expected_message, str(context.exception))
 
@@ -275,7 +287,8 @@ class TestConfiguration(TestCase):
 
         for product, sp, instrument, expected_data_level in cases:
             with self.subTest(f"{product}, {sp}, {instrument}"):
-                input_config = create_configuration(instruments=instrument, survival_corrected=sp, map_data_type=product)
+                input_config = create_configuration(instruments=instrument, survival_corrected=sp,
+                                                    map_data_type=product)
                 [(_, data_level)] = input_config.get_map_descriptors()
                 self.assertEqual(expected_data_level, data_level)
 

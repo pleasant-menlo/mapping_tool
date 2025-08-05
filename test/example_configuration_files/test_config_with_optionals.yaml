@@ -1,0 +1,23 @@
+canonical_map_period:
+  year: 2025
+  quarter: 1
+  map_period: 6
+  number_of_maps: 1
+
+instruments:
+  - Hi 90
+  - Ultra 45
+
+spin_phase: Ram
+reference_frame: spacecraft
+survival_corrected: true
+coordinate_system: hae
+pixelation_scheme: square
+pixel_parameter: 2
+map_data_type: ENA Intensity
+lo_species: h
+output_directory: path/to/output
+
+output_files:
+  Hi 90:
+    - hi90_map.cdf
