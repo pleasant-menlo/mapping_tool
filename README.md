@@ -38,28 +38,24 @@ From within the virtual environment
 
 ### Config File Parameters
 
-```json
-{
-  "canonical_map_period": {
-    "year": 2025,
-    "quarter": 1,
-    "map_period": 6,
-    "number_of_maps": 1
-  },
-  "instrument": [
-    "Hi 90",
-    "Hi 45"
-  ],
-  "spin_phase": "Ram",
-  "reference_frame": "spacecraft",
-  "survival_corrected": true,
-  "coordinate_system": "hae",
-  "pixelation_scheme": "square",
-  "pixel_parameter": 2,
-  "map_data_type": "ENA Intensity",
-  "lo_species": "h",
-  "output_directory": "."
-}
+```yaml
+canonical_map_period:
+  year: 2025
+  quarter: 1
+  map_period: 6
+  number_of_maps: 1
+
+instruments:
+  - Hi 90
+
+spin_phase: ram
+reference_frame: spacecraft
+survival_corrected: true
+coordinate_system: hae
+pixelation_scheme: square
+pixel_parameter: 4
+map_data_type: Spectral Index
+lo_species: h
 ```
 
 
