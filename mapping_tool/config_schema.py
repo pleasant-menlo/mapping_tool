@@ -72,7 +72,13 @@ schema = {
             "type": "string",
             "enum": [
                 "hae",
-                "HAE"
+                "HAE",
+                "hre",
+                "HRE",
+                "gcs",
+                "GCS",
+                "hnu",
+                "HNU"
             ]
         },
         "pixelation_scheme": {
