@@ -9,7 +9,7 @@
   "spin_phase": "Ram",
   "reference_frame": "spacecraft",
   "survival_corrected": true,
-  "coordinate_system": "hae",
+  "spice_frame_name": "ECLIPJ2000",
   "pixelation_scheme": "square",
   "pixel_parameter": 2,
   "map_data_type": "ENA Intensity"

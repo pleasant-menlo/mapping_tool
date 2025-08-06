@@ -1,17 +1,19 @@
 import dataclasses
 import logging
+import os
 import unittest
 from datetime import datetime, timezone
 from pathlib import Path
 from unittest.mock import patch, Mock, call
 
-from imap_processing.ena_maps.utils.naming import MappableInstrumentShortName
+from imap_processing.ena_maps.utils.naming import MappableInstrumentShortName, MapDescriptor
 from imap_l3_processing.models import InputMetadata
 from imap_data_access import ProcessingInputCollection, ScienceInput, SPICEInput
+from imap_processing.spice.geometry import SpiceFrame
 
 from mapping_tool.configuration import DataLevel
 from mapping_tool.generate_map import get_dependencies_for_l3_map, get_data_level_for_descriptor, generate_l3_map, \
-    generate_l2_map, generate_map
+    generate_l2_map, generate_map, CustomSpiceFrame
 from test.test_builders import create_map_descriptor, create_l2_map_descriptor
 
 
@@ -180,8 +182,8 @@ class TestGenerateMap(unittest.TestCase):
                 ])
 
                 mock_furnsh.assert_has_calls([
-                    call('path/to/spice_file'),
-                    call('path/to/spice_file'),
+                    call(os.path.join('path', 'to', 'spice_file')),
+                    call(os.path.join('path', 'to', 'spice_file')),
                 ])
 
                 mock_processor.return_value.process.assert_called_once()
@@ -252,12 +254,13 @@ class TestGenerateMap(unittest.TestCase):
         start_date = datetime(2020, 1, 1)
         end_date = datetime(2020, 1, 2)
 
-        for descriptor, mock_processor in cases:
+        for descriptor, mock_processor_class in cases:
             with self.subTest(descriptor.to_string()):
                 mock_collect_spice_kernels.reset_mock()
                 mock_get_pointing_sets.reset_mock()
                 expected_map = Mock()
-                mock_processor.return_value.post_processing.return_value = [expected_map]
+                mock_processor = mock_processor_class.return_value
+                mock_processor.post_processing.return_value = [expected_map]
 
                 actual_map = generate_l2_map(descriptor, start_date, end_date)
 
@@ -270,7 +273,7 @@ class TestGenerateMap(unittest.TestCase):
                     SPICEInput("imap_science_0001.tf"), SPICEInput("imap_sclk_0000.tsc")
                 ).serialize()
 
-                mock_processor.assert_called_once_with(
+                mock_processor_class.assert_called_once_with(
                     data_level="l2", data_descriptor=descriptor.to_string(),
                     dependency_str=expected_dependency_str,
                     start_date=start_date.strftime("%Y%m%d"),
@@ -279,18 +282,48 @@ class TestGenerateMap(unittest.TestCase):
                     upload_to_sdc=False
                 )
 
-                mock_processor.return_value.pre_processing.assert_called_once()
+                mock_processor.pre_processing.assert_called_once()
 
-                pre_processing_result = mock_processor.return_value.pre_processing.return_value
-                mock_processor.return_value.do_processing.assert_called_once_with(pre_processing_result)
+                pre_processing_result = mock_processor.pre_processing.return_value
+                mock_processor.do_processing.assert_called_once_with(pre_processing_result)
 
-                do_processing_result = mock_processor.return_value.do_processing.return_value
-                mock_processor.return_value.post_processing.assert_called_once_with(
+                do_processing_result = mock_processor.do_processing.return_value
+                mock_processor.post_processing.assert_called_once_with(
                     do_processing_result, pre_processing_result)
 
-                mock_processor.return_value.cleanup.assert_called_once()
+                mock_processor.cleanup.assert_called_once()
 
                 self.assertEqual(expected_map, actual_map)
+
+    @patch("mapping_tool.generate_map.DependencyCollector.collect_spice_kernels")
+    @patch("mapping_tool.generate_map.DependencyCollector.get_pointing_sets")
+    @patch("mapping_tool.generate_map.Hi")
+    def test_generate_l2_map_patches_l2_processing_get_map_coord_frame(self, mock_hi_processor_class,
+                                                                       mock_get_pointing_sets,
+                                                                       mock_collect_spice_kernels):
+        mock_hi_processor = mock_hi_processor_class.return_value
+        mock_collect_spice_kernels.return_value = ["imap_science_0001.tf", "imap_sclk_0000.tsc"]
+        mock_get_pointing_sets.return_value = ["imap_hi_l1c_pset-1_20250101_v000.cdf",
+                                               "imap_hi_l1c_pset-2_20250101_v000.cdf"]
+
+        start_date = datetime(2020, 1, 1)
+        end_date = datetime(2020, 1, 2)
+        descriptor = create_l2_map_descriptor(instrument=MappableInstrumentShortName.HI,
+                                              coordinate_system="SOME_CUSTOM_FRAME")
+
+        def mock_do_processing(deps):
+            self.assertEqual(deps, mock_hi_processor.pre_processing.return_value)
+            self.assertEqual(CustomSpiceFrame("SOME_CUSTOM_FRAME"),
+                             MapDescriptor.from_string(descriptor.to_string()).map_spice_coord_frame)
+
+        mock_hi_processor.post_processing.return_value = [Path("some_path")]
+        mock_hi_processor.do_processing.side_effect = mock_do_processing
+
+        _ = generate_l2_map(descriptor, start_date, end_date)
+
+        normal_pipeline_descriptor = "h90-ena-h-sf-nsp-ram-hae-2deg-6mo"
+        self.assertEqual(SpiceFrame.ECLIPJ2000,
+                         MapDescriptor.from_string(normal_pipeline_descriptor).map_spice_coord_frame)
 
     @patch("mapping_tool.generate_map.DependencyCollector.get_pointing_sets")
     @patch("mapping_tool.generate_map.DependencyCollector.collect_spice_kernels")

@@ -63,12 +63,8 @@ schema = {
         "survival_corrected": {
             "type": "boolean"
         },
-        "coordinate_system": {
-            "type": "string",
-            "enum": [
-                "hae",
-                "HAE"
-            ]
+        "spice_frame_name": {
+            "type": "string"
         },
         "pixelation_scheme": {
             "type": "string",
@@ -112,82 +108,9 @@ schema = {
         "output_directory": {
             "type": "string"
         },
-        "output_files": {
-            "type": "object",
-            "properties": {
-                "Hi 45": {
-                    "type": "array",
-                    "item": {
-                        "type": "string"
-                    }
-                },
-                "Hi 90": {
-                    "type": "array",
-                    "item": {
-                        "type": "string"
-                    }
-                },
-                "Hi combined": {
-                    "type": "array",
-                    "item": {
-                        "type": "string"
-                    }
-                },
-                "Ultra 45": {
-                    "type": "array",
-                    "item": {
-                        "type": "string"
-                    }
-                },
-                "Ultra 90": {
-                    "type": "array",
-                    "item": {
-                        "type": "string"
-                    }
-                },
-                "Ultra combined": {
-                    "type": "array",
-                    "item": {
-                        "type": "string"
-                    }
-                },
-                "Lo": {
-                    "type": "array",
-                    "item": {
-                        "type": "string"
-                    }
-                },
-                "lo": {
-                    "type": "array",
-                    "item": {
-                        "type": "string"
-                    }
-                },
-                "GLOWS": {
-                    "type": "array",
-                    "item": {
-                        "type": "string"
-                    }
-                },
-                "glows": {
-                    "type": "array",
-                    "item": {
-                        "type": "string"
-                    }
-                },
-                "IDEX": {
-                    "type": "array",
-                    "item": {
-                        "type": "string"
-                    }
-                },
-                "idex": {
-                    "type": "array",
-                    "item": {
-                        "type": "string"
-                    }
-                }
-            }
+        "quantity_suffix": {
+            "type": "string",
+            "pattern": "[a-zA-Z]*"
         }
     },
     "required": [
@@ -196,7 +119,7 @@ schema = {
         "spin_phase",
         "reference_frame",
         "survival_corrected",
-        "coordinate_system",
+        "spice_frame_name",
         "pixelation_scheme",
         "pixel_parameter",
         "map_data_type"
