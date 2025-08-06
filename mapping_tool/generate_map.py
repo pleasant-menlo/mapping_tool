@@ -1,7 +1,9 @@
+import dataclasses
 from dataclasses import replace
 import logging
 from datetime import datetime
 from pathlib import Path
+from unittest.mock import patch
 
 import imap_data_access
 
@@ -16,6 +18,11 @@ from imap_data_access import ProcessingInputCollection, ScienceInput, SPICEInput
 
 from mapping_tool.dependency_collector import DependencyCollector
 import spiceypy
+
+
+@dataclasses.dataclass
+class CustomSpiceFrame:
+    name: str
 
 
 def get_dependencies_for_l3_map(map_descriptor: MapDescriptor) -> list[MapDescriptor]:
@@ -121,24 +128,29 @@ def generate_l2_map(descriptor: MapDescriptor, start_date: datetime, end_date: d
         MappableInstrumentShortName.LO: Lo,
         MappableInstrumentShortName.ULTRA: Ultra,
     }
-    processor = processor_classes[descriptor.instrument](
-        data_level="l2", data_descriptor=descriptor.to_string(),
-        dependency_str=processing_input_collection.serialize(),
-        start_date=start_date.strftime("%Y%m%d"),
-        repointing=None,
-        version="0",
-        upload_to_sdc=False
-    )
+    processor_class = processor_classes[descriptor.instrument]
 
-    downloaded_deps = processor.pre_processing()
-    try:
-        results = processor.do_processing(downloaded_deps)
-        paths = processor.post_processing(results, downloaded_deps)
-    except Exception as e:
-        e.add_note(f"Processing for {descriptor.to_string()} failed")
-        raise e
-    finally:
-        processor.cleanup()
+    with patch('imap_processing.ena_maps.utils.naming.MapDescriptor.get_map_coord_frame') as mock_coord_frame:
+        mock_coord_frame.return_value = CustomSpiceFrame(descriptor.coordinate_system)
+
+        processor = processor_class(
+            data_level="l2", data_descriptor=descriptor.to_string(),
+            dependency_str=processing_input_collection.serialize(),
+            start_date=start_date.strftime("%Y%m%d"),
+            repointing=None,
+            version="0",
+            upload_to_sdc=False
+        )
+
+        downloaded_deps = processor.pre_processing()
+        try:
+            results = processor.do_processing(downloaded_deps)
+            paths = processor.post_processing(results, downloaded_deps)
+        except Exception as e:
+            e.add_note(f"Processing for {descriptor.to_string()} failed")
+            raise e
+        finally:
+            processor.cleanup()
 
     if len(paths) > 1:
         raise ValueError("L2 processing returned too many files!")

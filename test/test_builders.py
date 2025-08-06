@@ -3,6 +3,7 @@ from typing import Dict, Optional, Literal
 from imap_processing.ena_maps.utils.naming import MappableInstrumentShortName, MapDescriptor
 
 from mapping_tool.configuration import Configuration, CanonicalMapPeriod
+from mapping_tool.mapping_tool_descriptor import MappingToolDescriptor
 
 
 def create_map_descriptor(
@@ -17,7 +18,7 @@ def create_map_descriptor(
         spin_phase: str = "ram",
         coordinate_system: str = "hae",
 ):
-    return MapDescriptor(
+    return MappingToolDescriptor(
         frame_descriptor=frame_descriptor,
         resolution_str=resolution_str,
         duration=duration,
