@@ -54,7 +54,7 @@ class Configuration:
     map_data_type: str
     lo_species: Optional[str] = None
     output_directory: Optional[Path] = Path('.')
-    quantity_suffix: str = ''
+    quantity_suffix: str = 'CUSTOM'
 
     @classmethod
     def from_file(cls, config_path: Path):

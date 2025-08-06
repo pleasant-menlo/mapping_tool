@@ -59,6 +59,7 @@ class TestMain(unittest.TestCase):
 
         mock_configuration.canonical_map_period.calculate_date_ranges.return_value = map_date_ranges
         mock_configuration.output_directory = Path("path/to/output")
+        mock_configuration.quantity_suffix = "TEST"
 
         do_mapping_tool()
 
@@ -92,17 +93,17 @@ class TestMain(unittest.TestCase):
 
         mock_copy_file.assert_has_calls([
             call(Path('path/to/cdf/imap_hi_l3_h90-ena-h-sf-sp-ram-hae-2deg-6mo_20250101_v000.cdf'),
-                 Path('path/to/output/imap_hi_l3_h90-ena-h-sf-sp-ram-hae-2deg-6mo_20250101_v000.cdf')),
+                 Path('path/to/output/imap_hi_l3_h90-enaTEST-h-sf-sp-ram-hae-2deg-6mo_20250101_v000.cdf')),
             call(Path('path/to/cdf/imap_hi_l3_h90-ena-h-sf-sp-ram-hae-2deg-6mo_20260101_v000.cdf'),
-                 Path('path/to/output/imap_hi_l3_h90-ena-h-sf-sp-ram-hae-2deg-6mo_20260101_v000.cdf')),
+                 Path('path/to/output/imap_hi_l3_h90-enaTEST-h-sf-sp-ram-hae-2deg-6mo_20260101_v000.cdf')),
             call(Path('path/to/cdf/imap_lo_l3_ilo-ena-h-sf-sp-ram-hae-2deg-6mo_20250101_v000.cdf'),
-                 Path('path/to/output/imap_lo_l3_ilo-ena-h-sf-sp-ram-hae-2deg-6mo_20250101_v000.cdf')),
+                 Path('path/to/output/imap_lo_l3_ilo-enaTEST-h-sf-sp-ram-hae-2deg-6mo_20250101_v000.cdf')),
             call(Path('path/to/cdf/imap_lo_l3_ilo-ena-h-sf-sp-ram-hae-2deg-6mo_20260101_v000.cdf'),
-                 Path('path/to/output/imap_lo_l3_ilo-ena-h-sf-sp-ram-hae-2deg-6mo_20260101_v000.cdf')),
+                 Path('path/to/output/imap_lo_l3_ilo-enaTEST-h-sf-sp-ram-hae-2deg-6mo_20260101_v000.cdf')),
             call(Path('path/to/cdf/imap_ultra_l3_u45-ena-h-sf-sp-ram-hae-2deg-6mo_20250101_v000.cdf'),
-                 Path('path/to/output/imap_ultra_l3_u45-ena-h-sf-sp-ram-hae-2deg-6mo_20250101_v000.cdf')),
+                 Path('path/to/output/imap_ultra_l3_u45-enaTEST-h-sf-sp-ram-hae-2deg-6mo_20250101_v000.cdf')),
             call(Path('path/to/cdf/imap_ultra_l3_u45-ena-h-sf-sp-ram-hae-2deg-6mo_20260101_v000.cdf'),
-                 Path('path/to/output/imap_ultra_l3_u45-ena-h-sf-sp-ram-hae-2deg-6mo_20260101_v000.cdf'))
+                 Path('path/to/output/imap_ultra_l3_u45-enaTEST-h-sf-sp-ram-hae-2deg-6mo_20260101_v000.cdf'))
         ])
 
     @skip

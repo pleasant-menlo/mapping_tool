@@ -33,7 +33,7 @@ class TestConfiguration(TestCase):
                     map_data_type="ENA Intensity",
                     lo_species=None,
                     output_directory=Path('.'),
-                    quantity_suffix=""
+                    quantity_suffix="CUSTOM"
                 )
 
                 self.assertEqual(expected_config, config)
