@@ -18,10 +18,6 @@
   "map_data_type": "ENA Intensity",
   "lo_species": "h",
   "output_directory": "path/to/output",
-  "output_files": {
-    "Hi 90": [
-      "hi90_map.cdf"
-    ]
-  }
+  "quantity_suffix": "custom"
 }
 

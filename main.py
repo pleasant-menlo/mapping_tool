@@ -1,4 +1,6 @@
 import logging
+import shutil
+from dataclasses import replace
 
 from mapping_tool.generate_map import generate_map
 
@@ -26,7 +28,13 @@ def do_mapping_tool():
 
             logger.info(f"Generating map: {map_details}")
 
-            generate_map(descriptor, start_date, end_date)
+            generated_map_path = generate_map(descriptor, start_date, end_date)
+            descriptor_with_suffix = replace(descriptor,
+                                             principal_data=descriptor.principal_data + config.quantity_suffix)
+            map_name_with_quantity_suffix = generated_map_path.name.replace(descriptor.to_string(),
+                                                                            descriptor_with_suffix.to_string())
+            output_path = config.output_directory / map_name_with_quantity_suffix
+            shutil.copy(generated_map_path, output_path)
 
 
 if __name__ == "__main__":
