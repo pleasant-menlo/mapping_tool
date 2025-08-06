@@ -4,9 +4,7 @@ canonical_map_period:
   map_period: 6
   number_of_maps: 1
 
-instruments:
-  - Hi 90
-  - Ultra 45
+instrument: Ultra 45
 
 spin_phase: Ram
 reference_frame: spacecraft

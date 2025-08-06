@@ -1,8 +1,9 @@
 import dataclasses
+from dataclasses import replace
 import logging
 from datetime import datetime
 from pathlib import Path
-from typing import Optional
+from unittest.mock import patch
 
 import imap_data_access
 
@@ -18,28 +19,35 @@ from imap_data_access import ProcessingInputCollection, ScienceInput, SPICEInput
 from mapping_tool.dependency_collector import DependencyCollector
 import spiceypy
 
+from mapping_tool.mapping_tool_descriptor import MappingToolDescriptor
 
-def get_dependencies_for_l3_map(map_descriptor: MapDescriptor) -> list[MapDescriptor]:
+
+@dataclasses.dataclass
+class CustomSpiceFrame:
+    name: str
+
+
+def get_dependencies_for_l3_map(map_descriptor: MappingToolDescriptor) -> list[MappingToolDescriptor]:
     match map_descriptor:
         case MapDescriptor(principal_data="spx"):
-            return [dataclasses.replace(map_descriptor, principal_data="ena")]
+            return [replace(map_descriptor, principal_data="ena")]
         case MapDescriptor(sensor="combined"):
             return [
-                dataclasses.replace(map_descriptor, sensor="90"),
-                dataclasses.replace(map_descriptor, sensor="45"),
+                replace(map_descriptor, sensor="90"),
+                replace(map_descriptor, sensor="45"),
             ]
         case MapDescriptor(survival_corrected="sp", spin_phase="full"):
             return [
-                dataclasses.replace(map_descriptor, spin_phase="ram", survival_corrected="nsp"),
-                dataclasses.replace(map_descriptor, spin_phase="anti", survival_corrected="nsp"),
+                replace(map_descriptor, spin_phase="ram", survival_corrected="nsp"),
+                replace(map_descriptor, spin_phase="anti", survival_corrected="nsp"),
             ]
         case MapDescriptor(survival_corrected="sp", spin_phase="ram" | "anti"):
-            return [dataclasses.replace(map_descriptor, survival_corrected="nsp")]
+            return [replace(map_descriptor, survival_corrected="nsp")]
         case _:
             return []
 
 
-def get_data_level_for_descriptor(descriptor: MapDescriptor):
+def get_data_level_for_descriptor(descriptor: MappingToolDescriptor):
     if descriptor.instrument == MappableInstrumentShortName.GLOWS or descriptor.instrument == MappableInstrumentShortName.IDEX:
         return DataLevel.NA
     elif descriptor.survival_corrected == "sp" or "combined" == descriptor.sensor or descriptor.principal_data == "spx":
@@ -48,7 +56,7 @@ def get_data_level_for_descriptor(descriptor: MapDescriptor):
         return DataLevel.L2
 
 
-def generate_map(descriptor: MapDescriptor, start: datetime, end: datetime) -> Optional[Path]:
+def generate_map(descriptor: MappingToolDescriptor, start: datetime, end: datetime) -> Path:
     data_level = get_data_level_for_descriptor(descriptor)
     if data_level == DataLevel.L2:
         return generate_l2_map(descriptor, start, end)
@@ -61,7 +69,7 @@ def generate_map(descriptor: MapDescriptor, start: datetime, end: datetime) -> O
         raise ValueError(f"Cannot produce map for instrument: {descriptor.instrument_descriptor}")
 
 
-def generate_l3_map(descriptor: MapDescriptor, start: datetime, end: datetime, input_maps: list[Path]) -> Path:
+def generate_l3_map(descriptor: MappingToolDescriptor, start: datetime, end: datetime, input_maps: list[Path]) -> Path:
     processor_class = {
         MappableInstrumentShortName.HI: HiProcessor,
         MappableInstrumentShortName.LO: LoProcessor,
@@ -74,7 +82,7 @@ def generate_l3_map(descriptor: MapDescriptor, start: datetime, end: datetime, i
         start_date=start,
         end_date=end,
         version='v000',
-        descriptor=descriptor.to_string(),
+        descriptor=descriptor.to_map_descriptor_string(),
     )
 
     spice_kernel_paths = DependencyCollector.collect_spice_kernels(start_date=start, end_date=end)
@@ -103,7 +111,7 @@ def generate_l3_map(descriptor: MapDescriptor, start: datetime, end: datetime, i
     return processed_files[0]
 
 
-def generate_l2_map(descriptor: MapDescriptor, start_date: datetime, end_date: datetime) -> Path:
+def generate_l2_map(descriptor: MappingToolDescriptor, start_date: datetime, end_date: datetime) -> Path:
     spice_kernel_names = DependencyCollector.collect_spice_kernels(start_date=start_date, end_date=end_date)
 
     map_details = f'{descriptor.to_string()} {start_date.strftime("%Y-%m-%d")} to {end_date.strftime("%Y-%m-%d")}'
@@ -122,24 +130,29 @@ def generate_l2_map(descriptor: MapDescriptor, start_date: datetime, end_date: d
         MappableInstrumentShortName.LO: Lo,
         MappableInstrumentShortName.ULTRA: Ultra,
     }
-    processor = processor_classes[descriptor.instrument](
-        data_level="l2", data_descriptor=descriptor.to_string(),
-        dependency_str=processing_input_collection.serialize(),
-        start_date=start_date.strftime("%Y%m%d"),
-        repointing=None,
-        version="0",
-        upload_to_sdc=False
-    )
+    processor_class = processor_classes[descriptor.instrument]
 
-    downloaded_deps = processor.pre_processing()
-    try:
-        results = processor.do_processing(downloaded_deps)
-        paths = processor.post_processing(results, downloaded_deps)
-    except Exception as e:
-        e.add_note(f"Processing for {descriptor.to_string()} failed")
-        raise e
-    finally:
-        processor.cleanup()
+    with patch('imap_processing.ena_maps.utils.naming.MapDescriptor.get_map_coord_frame') as mock_coord_frame:
+        mock_coord_frame.return_value = CustomSpiceFrame(descriptor.coordinate_system)
+
+        processor = processor_class(
+            data_level="l2", data_descriptor=descriptor.to_string(),
+            dependency_str=processing_input_collection.serialize(),
+            start_date=start_date.strftime("%Y%m%d"),
+            repointing=None,
+            version="0",
+            upload_to_sdc=False
+        )
+
+        downloaded_deps = processor.pre_processing()
+        try:
+            results = processor.do_processing(downloaded_deps)
+            paths = processor.post_processing(results, downloaded_deps)
+        except Exception as e:
+            e.add_note(f"Processing for {descriptor.to_string()} failed")
+            raise e
+        finally:
+            processor.cleanup()
 
     if len(paths) > 1:
         raise ValueError("L2 processing returned too many files!")

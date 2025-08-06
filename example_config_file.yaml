@@ -1,17 +1,17 @@
 canonical_map_period:
   year: 2025
-  quarter: 1
+  quarter: 3
   map_period: 6
   number_of_maps: 1
 
-instruments:
-  - Hi 90
+instrument: Hi 90
 
-spin_phase: ram
+spin_phase: Full spin
 reference_frame: spacecraft
 survival_corrected: true
-coordinate_system: hae
+spice_frame_name: IMAP_HAE
 pixelation_scheme: square
 pixel_parameter: 4
-map_data_type: Spectral Index
+map_data_type: ENA Intensity
 lo_species: h
+quantity_suffix: CUSTOM

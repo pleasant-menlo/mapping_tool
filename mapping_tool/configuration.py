@@ -13,6 +13,7 @@ from jsonschema import validate
 import yaml
 
 from mapping_tool import config_schema
+from mapping_tool.mapping_tool_descriptor import MappingToolDescriptor
 
 
 @dataclass
@@ -41,20 +42,27 @@ class DataLevel(enum.StrEnum):
     NA = 'no applicable level'
 
 
+class MapSettings:
+    descriptor: MapDescriptor
+    spice_frame: str
+    start_date: datetime
+    end_date: datetime
+
+
 @dataclass
 class Configuration:
     canonical_map_period: CanonicalMapPeriod
-    instruments: list[str]
+    instrument: str
     spin_phase: str
     reference_frame: str
     survival_corrected: bool
-    coordinate_system: str
+    spice_frame_name: str
     pixelation_scheme: str
     pixel_parameter: int
     map_data_type: str
     lo_species: Optional[str] = None
     output_directory: Optional[Path] = Path('.')
-    output_files: Optional[dict[(MappableInstrumentShortName, str), list]] = None
+    quantity_suffix: str = 'CUSTOM'
 
     @classmethod
     def from_file(cls, config_path: Path):
@@ -70,20 +78,6 @@ class Configuration:
             config["canonical_map_period"] = CanonicalMapPeriod(**config["canonical_map_period"])
             if config.get("output_directory") is not None:
                 config["output_directory"] = Path(config["output_directory"])
-
-            if "output_files" in config:
-                remapped_output_filenames = {}
-                lowercase_instruments = [instrument.lower() for instrument in config["instruments"]]
-                for instrument, output_filenames in config['output_files'].items():
-                    if instrument.lower() not in lowercase_instruments:
-                        raise ValueError(
-                            f"Specified output file names for an instrument that won't be generated: {instrument}")
-                    if len(output_filenames) > config["canonical_map_period"].number_of_maps:
-                        raise ValueError(
-                            f"More {instrument} filenames specified ({len(output_filenames)}) than will be generated ({config['canonical_map_period'].number_of_maps})")
-                    remapped_output_filenames[cls.parse_instrument(instrument)] = output_filenames
-                config["output_files"] = remapped_output_filenames
-
             return cls(**config)
 
     @classmethod
@@ -98,7 +92,7 @@ class Configuration:
 
         return instrument, sensor
 
-    def get_map_descriptors(self) -> list[tuple[MapDescriptor, DataLevel]]:
+    def get_map_descriptor(self) -> MappingToolDescriptor:
         frame_descriptors = {
             "spacecraft": "sf",
             "heliospheric": "hf",
@@ -119,26 +113,18 @@ class Configuration:
         resolution = f"{self.pixel_parameter}deg" if self.pixelation_scheme.lower() == "square" else f"nside{self.pixel_parameter}"
         duration = str(self.canonical_map_period.map_period) + "mo"
 
-        descriptors = []
-        for instrument_sensor in self.instruments:
-            instrument, sensor = self.parse_instrument(instrument_sensor)
+        instrument, sensor = self.parse_instrument(self.instrument)
 
-            descriptor = MapDescriptor(
-                frame_descriptor=frame_descriptors[self.reference_frame],
-                resolution_str=resolution,
-                duration=duration,
-                instrument=instrument,
-                sensor=sensor,
-                principal_data=principal_data[self.map_data_type],
-                species=self.lo_species or 'h',
-                survival_corrected="sp" if self.survival_corrected else "nsp",
-                spin_phase=spin_phase[self.spin_phase.lower()],
-                coordinate_system=self.coordinate_system.lower()
-            )
-            data_level = DataLevel.L2
-            if self.survival_corrected or "combined" in sensor.lower() or self.map_data_type.lower() == "spectral index":
-                data_level = DataLevel.L3
-            elif instrument == MappableInstrumentShortName.GLOWS:
-                data_level = DataLevel.NA
-            descriptors.append((descriptor, data_level))
-        return descriptors
+        return MappingToolDescriptor(
+            frame_descriptor=frame_descriptors[self.reference_frame],
+            resolution_str=resolution,
+            duration=duration,
+            instrument=instrument,
+            sensor=sensor,
+            principal_data=principal_data[self.map_data_type],
+            quantity_suffix=self.quantity_suffix,
+            species=self.lo_species or 'h',
+            survival_corrected="sp" if self.survival_corrected else "nsp",
+            spin_phase=spin_phase[self.spin_phase.lower()],
+            coordinate_system="custom"
+        )

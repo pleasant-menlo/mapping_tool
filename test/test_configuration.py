@@ -9,9 +9,11 @@ from unittest.mock import patch
 
 from mapping_tool import config_schema
 from mapping_tool.configuration import Configuration, CanonicalMapPeriod, DataLevel
-from test.test_builders import create_configuration, create_config_dict, create_canonical_map_period
+from mapping_tool.mapping_tool_descriptor import MappingToolDescriptor
+from test.test_builders import create_configuration, create_config_dict, create_canonical_map_period, \
+    create_map_descriptor
 from test.test_helpers import get_example_config_path
-from imap_processing.ena_maps.utils.naming import MapDescriptor, MappableInstrumentShortName
+from imap_processing.ena_maps.utils.naming import MappableInstrumentShortName
 
 
 class TestConfiguration(TestCase):
@@ -23,17 +25,17 @@ class TestConfiguration(TestCase):
 
                 expected_config: Configuration = Configuration(
                     canonical_map_period=CanonicalMapPeriod(year=2025, quarter=1, map_period=6, number_of_maps=1),
-                    instruments=["Hi 90"],
+                    instrument="Hi 90",
                     spin_phase="Ram",
                     reference_frame="spacecraft",
                     survival_corrected=True,
-                    coordinate_system="hae",
+                    spice_frame_name="ECLIPJ2000",
                     pixelation_scheme="square",
                     pixel_parameter=2,
                     map_data_type="ENA Intensity",
                     lo_species=None,
                     output_directory=Path('.'),
-                    output_files=None
+                    quantity_suffix="CUSTOM"
                 )
 
                 self.assertEqual(expected_config, config)
@@ -52,19 +54,17 @@ class TestConfiguration(TestCase):
 
                 expected_config: Configuration = Configuration(
                     canonical_map_period=CanonicalMapPeriod(year=2025, quarter=1, map_period=6, number_of_maps=1),
-                    instruments=["Hi 90", 'Ultra 45'],
+                    instrument='Ultra 45',
                     spin_phase="Ram",
                     reference_frame="spacecraft",
                     survival_corrected=True,
-                    coordinate_system="hae",
+                    spice_frame_name="IMAP_HNU",
                     pixelation_scheme="square",
                     pixel_parameter=2,
                     map_data_type="ENA Intensity",
                     lo_species="h",
                     output_directory=Path('path/to/output'),
-                    output_files={
-                        (MappableInstrumentShortName.HI, "90"): ['hi90_map.cdf']
-                    }
+                    quantity_suffix="custom"
                 )
 
                 self.assertEqual(expected_config, config)
@@ -83,11 +83,11 @@ class TestConfiguration(TestCase):
                         map_period=6,
                         number_of_maps=1
                     ),
-                    "instruments": ["Hi 90"],
+                    "instrument": "Hi 90",
                     "spin_phase": "Ram",
                     "reference_frame": "spacecraft",
                     "survival_corrected": True,
-                    "coordinate_system": "hae",
+                    "spice_frame_name": "ECLIPJ2000",
                     "pixelation_scheme": "square",
                     "pixel_parameter": 2,
                     "map_data_type": "ENA Intensity",
@@ -98,7 +98,7 @@ class TestConfiguration(TestCase):
     @patch("mapping_tool.configuration.json.load")
     def test_from_file_fails_validation_with_invalid_config(self, mock_load):
         validation_error_cases = [
-            ("invalid instrument", {"instruments": "90"}),
+            ("invalid instrument", {"instrument": "90"}),
             ("invalid spin phase", {"spin_phase": "none"}),
             ("invalid reference frame", {"reference_frame": "spacecraft kinematic"}),
             ("invalid survival probability corrected", {"survival_corrected": "YES"}),
@@ -110,75 +110,6 @@ class TestConfiguration(TestCase):
                 with self.assertRaises(jsonschema.exceptions.ValidationError):
                     Configuration.from_file(get_example_config_path() / "test_l2_config.json")
 
-    @patch("mapping_tool.configuration.json.load")
-    def test_config_creation_fails_when_output_files_and_number_of_output_maps_differ(self, mock_load):
-
-        test_cases = [
-            ({'Hi 90': ['hi90_map.cdf'], 'Ultra 45': ['ultra45_map.cdf']}, ['Hi 90'], 1,
-             "Specified output file names for an instrument that won't be generated: Ultra 45"),
-
-            ({'Hi 90': ['hi90_map_1.cdf', 'hi90_map_2.cdf'], 'Ultra 45': ['ultra45_map.cdf']},
-             ['Hi 90', 'Ultra 45'], 1,
-             f"More Hi 90 filenames specified (2) than will be generated (1)"),
-        ]
-
-        for (output_files, instruments, number_of_maps, expected_message) in test_cases:
-            with self.subTest(expected_message):
-                config = create_config_dict({})
-                config['output_files'] = output_files
-                config['instruments'] = instruments
-                config['canonical_map_period']['number_of_maps'] = number_of_maps
-                mock_load.return_value = config
-                with self.assertRaises(ValueError) as context:
-                    Configuration.from_file(get_example_config_path() / "test_l2_config.json")
-
-                self.assertEqual(expected_message, str(context.exception))
-
-    def test_get_map_descriptors_returns_descriptors_for_each_instrument(self):
-        config: Configuration = Configuration(
-            canonical_map_period=CanonicalMapPeriod(year=2025, quarter=1, map_period=6, number_of_maps=2),
-            instruments=["hi 90", "Lo"],
-            spin_phase="Ram",
-            reference_frame="spacecraft",
-            survival_corrected=True,
-            coordinate_system="hae",
-            pixelation_scheme="square",
-            pixel_parameter=2,
-            map_data_type="ENA Intensity",
-            lo_species="h"
-        )
-
-        expected_descriptors_and_levels: list[tuple[MapDescriptor, DataLevel]] = ([
-            (MapDescriptor(
-                frame_descriptor="sf",
-                resolution_str="2deg",
-                duration="6mo",
-                instrument=MappableInstrumentShortName["HI"],
-                sensor="90",
-                principal_data="ena",
-                species="h",
-                survival_corrected="sp",
-                spin_phase="ram",
-                coordinate_system="hae"
-            ), DataLevel.L3),
-            (MapDescriptor(
-                frame_descriptor="sf",
-                resolution_str="2deg",
-                duration="6mo",
-                instrument=MappableInstrumentShortName["LO"],
-                sensor="",
-                principal_data="ena",
-                species="h",
-                survival_corrected="sp",
-                spin_phase="ram",
-                coordinate_system="hae"
-            ), DataLevel.L3)
-        ])
-
-        descriptors_and_levels = config.get_map_descriptors()
-
-        self.assertEqual(expected_descriptors_and_levels, descriptors_and_levels)
-
     def test_get_map_descriptors_frame_descriptors(self):
         cases = [
             ("spacecraft", "sf"),
@@ -189,9 +120,8 @@ class TestConfiguration(TestCase):
         for case, expected in cases:
             with self.subTest(f"{case}, {expected}"):
                 input_config = create_configuration(reference_frame=case)
-                [(descriptor, data_level)] = input_config.get_map_descriptors()
+                descriptor = input_config.get_map_descriptor()
                 self.assertEqual(expected, descriptor.frame_descriptor)
-                self.assertEqual(DataLevel.L2, data_level)
 
     def test_get_map_descriptors_principal_data(self):
         cases = [
@@ -202,9 +132,8 @@ class TestConfiguration(TestCase):
         for case, expected_descriptor, expected_data_level in cases:
             with self.subTest(f"{case}, {expected_descriptor}"):
                 input_config = create_configuration(map_data_type=case)
-                [(descriptor, data_level)] = input_config.get_map_descriptors()
+                descriptor = input_config.get_map_descriptor()
                 self.assertEqual(expected_descriptor, descriptor.principal_data)
-                self.assertEqual(expected_data_level, data_level)
 
     def test_get_map_descriptors_spin_phase(self):
         cases = [
@@ -219,21 +148,19 @@ class TestConfiguration(TestCase):
         for case, expected in cases:
             with self.subTest(f"{case}, {expected}"):
                 input_config = create_configuration(spin_phase=case)
-                [(descriptor, _)] = input_config.get_map_descriptors()
+                descriptor = input_config.get_map_descriptor()
                 self.assertEqual(expected, descriptor.spin_phase)
 
-    def test_get_map_descriptors_coordinate_system(self):
+    def test_get_map_descriptors_spice_frame_name(self):
         cases = [
-            ("HAE", "hae"),
-            ("hae", "hae"),
+            ("ECLIPJ2000", "custom"),
+            ("IMAP_HNU", "custom"),
         ]
-
-        for case, expected in cases:
-            with self.subTest(f"{case}, {expected}"):
-                input_config = create_configuration(coordinate_system=case)
-                [(descriptor, data_level)] = input_config.get_map_descriptors()
+        for spice_frame_name, expected in cases:
+            with self.subTest(f"{spice_frame_name}, {expected}"):
+                input_config = create_configuration(spice_frame_name=spice_frame_name)
+                descriptor = input_config.get_map_descriptor()
                 self.assertEqual(expected, descriptor.coordinate_system)
-                self.assertEqual(DataLevel.L2, data_level)
 
     def test_get_map_descriptors_resolution(self):
         cases = [
@@ -246,51 +173,38 @@ class TestConfiguration(TestCase):
         for scheme, parameter, expected in cases:
             with self.subTest(f"{scheme}, {parameter}, {expected}"):
                 input_config = create_configuration(pixelation_scheme=scheme, pixel_parameter=parameter)
-                [(descriptor, data_level)] = input_config.get_map_descriptors()
+                descriptor = input_config.get_map_descriptor()
                 self.assertEqual(expected, descriptor.resolution_str)
-                self.assertEqual(DataLevel.L2, data_level)
 
     def test_get_map_descriptors_instrument_and_sensor(self):
         cases = [
-            (["hi 45"], MappableInstrumentShortName.HI, "45", "h45", DataLevel.L2),
-            (["Hi 90"], MappableInstrumentShortName.HI, "90", "h90", DataLevel.L2),
-            (["hi combined"], MappableInstrumentShortName.HI, "combined", "hic", DataLevel.L3),
-            (["Ultra 45"], MappableInstrumentShortName.ULTRA, "45", "u45", DataLevel.L2),
-            (["ultra 90"], MappableInstrumentShortName.ULTRA, "90", "u90", DataLevel.L2),
-            (["Ultra combined"], MappableInstrumentShortName.ULTRA, "combined", "ulc", DataLevel.L3),
-            (["Lo"], MappableInstrumentShortName.LO, "", "ilo", DataLevel.L2),
-            (["lo"], MappableInstrumentShortName.LO, "", "ilo", DataLevel.L2),
-            (["GLOWS"], MappableInstrumentShortName.GLOWS, "", "glx", DataLevel.NA),
-            (["glows"], MappableInstrumentShortName.GLOWS, "", "glx", DataLevel.NA),
-            (["IDEX"], MappableInstrumentShortName.IDEX, "", "idx", DataLevel.L2),
-            (["idex"], MappableInstrumentShortName.IDEX, "", "idx", DataLevel.L2),
+            ("hi 45", MappableInstrumentShortName.HI, "45", "h45"),
+            ("Hi 90", MappableInstrumentShortName.HI, "90", "h90"),
+            ("hi combined", MappableInstrumentShortName.HI, "combined", "hic"),
+            ("Ultra 45", MappableInstrumentShortName.ULTRA, "45", "u45"),
+            ("ultra 90", MappableInstrumentShortName.ULTRA, "90", "u90"),
+            ("Ultra combined", MappableInstrumentShortName.ULTRA, "combined", "ulc"),
+            ("Lo", MappableInstrumentShortName.LO, "", "ilo"),
+            ("lo", MappableInstrumentShortName.LO, "", "ilo"),
+            ("GLOWS", MappableInstrumentShortName.GLOWS, "", "glx"),
+            ("glows", MappableInstrumentShortName.GLOWS, "", "glx"),
+            ("IDEX", MappableInstrumentShortName.IDEX, "", "idx"),
+            ("idex", MappableInstrumentShortName.IDEX, "", "idx"),
         ]
-        for case, instrument, sensor, instrument_descriptor, expected_data_level in cases:
+        for case, instrument, sensor, instrument_descriptor in cases:
             with self.subTest(f"{case}, {instrument}, {sensor}"):
-                input_config = create_configuration(instruments=case)
-                [(descriptor, data_level)] = input_config.get_map_descriptors()
+                input_config = create_configuration(instrument=case)
+                descriptor = input_config.get_map_descriptor()
                 self.assertEqual(instrument, descriptor.instrument)
                 self.assertEqual(sensor, descriptor.sensor)
                 self.assertEqual(instrument_descriptor, descriptor.instrument_descriptor)
-                self.assertEqual(expected_data_level, data_level)
 
-    def test_get_data_level(self):
-        cases = [
-            ("ENA Intensity", True, ["Hi 45"], DataLevel.L3),
-            ("ENA Intensity", False, ["Hi 45"], DataLevel.L2),
-            ("ENA Intensity", False, ["Hi combined"], DataLevel.L3),
-            ("Spectral Index", False, ["Hi 90"], DataLevel.L3),
-            ("Spectral Index", True, ["Hi 90"], DataLevel.L3),
-            ("Spectral Index", False, ["Lo"], DataLevel.L3),
-            ("ENA Intensity", False, ["Lo"], DataLevel.L2),
-        ]
+    def test_mapping_tool_descriptor_to_map_descriptor_string(self):
+        mapping_tool_descriptor = create_map_descriptor(quantity_suffix="suffix")
 
-        for product, sp, instrument, expected_data_level in cases:
-            with self.subTest(f"{product}, {sp}, {instrument}"):
-                input_config = create_configuration(instruments=instrument, survival_corrected=sp,
-                                                    map_data_type=product)
-                [(_, data_level)] = input_config.get_map_descriptors()
-                self.assertEqual(expected_data_level, data_level)
+        expected_map_descriptor_string = "h90-ena-h-sf-sp-ram-hae-2deg-6mo"
+        actual_map_descriptor_string = mapping_tool_descriptor.to_map_descriptor_string()
+        self.assertEqual(expected_map_descriptor_string, actual_map_descriptor_string)
 
 
 class TestCanonicalMapPeriod(TestCase):

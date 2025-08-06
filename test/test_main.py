@@ -1,31 +1,30 @@
 import json
-import os
 import subprocess
 import sys
 import tempfile
 import unittest
-from collections import defaultdict
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
-from unittest import skipIf, skip
-from unittest.mock import patch, call, sentinel, Mock
+from unittest import skip
+from unittest.mock import patch, call, Mock
 
-from imap_data_access import ScienceInput, SPICEInput
 from imap_processing.ena_maps.utils.naming import MappableInstrumentShortName
 
 import main
 from main import do_mapping_tool
-from mapping_tool.configuration import DataLevel
 from test.test_builders import create_map_descriptor
 from test.test_helpers import run_periodically
 
 
 class TestMain(unittest.TestCase):
 
+    @patch('main.CDF')
+    @patch('main.shutil.copy')
     @patch('main.generate_map')
     @patch('main.Configuration.from_file')
     @patch('main.argparse.ArgumentParser')
-    def test_do_mapping_tool(self, mock_argument_parser_class, mock_configuration_from_file, mock_generate_map):
+    def test_do_mapping_tool(self, mock_argument_parser_class, mock_configuration_from_file, mock_generate_map,
+                             mock_copy_file, mock_cdf):
         self.assertTrue(hasattr(main, "logger"))
         main.logger = Mock()
 
@@ -33,13 +32,15 @@ class TestMain(unittest.TestCase):
         mock_args = mock_argument_parser.parse_args.return_value
         mock_configuration = mock_configuration_from_file.return_value
 
-        hi_descriptor = create_map_descriptor(instrument=MappableInstrumentShortName.HI, sensor="90")
-        lo_descriptor = create_map_descriptor(instrument=MappableInstrumentShortName.LO, sensor="")
-        ultra_descriptor = create_map_descriptor(instrument=MappableInstrumentShortName.ULTRA, sensor="45")
+        hi_descriptor = create_map_descriptor(instrument=MappableInstrumentShortName.HI, sensor="90",
+                                              quantity_suffix="TEST")
 
-        mock_configuration.get_map_descriptors.return_value = [(hi_descriptor, DataLevel.L2),
-                                                               (lo_descriptor, DataLevel.L2),
-                                                               (ultra_descriptor, DataLevel.L2)]
+        mock_configuration.get_map_descriptor.return_value = hi_descriptor
+
+        mock_generate_map.side_effect = [
+            Path('path/to/cdf/imap_hi_l3_h90-ena-h-sf-sp-ram-hae-2deg-6mo_20250101_v000.cdf'),
+            Path('path/to/cdf/imap_hi_l3_h90-ena-h-sf-sp-ram-hae-2deg-6mo_20260101_v000.cdf'),
+        ]
 
         map_date_ranges = [
             (datetime(2025, 1, 1, tzinfo=timezone.utc), datetime(2026, 1, 1, tzinfo=timezone.utc)),
@@ -48,10 +49,21 @@ class TestMain(unittest.TestCase):
 
         mock_configuration.canonical_map_period.calculate_date_ranges.return_value = map_date_ranges
         mock_configuration.output_directory = Path("path/to/output")
-        mock_configuration.output_files = {(MappableInstrumentShortName.HI, "90"): ["hi_map_1.cdf", "hi_map_2.cdf"],
-                                           (MappableInstrumentShortName.LO, ""): ["lo_map_1.cdf", "lo_map_2.cdf"],
-                                           (MappableInstrumentShortName.ULTRA, "45"): ["ultra_map_1.cdf",
-                                                                                       "ultra_map_2.cdf"]}
+        mock_configuration.quantity_suffix = "TEST"
+
+        mock_cdf_file_1 = Mock()
+        mock_cdf_file_2 = Mock()
+        mock_cdf.return_value.__enter__.side_effect = [mock_cdf_file_1, mock_cdf_file_2]
+
+        mock_cdf_file_1.attrs = {
+            "Logical_source": "old logical source",
+            "Logical_file_id": "old logical file_id",
+        }
+
+        mock_cdf_file_2.attrs = {
+            "Logical_source": "old logical source",
+            "Logical_file_id": "old logical file_id",
+        }
 
         do_mapping_tool()
 
@@ -62,25 +74,32 @@ class TestMain(unittest.TestCase):
 
         mock_configuration_from_file.assert_called_once_with(mock_args.config_file)
 
-        mock_configuration.get_map_descriptors.assert_called_once()
+        mock_configuration.get_map_descriptor.assert_called_once()
         mock_configuration.canonical_map_period.calculate_date_ranges.assert_called_once()
 
         main.logger.info.assert_has_calls([
-            call('Generating map: h90-ena-h-sf-sp-ram-hae-2deg-6mo 2025-01-01 to 2026-01-01'),
-            call('Generating map: h90-ena-h-sf-sp-ram-hae-2deg-6mo 2026-01-01 to 2027-01-01'),
-            call('Generating map: ilo-ena-h-sf-sp-ram-hae-2deg-6mo 2025-01-01 to 2026-01-01'),
-            call('Generating map: ilo-ena-h-sf-sp-ram-hae-2deg-6mo 2026-01-01 to 2027-01-01'),
-            call('Generating map: u45-ena-h-sf-sp-ram-hae-2deg-6mo 2025-01-01 to 2026-01-01'),
-            call('Generating map: u45-ena-h-sf-sp-ram-hae-2deg-6mo 2026-01-01 to 2027-01-01'),
+            call('Generating map: h90-enaTEST-h-sf-sp-ram-hae-2deg-6mo 2025-01-01 to 2026-01-01'),
+            call('Generating map: h90-enaTEST-h-sf-sp-ram-hae-2deg-6mo 2026-01-01 to 2027-01-01'),
         ])
 
         mock_generate_map.assert_has_calls([
             call(hi_descriptor, map_date_ranges[0][0], map_date_ranges[0][1]),
             call(hi_descriptor, map_date_ranges[1][0], map_date_ranges[1][1]),
-            call(lo_descriptor, map_date_ranges[0][0], map_date_ranges[0][1]),
-            call(lo_descriptor, map_date_ranges[1][0], map_date_ranges[1][1]),
-            call(ultra_descriptor, map_date_ranges[0][0], map_date_ranges[0][1]),
-            call(ultra_descriptor, map_date_ranges[1][0], map_date_ranges[1][1]),
+        ])
+
+        self.assertEqual('h90-enaTEST-h-sf-sp-ram-hae-2deg-6mo', mock_cdf_file_1.attrs["Logical_source"])
+        self.assertEqual('imap_hi_l3_h90-enaTEST-h-sf-sp-ram-hae-2deg-6mo_20250101_v000',
+                         mock_cdf_file_1.attrs["Logical_file_id"])
+
+        self.assertEqual('h90-enaTEST-h-sf-sp-ram-hae-2deg-6mo', mock_cdf_file_2.attrs["Logical_source"])
+        self.assertEqual('imap_hi_l3_h90-enaTEST-h-sf-sp-ram-hae-2deg-6mo_20260101_v000',
+                         mock_cdf_file_2.attrs["Logical_file_id"])
+
+        mock_copy_file.assert_has_calls([
+            call(Path('path/to/cdf/imap_hi_l3_h90-ena-h-sf-sp-ram-hae-2deg-6mo_20250101_v000.cdf'),
+                 Path('path/to/output/imap_hi_l3_h90-enaTEST-h-sf-sp-ram-hae-2deg-6mo_20250101_v000.cdf')),
+            call(Path('path/to/cdf/imap_hi_l3_h90-ena-h-sf-sp-ram-hae-2deg-6mo_20260101_v000.cdf'),
+                 Path('path/to/output/imap_hi_l3_h90-enaTEST-h-sf-sp-ram-hae-2deg-6mo_20260101_v000.cdf')),
         ])
 
     @skip
@@ -105,9 +124,7 @@ class TestMain(unittest.TestCase):
             "map_data_type": "ENA Intensity",
             "lo_species": "h",
             "output_directory": ".",
-            "output_files": {
-                "Hi 90": ["hi90 map.cdf"]
-            }
+            "quantity_suffix": "test"
         }
 
         with tempfile.TemporaryDirectory() as temporary_directory:
