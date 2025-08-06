@@ -37,9 +37,9 @@ class TestMain(unittest.TestCase):
         lo_descriptor = create_map_descriptor(instrument=MappableInstrumentShortName.LO, sensor="")
         ultra_descriptor = create_map_descriptor(instrument=MappableInstrumentShortName.ULTRA, sensor="45")
 
-        mock_configuration.get_map_descriptors.return_value = [(hi_descriptor, DataLevel.L2),
-                                                               (lo_descriptor, DataLevel.L2),
-                                                               (ultra_descriptor, DataLevel.L2)]
+        mock_configuration.get_map_descriptors.return_value = [hi_descriptor,
+                                                               lo_descriptor,
+                                                               ultra_descriptor]
 
         map_date_ranges = [
             (datetime(2025, 1, 1, tzinfo=timezone.utc), datetime(2026, 1, 1, tzinfo=timezone.utc)),

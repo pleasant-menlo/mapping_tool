@@ -68,18 +68,8 @@ schema = {
         "survival_corrected": {
             "type": "boolean"
         },
-        "coordinate_system": {
-            "type": "string",
-            "enum": [
-                "hae",
-                "HAE",
-                "hre",
-                "HRE",
-                "gcs",
-                "GCS",
-                "hnu",
-                "HNU"
-            ]
+        "spice_frame_name": {
+            "type": "string"
         },
         "pixelation_scheme": {
             "type": "string",
@@ -207,7 +197,7 @@ schema = {
         "spin_phase",
         "reference_frame",
         "survival_corrected",
-        "coordinate_system",
+        "spice_frame_name",
         "pixelation_scheme",
         "pixel_parameter",
         "map_data_type"

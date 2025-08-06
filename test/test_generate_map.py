@@ -1,5 +1,6 @@
 import dataclasses
 import logging
+import os
 import unittest
 from datetime import datetime, timezone
 from pathlib import Path
@@ -180,8 +181,8 @@ class TestGenerateMap(unittest.TestCase):
                 ])
 
                 mock_furnsh.assert_has_calls([
-                    call('path/to/spice_file'),
-                    call('path/to/spice_file'),
+                    call(os.path.join('path', 'to', 'spice_file')),
+                    call(os.path.join('path', 'to', 'spice_file')),
                 ])
 
                 mock_processor.return_value.process.assert_called_once()

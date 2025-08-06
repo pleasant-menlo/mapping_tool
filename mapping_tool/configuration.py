@@ -13,6 +13,7 @@ from jsonschema import validate
 import yaml
 
 from mapping_tool import config_schema
+from mapping_tool.mapping_tool_descriptor import MappingToolDescriptor
 
 
 @dataclass
@@ -41,6 +42,13 @@ class DataLevel(enum.StrEnum):
     NA = 'no applicable level'
 
 
+class MapSettings:
+    descriptor: MapDescriptor
+    spice_frame: str
+    start_date: datetime
+    end_date: datetime
+
+
 @dataclass
 class Configuration:
     canonical_map_period: CanonicalMapPeriod
@@ -48,7 +56,7 @@ class Configuration:
     spin_phase: str
     reference_frame: str
     survival_corrected: bool
-    coordinate_system: str
+    spice_frame_name: str
     pixelation_scheme: str
     pixel_parameter: int
     map_data_type: str
@@ -98,7 +106,7 @@ class Configuration:
 
         return instrument, sensor
 
-    def get_map_descriptors(self) -> list[tuple[MapDescriptor, DataLevel]]:
+    def get_map_descriptors(self) -> list[MapDescriptor]:
         frame_descriptors = {
             "spacecraft": "sf",
             "heliospheric": "hf",
@@ -123,7 +131,7 @@ class Configuration:
         for instrument_sensor in self.instruments:
             instrument, sensor = self.parse_instrument(instrument_sensor)
 
-            descriptor = MapDescriptor(
+            descriptor = MappingToolDescriptor(
                 frame_descriptor=frame_descriptors[self.reference_frame],
                 resolution_str=resolution,
                 duration=duration,
@@ -133,12 +141,7 @@ class Configuration:
                 species=self.lo_species or 'h',
                 survival_corrected="sp" if self.survival_corrected else "nsp",
                 spin_phase=spin_phase[self.spin_phase.lower()],
-                coordinate_system=self.coordinate_system.lower()
+                coordinate_system="custom"
             )
-            data_level = DataLevel.L2
-            if self.survival_corrected or "combined" in sensor.lower() or self.map_data_type.lower() == "spectral index":
-                data_level = DataLevel.L3
-            elif instrument == MappableInstrumentShortName.GLOWS:
-                data_level = DataLevel.NA
-            descriptors.append((descriptor, data_level))
+            descriptors.append(descriptor)
         return descriptors
