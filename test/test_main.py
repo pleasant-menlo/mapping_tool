@@ -12,7 +12,9 @@ from imap_processing.ena_maps.utils.naming import MappableInstrumentShortName
 
 import main
 from main import do_mapping_tool
-from test.test_builders import create_map_descriptor
+from mapping_tool.mapping_tool_descriptor import MappingToolDescriptor
+from test.test_builders import create_map_descriptor, create_config_dict, create_configuration, \
+    create_canonical_map_period
 from test.test_helpers import run_periodically
 
 
@@ -28,9 +30,7 @@ class TestMain(unittest.TestCase):
         self.assertTrue(hasattr(main, "logger"))
         main.logger = Mock()
 
-        mock_argument_parser = mock_argument_parser_class.return_value
-        mock_args = mock_argument_parser.parse_args.return_value
-        mock_configuration = mock_configuration_from_file.return_value
+        mock_configuration = Mock()
 
         hi_descriptor = create_map_descriptor(instrument=MappableInstrumentShortName.HI, sensor="90",
                                               quantity_suffix="TEST")
@@ -65,14 +65,7 @@ class TestMain(unittest.TestCase):
             "Logical_file_id": "old logical file_id",
         }
 
-        do_mapping_tool()
-
-        mock_argument_parser_class.assert_called_once()
-
-        mock_argument_parser.add_argument.assert_called_once_with('config_file', type=Path)
-        mock_argument_parser.parse_args.assert_called_once()
-
-        mock_configuration_from_file.assert_called_once_with(mock_args.config_file)
+        do_mapping_tool(mock_configuration)
 
         mock_configuration.get_map_descriptor.assert_called_once()
         mock_configuration.canonical_map_period.calculate_date_ranges.assert_called_once()
@@ -100,6 +93,29 @@ class TestMain(unittest.TestCase):
                  Path('path/to/output/imap_hi_l3_h90-enaTEST-h-sf-sp-ram-hae-2deg-6mo_20250101_v000.cdf')),
             call(Path('path/to/cdf/imap_hi_l3_h90-ena-h-sf-sp-ram-hae-2deg-6mo_20260101_v000.cdf'),
                  Path('path/to/output/imap_hi_l3_h90-enaTEST-h-sf-sp-ram-hae-2deg-6mo_20260101_v000.cdf')),
+        ])
+
+    @patch('main.CDF')
+    @patch('main.shutil.copy')
+    @patch('main.generate_map')
+    def test_continues_to_generate_maps_when_one_fails(self, mock_generate_map, _mock_copy, _mock_cdf):
+        config = create_configuration(canonical_map_period=create_canonical_map_period(number_of_maps=3))
+
+        mock_generate_map.side_effect = [Path('path/to/imap_l3_hi_h90-enaCUSTOM-h-sf-nsp-ram-custom-4deg-6mo'),
+                                         Exception("failed to generate map"),
+                                         Path('path/to/other/imap_l3_hi_h90-enaCUSTOM-h-sf-nsp-ram-custom-4deg-6mo')]
+
+        do_mapping_tool(config)
+
+        map_descriptor = MappingToolDescriptor.from_string("h90-ena-h-sf-nsp-ram-custom-4deg-6mo")
+
+        mock_generate_map.assert_has_calls([
+            call(map_descriptor, datetime(2025, 1, 1, 0, 0, tzinfo=timezone.utc),
+                 datetime(2025, 7, 2, 15, 0, tzinfo=timezone.utc)),
+            call(map_descriptor, datetime(2025, 7, 2, 15, 0, tzinfo=timezone.utc),
+                 datetime(2026, 1, 1, 6, 0, tzinfo=timezone.utc)),
+            call(map_descriptor, datetime(2026, 1, 1, 6, 0, tzinfo=timezone.utc),
+                 datetime(2026, 7, 2, 21, 0, tzinfo=timezone.utc)),
         ])
 
     @run_periodically(timedelta(days=1))
