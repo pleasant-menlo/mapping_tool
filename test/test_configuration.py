@@ -199,13 +199,6 @@ class TestConfiguration(TestCase):
                 self.assertEqual(sensor, descriptor.sensor)
                 self.assertEqual(instrument_descriptor, descriptor.instrument_descriptor)
 
-    def test_mapping_tool_descriptor_to_map_descriptor_string(self):
-        mapping_tool_descriptor = create_map_descriptor(quantity_suffix="suffix")
-
-        expected_map_descriptor_string = "h90-ena-h-sf-sp-ram-hae-2deg-6mo"
-        actual_map_descriptor_string = mapping_tool_descriptor.to_map_descriptor_string()
-        self.assertEqual(expected_map_descriptor_string, actual_map_descriptor_string)
-
 
 class TestCanonicalMapPeriod(TestCase):
     def test_calculate_date_ranges(self):

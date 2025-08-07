@@ -13,7 +13,7 @@ class MappingToolDescriptor(MapDescriptor):
             self.instrument, self.sensor
         )
 
-    def to_string(self):
+    def to_mapping_tool_string(self):
         return "-".join(
             [
                 self.instrument_descriptor,
@@ -27,6 +27,3 @@ class MappingToolDescriptor(MapDescriptor):
                 str(self.duration),
             ]
         )
-
-    def to_map_descriptor_string(self):
-        return super().to_string()

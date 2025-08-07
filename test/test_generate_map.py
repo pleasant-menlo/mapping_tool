@@ -165,7 +165,7 @@ class TestGenerateMap(unittest.TestCase):
                     start_date=start_date,
                     end_date=end_date,
                     version='v000',
-                    descriptor=descriptor.to_map_descriptor_string(),
+                    descriptor=descriptor.to_string(),
                 )
 
                 actual_processing_input_collection, actual_input_metadata = mock_processor.call_args.args

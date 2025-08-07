@@ -1,7 +1,7 @@
 canonical_map_period:
   year: 2025
   quarter: 3
-  map_period: 6
+  map_period: 1
   number_of_maps: 1
 
 instrument: Hi 90
@@ -14,4 +14,4 @@ pixelation_scheme: square
 pixel_parameter: 4
 map_data_type: ENA Intensity
 lo_species: h
-quantity_suffix: CUSTOM
+quantity_suffix: SOME_CUSTOM_SUFFIX

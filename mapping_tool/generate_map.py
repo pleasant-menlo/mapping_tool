@@ -31,6 +31,13 @@ def get_dependencies_for_l3_map(map_descriptor: MappingToolDescriptor) -> list[M
     match map_descriptor:
         case MapDescriptor(principal_data="spx"):
             return [replace(map_descriptor, principal_data="ena")]
+        case MapDescriptor(sensor="combined", spin_phase="full"):
+            return [
+                replace(map_descriptor, sensor="90", spin_phase="ram"),
+                replace(map_descriptor, sensor="45", spin_phase="ram"),
+                replace(map_descriptor, sensor="90", spin_phase="anti"),
+                replace(map_descriptor, sensor="45", spin_phase="anti"),
+            ]
         case MapDescriptor(sensor="combined"):
             return [
                 replace(map_descriptor, sensor="90"),
@@ -82,7 +89,7 @@ def generate_l3_map(descriptor: MappingToolDescriptor, start: datetime, end: dat
         start_date=start,
         end_date=end,
         version='v000',
-        descriptor=descriptor.to_map_descriptor_string(),
+        descriptor=descriptor.to_string(),
     )
 
     spice_kernel_paths = DependencyCollector.collect_spice_kernels(start_date=start, end_date=end)

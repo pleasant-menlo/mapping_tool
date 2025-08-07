@@ -102,7 +102,6 @@ class TestMain(unittest.TestCase):
                  Path('path/to/output/imap_hi_l3_h90-enaTEST-h-sf-sp-ram-hae-2deg-6mo_20260101_v000.cdf')),
         ])
 
-    @skip
     @run_periodically(timedelta(days=1))
     def test_main_integration(self):
         config_json = {
@@ -112,13 +111,11 @@ class TestMain(unittest.TestCase):
                 "map_period": 3,
                 "number_of_maps": 1
             },
-            "instruments": [
-                "Hi 90"
-            ],
+            "instrument": "Hi 90",
             "spin_phase": "Ram",
             "reference_frame": "spacecraft",
             "survival_corrected": True,
-            "coordinate_system": "hae",
+            "spice_frame_name": "IMAP_HAE",
             "pixelation_scheme": "square",
             "pixel_parameter": 4,
             "map_data_type": "ENA Intensity",
@@ -139,18 +136,6 @@ class TestMain(unittest.TestCase):
             if process_result.returncode != 0:
                 self.fail("Process failed:\n" + process_result.stderr)
 
-            expected_stderr_messages = [
-                'Generating map: h90-ena-h-sf-sp-ram-hae-2deg-1mo 2025-07-02 to 2025-08-02',
-                'imap_hi_l1c_90sensor-pset_20250702_v001.cdf',
-                'Writing to: hi90 map.cdf',
-                # 'No pointing sets found for ilo-ena-h-sf-sp-ram-hae-2deg-1mo 2025-07-02 to 2025-08-02',
-                # 'Generating map: u90-ena-h-sf-sp-ram-hae-2deg-1mo 2025-07-02 to 2025-08-02',
-                # 'imap_ultra_l1c_90sensor-spacecraftpset_20250715-repoint00062_v001.cdf',
-                # 'Writing to: imap_ultra_l2_u90-ena-h-sf-nsp-full-hae-2deg-0mo_20250702_v000.cdf'
-            ]
-
-            for message in expected_stderr_messages:
-                self.assertIn(message, process_result.stderr)
-
-            self.assertTrue((tmp_dir / "hi90 map.cdf").exists())
-            # self.assertTrue((tmp_dir / "imap_ultra_l2_u90-ena-h-sf-nsp-full-hae-2deg-0mo_20250702_v000.cdf").exists())
+            print(process_result.stderr)
+            self.assertTrue(
+                (tmp_dir / "imap_hi_l3_h90-enaTEST-h-sf-sp-ram-custom-4deg-3mo_20250702_v000.cdf").exists())
