@@ -1,7 +1,10 @@
 import logging
 import shutil
+import traceback
+from datetime import datetime
 
-from mapping_tool.generate_map import generate_map
+from mapping_tool.generate_map import generate_map, get_dependencies_for_l3_map, get_data_level_for_descriptor
+from mapping_tool.mapping_tool_descriptor import MappingToolDescriptor
 
 logger = logging.getLogger(__name__)
 
@@ -12,6 +15,19 @@ from pathlib import Path
 from spacepy.pycdf import CDF
 
 from mapping_tool.configuration import Configuration
+
+from imap_data_access import ScienceFilePath
+
+
+def cleanup_l2_l3_dependencies(descriptor: MappingToolDescriptor, start_date: datetime):
+    data_level = get_data_level_for_descriptor(descriptor)
+    filename = f"imap_{descriptor.instrument.name.lower()}_{data_level}_{descriptor.to_string()}_{start_date.strftime("%Y%m%d")}_v000.cdf"
+    file_path = ScienceFilePath(filename)
+    file_path.construct_path().unlink(missing_ok=True)
+
+    dependencies = get_dependencies_for_l3_map(descriptor)
+    for dependency in dependencies:
+        cleanup_l2_l3_dependencies(dependency, start_date)
 
 
 def do_mapping_tool(config: Configuration):
@@ -31,8 +47,10 @@ def do_mapping_tool(config: Configuration):
             with CDF(str(output_path), readonly=False) as cdf:
                 cdf.attrs['Logical_source'] = descriptor.to_mapping_tool_string()
                 cdf.attrs['Logical_file_id'] = output_path.stem
-        except Exception as _:
-            logger.error(f"Failed to generate map: {map_details}")
+        except Exception:
+            logger.error(f"Failed to generate map: {map_details} with error\n{traceback.format_exc()}")
+        finally:
+            cleanup_l2_l3_dependencies(descriptor, start_date)
 
 
 if __name__ == "__main__":

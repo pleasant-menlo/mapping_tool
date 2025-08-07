@@ -5,13 +5,13 @@ import tempfile
 import unittest
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
-from unittest import skip
 from unittest.mock import patch, call, Mock
+import imap_data_access
 
 from imap_processing.ena_maps.utils.naming import MappableInstrumentShortName
 
 import main
-from main import do_mapping_tool
+from main import do_mapping_tool, cleanup_l2_l3_dependencies
 from mapping_tool.mapping_tool_descriptor import MappingToolDescriptor
 from test.test_builders import create_map_descriptor, create_config_dict, create_configuration, \
     create_canonical_map_period
@@ -97,8 +97,10 @@ class TestMain(unittest.TestCase):
 
     @patch('main.CDF')
     @patch('main.shutil.copy')
+    @patch('main.cleanup_l2_l3_dependencies')
     @patch('main.generate_map')
-    def test_continues_to_generate_maps_when_one_fails(self, mock_generate_map, _mock_copy, _mock_cdf):
+    def test_continues_to_generate_maps_when_one_fails(self, mock_generate_map, mock_cleanup_l2_l3_dependencies,
+                                                       _mock_copy, _mock_cdf):
         config = create_configuration(canonical_map_period=create_canonical_map_period(number_of_maps=3))
 
         mock_generate_map.side_effect = [Path('path/to/imap_l3_hi_h90-enaCUSTOM-h-sf-nsp-ram-custom-4deg-6mo'),
@@ -117,6 +119,34 @@ class TestMain(unittest.TestCase):
             call(map_descriptor, datetime(2026, 1, 1, 6, 0, tzinfo=timezone.utc),
                  datetime(2026, 7, 2, 21, 0, tzinfo=timezone.utc)),
         ])
+
+        mock_cleanup_l2_l3_dependencies.assert_has_calls([
+            call(map_descriptor, datetime(2025, 1, 1, 0, 0, tzinfo=timezone.utc)),
+            call(map_descriptor, datetime(2025, 7, 2, 15, 0, tzinfo=timezone.utc)),
+            call(map_descriptor, datetime(2026, 1, 1, 6, 0, tzinfo=timezone.utc))
+
+        ])
+
+    @patch("main.Path.unlink", autospec=True)
+    def test_cleanup_dependencies(self, mock_unlink):
+        test_deletes_stuff_here = Path("/hopefully/no/one/has/this/dir")
+        imap_data_access.config["DATA_DIR"] = test_deletes_stuff_here
+
+        descriptor = MappingToolDescriptor.from_string("h90-ena-h-sf-sp-full-custom-4deg-6mo")
+        start_date = "20250606"
+
+        cleanup_l2_l3_dependencies(descriptor, datetime.strptime(start_date, "%Y%m%d"))
+
+        l2_imap_data_folder_path = test_deletes_stuff_here / "imap/hi/l2/2025/06/"
+        l3_imap_data_folder_path = test_deletes_stuff_here / "imap/hi/l3/2025/06/"
+
+        # @formatter:off
+        mock_unlink.assert_has_calls([
+            call(l3_imap_data_folder_path / "imap_hi_l3_h90-ena-h-sf-sp-full-custom-4deg-6mo_20250606_v000.cdf", missing_ok=True),
+            call(l2_imap_data_folder_path / "imap_hi_l2_h90-ena-h-sf-nsp-ram-custom-4deg-6mo_20250606_v000.cdf", missing_ok=True),
+            call(l2_imap_data_folder_path / "imap_hi_l2_h90-ena-h-sf-nsp-anti-custom-4deg-6mo_20250606_v000.cdf", missing_ok=True)
+        ])
+        # @formatter:on
 
     @run_periodically(timedelta(days=1))
     def test_main_integration(self):

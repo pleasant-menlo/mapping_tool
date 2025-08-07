@@ -1,7 +1,7 @@
 canonical_map_period:
   year: 2025
   quarter: 3
-  map_period: 1
+  map_period: 3
   number_of_maps: 1
 
 instrument: Hi 90
