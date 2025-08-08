@@ -16,14 +16,35 @@ from spacepy.pycdf import CDF
 
 from mapping_tool.configuration import Configuration
 
+import imap_data_access
 from imap_data_access import ScienceFilePath
+
+
+def prune_empty_data_dir_folders(folder_path: Path):
+    data_dir_path = imap_data_access.config["DATA_DIR"]
+
+    assert folder_path.is_relative_to(data_dir_path), ValueError(
+        "Meant to be called only on paths within the imap data directory!")
+
+    if not folder_path.exists() or folder_path.name == "imap":
+        return
+
+    for file in folder_path.rglob("*"):
+        if file.is_file():
+            break
+    else:
+        folder_path.rmdir()
+        prune_empty_data_dir_folders(folder_path.parent)
 
 
 def cleanup_l2_l3_dependencies(descriptor: MappingToolDescriptor, start_date: datetime):
     data_level = get_data_level_for_descriptor(descriptor)
     filename = f"imap_{descriptor.instrument.name.lower()}_{data_level}_{descriptor.to_string()}_{start_date.strftime("%Y%m%d")}_v000.cdf"
-    file_path = ScienceFilePath(filename)
-    file_path.construct_path().unlink(missing_ok=True)
+    science_file_path = ScienceFilePath(filename)
+    file_path = science_file_path.construct_path()
+
+    file_path.unlink(missing_ok=True)
+    prune_empty_data_dir_folders(file_path.parent)
 
     dependencies = get_dependencies_for_l3_map(descriptor)
     for dependency in dependencies:

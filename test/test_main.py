@@ -23,10 +23,8 @@ class TestMain(unittest.TestCase):
     @patch('main.CDF')
     @patch('main.shutil.copy')
     @patch('main.generate_map')
-    @patch('main.Configuration.from_file')
-    @patch('main.argparse.ArgumentParser')
-    def test_do_mapping_tool(self, mock_argument_parser_class, mock_configuration_from_file, mock_generate_map,
-                             mock_copy_file, mock_cdf):
+    @patch('main.cleanup_l2_l3_dependencies')
+    def test_do_mapping_tool(self, mock_cleanup, mock_generate_map, mock_copy_file, mock_cdf):
         self.assertTrue(hasattr(main, "logger"))
         main.logger = Mock()
 
@@ -95,6 +93,11 @@ class TestMain(unittest.TestCase):
                  Path('path/to/output/imap_hi_l3_h90-enaTEST-h-sf-sp-ram-hae-2deg-6mo_20260101_v000.cdf')),
         ])
 
+        mock_cleanup.assert_has_calls([
+            call(hi_descriptor, map_date_ranges[0][0]),
+            call(hi_descriptor, map_date_ranges[1][0]),
+        ])
+
     @patch('main.CDF')
     @patch('main.shutil.copy')
     @patch('main.cleanup_l2_l3_dependencies')
@@ -127,26 +130,51 @@ class TestMain(unittest.TestCase):
 
         ])
 
-    @patch("main.Path.unlink", autospec=True)
-    def test_cleanup_dependencies(self, mock_unlink):
-        test_deletes_stuff_here = Path("/hopefully/no/one/has/this/dir")
-        imap_data_access.config["DATA_DIR"] = test_deletes_stuff_here
+    def test_cleanup_dependencies(self):
+        for one_of_the_deps_failed_to_generate in [True, False]:
+            with self.subTest(f"One of the dependencies failed to generate: {one_of_the_deps_failed_to_generate}"):
+                original_imap_data_dir = imap_data_access.config["DATA_DIR"]
+                try:
+                    with tempfile.TemporaryDirectory() as tmpdir:
+                        test_deletes_stuff_here = Path(tmpdir)
+                        imap_data_access.config["DATA_DIR"] = test_deletes_stuff_here
 
-        descriptor = MappingToolDescriptor.from_string("h90-ena-h-sf-sp-full-custom-4deg-6mo")
-        start_date = "20250606"
+                        descriptor = MappingToolDescriptor.from_string("h90-ena-h-sf-sp-full-custom-4deg-6mo")
+                        start_date = "20250606"
 
-        cleanup_l2_l3_dependencies(descriptor, datetime.strptime(start_date, "%Y%m%d"))
+                        l1c_dir = test_deletes_stuff_here / "imap/hi/l1c/2025/06"
+                        l2_imap_data_folder_path = test_deletes_stuff_here / "imap/hi/l2/2025/06/"
+                        l3_imap_data_folder_path = test_deletes_stuff_here / "imap/hi/l3/2025/06/"
+                        l1c_dir.mkdir(parents=True)
+                        l2_imap_data_folder_path.mkdir(parents=True)
 
-        l2_imap_data_folder_path = test_deletes_stuff_here / "imap/hi/l2/2025/06/"
-        l3_imap_data_folder_path = test_deletes_stuff_here / "imap/hi/l3/2025/06/"
+                        l3 = l3_imap_data_folder_path / "imap_hi_l3_h90-ena-h-sf-sp-full-custom-4deg-6mo_20250606_v000.cdf"
+                        l2_ram = l2_imap_data_folder_path / "imap_hi_l2_h90-ena-h-sf-nsp-ram-custom-4deg-6mo_20250606_v000.cdf"
+                        l2_anti = l2_imap_data_folder_path / "imap_hi_l2_h90-ena-h-sf-nsp-anti-custom-4deg-6mo_20250606_v000.cdf"
+                        l1c = l1c_dir / "imap_hi_l1c_pset_20250606_v000.cdf"
 
-        # @formatter:off
-        mock_unlink.assert_has_calls([
-            call(l3_imap_data_folder_path / "imap_hi_l3_h90-ena-h-sf-sp-full-custom-4deg-6mo_20250606_v000.cdf", missing_ok=True),
-            call(l2_imap_data_folder_path / "imap_hi_l2_h90-ena-h-sf-nsp-ram-custom-4deg-6mo_20250606_v000.cdf", missing_ok=True),
-            call(l2_imap_data_folder_path / "imap_hi_l2_h90-ena-h-sf-nsp-anti-custom-4deg-6mo_20250606_v000.cdf", missing_ok=True)
-        ])
-        # @formatter:on
+                        if not one_of_the_deps_failed_to_generate:
+                            l3_imap_data_folder_path.mkdir(parents=True)
+                            l3.touch()
+
+                        l2_ram.touch()
+                        l2_anti.touch()
+                        l1c.touch()
+
+                        cleanup_l2_l3_dependencies(descriptor, datetime.strptime(start_date, "%Y%m%d"))
+
+                        data_folder = test_deletes_stuff_here / "imap"
+                        expected_folder_structure = [
+                            data_folder / "hi",
+                            data_folder / "hi/l1c",
+                            data_folder / "hi/l1c/2025",
+                            data_folder / "hi/l1c/2025/06",
+                            data_folder / "hi/l1c/2025/06/imap_hi_l1c_pset_20250606_v000.cdf",
+                        ]
+
+                        self.assertEqual(expected_folder_structure, list(data_folder.rglob("*")))
+                finally:
+                    imap_data_access.config["DATA_DIR"] = original_imap_data_dir
 
     @run_periodically(timedelta(days=1))
     def test_main_integration(self):
@@ -177,7 +205,7 @@ class TestMain(unittest.TestCase):
                 json.dump(config_json, config_file)
 
             process_result = subprocess.run([sys.executable, main.__file__, "config.json"], cwd=temporary_directory,
-                                            text=True, capture_output=True)
+                                            text=True)
 
             if process_result.returncode != 0:
                 self.fail("Process failed:\n" + process_result.stderr)
