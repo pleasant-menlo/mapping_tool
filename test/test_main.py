@@ -176,6 +176,19 @@ class TestMain(unittest.TestCase):
                 finally:
                     imap_data_access.config["DATA_DIR"] = original_imap_data_dir
 
+    @patch("main.generate_map")
+    def test_tool_does_not_generate_map_if_file_already_exists(self, mock_generate_map):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            config = create_configuration(output_directory=Path(tmpdir))
+            existing_file = Path(
+                tmpdir) / f"imap_hi_l2_{config.get_map_descriptor().to_mapping_tool_string()}_20250101_v000.cdf"
+            existing_file.write_text("text")
+
+            do_mapping_tool(config)
+
+            mock_generate_map.assert_not_called()
+            self.assertEqual("text", existing_file.read_text())
+
     @run_periodically(timedelta(days=1))
     def test_main_integration(self):
         config_json = {

@@ -1,3 +1,4 @@
+from pathlib import Path
 from typing import Dict, Optional, Literal
 
 from imap_processing.ena_maps.utils.naming import MappableInstrumentShortName, MapDescriptor
@@ -72,6 +73,7 @@ def create_configuration(
         pixel_parameter: int = 4,
         map_data_type: str = "ENA Intensity",
         lo_species: str = "h",
+        output_directory: Path = Path(".")
 ):
     canonical_period = canonical_map_period if canonical_map_period is not None else create_canonical_map_period()
     instrument = instrument or "Hi 90"
@@ -86,6 +88,7 @@ def create_configuration(
         pixel_parameter=pixel_parameter,
         map_data_type=map_data_type,
         lo_species=lo_species,
+        output_directory=output_directory
     )
 
 

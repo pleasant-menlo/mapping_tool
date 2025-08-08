@@ -37,6 +37,11 @@ def prune_empty_data_dir_folders(folder_path: Path):
         prune_empty_data_dir_folders(folder_path.parent)
 
 
+def get_output_filename(descriptor: MappingToolDescriptor, start_date: datetime):
+    data_level = get_data_level_for_descriptor(descriptor)
+    return f"imap_{descriptor.instrument.name.lower()}_{data_level}_{descriptor.to_mapping_tool_string()}_{start_date.strftime("%Y%m%d")}_v000.cdf"
+
+
 def cleanup_l2_l3_dependencies(descriptor: MappingToolDescriptor, start_date: datetime):
     data_level = get_data_level_for_descriptor(descriptor)
     filename = f"imap_{descriptor.instrument.name.lower()}_{data_level}_{descriptor.to_string()}_{start_date.strftime("%Y%m%d")}_v000.cdf"
@@ -57,6 +62,11 @@ def do_mapping_tool(config: Configuration):
     descriptor = config.get_map_descriptor()
     for start_date, end_date in map_date_ranges:
         map_details = f'{descriptor.to_mapping_tool_string()} {start_date.strftime("%Y-%m-%d")} to {end_date.strftime("%Y-%m-%d")}'
+
+        output_filename = get_output_filename(descriptor, start_date)
+        if (config.output_directory / output_filename).exists():
+            logger.info(f"Skipping generation of map: {output_filename}, because it already exists!")
+            continue
 
         logger.info(f"Generating map: {map_details}")
         try:
