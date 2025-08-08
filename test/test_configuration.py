@@ -35,7 +35,8 @@ class TestConfiguration(TestCase):
                     map_data_type="ENA Intensity",
                     lo_species=None,
                     output_directory=Path('.'),
-                    quantity_suffix="CUSTOM"
+                    quantity_suffix="CUSTOM",
+                    kernel_path=Path("path/to/another_kernel")
                 )
 
                 self.assertEqual(expected_config, config)
@@ -64,7 +65,8 @@ class TestConfiguration(TestCase):
                     map_data_type="ENA Intensity",
                     lo_species="h",
                     output_directory=Path('path/to/output'),
-                    quantity_suffix="custom"
+                    quantity_suffix="custom",
+                    kernel_path=Path("path/to/kernel")
                 )
 
                 self.assertEqual(expected_config, config)
@@ -91,6 +93,7 @@ class TestConfiguration(TestCase):
                     "pixelation_scheme": "square",
                     "pixel_parameter": 2,
                     "map_data_type": "ENA Intensity",
+                    "kernel_path": Path("path/to/another_kernel")
                 }
 
                 mock_validate.assert_called_with(expected_config, config_schema.schema)
@@ -151,14 +154,14 @@ class TestConfiguration(TestCase):
                 descriptor = input_config.get_map_descriptor()
                 self.assertEqual(expected, descriptor.spin_phase)
 
-    def test_get_map_descriptors_spice_frame_name(self):
+    def test_get_map_descriptors_spice_frame_name_and_path(self):
         cases = [
-            ("ECLIPJ2000", "custom"),
-            ("IMAP_HNU", "custom"),
+            ("ECLIPJ2000", Path("path_to_kernel"), "custom"),
+            ("IMAP_HNU", Path("path_to_kernel_again"), "custom"),
         ]
-        for spice_frame_name, expected in cases:
+        for spice_frame_name, spice_path, expected in cases:
             with self.subTest(f"{spice_frame_name}, {expected}"):
-                input_config = create_configuration(spice_frame_name=spice_frame_name)
+                input_config = create_configuration(spice_frame_name=spice_frame_name, custom_spice_path=spice_path)
                 descriptor = input_config.get_map_descriptor()
                 self.assertEqual(expected, descriptor.coordinate_system)
 

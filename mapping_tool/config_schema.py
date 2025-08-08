@@ -111,6 +111,9 @@ schema = {
         "quantity_suffix": {
             "type": "string",
             "pattern": "[a-zA-Z]*"
+        },
+        "kernel_path": {
+            "type": "string",
         }
     },
     "required": [

@@ -61,6 +61,7 @@ class Configuration:
     pixelation_scheme: str
     pixel_parameter: int
     map_data_type: str
+    kernel_path: Path = None
     lo_species: Optional[str] = None
     output_directory: Optional[Path] = Path('.')
     quantity_suffix: str = 'CUSTOM'
@@ -79,6 +80,8 @@ class Configuration:
             config["canonical_map_period"] = CanonicalMapPeriod(**config["canonical_map_period"])
             if config.get("output_directory") is not None:
                 config["output_directory"] = Path(config["output_directory"])
+            if config.get("kernel_path") is not None:
+                config["kernel_path"] = Path(config["kernel_path"])
             return cls(**config)
 
     @classmethod

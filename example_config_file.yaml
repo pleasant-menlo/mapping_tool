@@ -4,14 +4,15 @@ canonical_map_period:
   map_period: 3
   number_of_maps: 1
 
-instrument: Hi 90
+instrument: Ultra 90
 
 spin_phase: Full spin
 reference_frame: spacecraft
-survival_corrected: true
-spice_frame_name: IMAP_HAE
+survival_corrected: false
+spice_frame_name: IMAP_GCS
 pixelation_scheme: square
 pixel_parameter: 4
 map_data_type: ENA Intensity
 lo_species: h
-quantity_suffix: SOME_CUSTOM_SUFFIX
+quantity_suffix: SUFFIX
+kernel_path: "./imap_science_100.tf"

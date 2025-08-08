@@ -13,3 +13,4 @@ spice_frame_name: ECLIPJ2000
 pixelation_scheme: square
 pixel_parameter: 2
 map_data_type: ENA Intensity
+kernel_path: path/to/another_kernel

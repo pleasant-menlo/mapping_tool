@@ -15,6 +15,7 @@
   "map_data_type": "ENA Intensity",
   "lo_species": "h",
   "output_directory": "path/to/output",
-  "quantity_suffix": "custom"
+  "quantity_suffix": "custom",
+  "kernel_path": "path/to/kernel"
 }
 

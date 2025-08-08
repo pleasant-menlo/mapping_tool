@@ -20,7 +20,8 @@ def create_map_descriptor(
         spin_phase: str = "ram",
         coordinate_system: str = "hae",
         quantity_suffix: str = "CUSTOM",
-        spice_frame: SpiceFrame = SpiceFrame.ECLIPJ2000
+        spice_frame: SpiceFrame = SpiceFrame.ECLIPJ2000,
+        custom_spice_path: Optional[Path] = None
 ):
     return MappingToolDescriptor(
         frame_descriptor=frame_descriptor,
@@ -35,29 +36,7 @@ def create_map_descriptor(
         coordinate_system=coordinate_system,
         quantity_suffix=quantity_suffix,
         spice_frame=spice_frame,
-    )
-
-
-def create_l2_map_descriptor(
-        frame_descriptor: Literal["sf", "hf", "hk"] = "sf",
-        resolution_str: str = "2deg",
-        duration: str = "6mo",
-        instrument: MappableInstrumentShortName = MappableInstrumentShortName["HI"],
-        sensor: str = "90",
-        species: str = "h",
-        spin_phase: str = "ram",
-        coordinate_system: str = "hae"
-):
-    return create_map_descriptor(
-        frame_descriptor=frame_descriptor,
-        resolution_str=resolution_str,
-        duration=duration,
-        instrument=instrument,
-        sensor=sensor,
-        species=species,
-        spin_phase=spin_phase,
-        coordinate_system=coordinate_system,
-        survival_corrected="nsp"
+        kernel_path=custom_spice_path
     )
 
 
@@ -76,7 +55,8 @@ def create_configuration(
         pixel_parameter: int = 4,
         map_data_type: str = "ENA Intensity",
         lo_species: str = "h",
-        output_directory: Path = Path(".")
+        output_directory: Path = Path("."),
+        custom_spice_path: Optional[Path] = None
 ):
     canonical_period = canonical_map_period if canonical_map_period is not None else create_canonical_map_period()
     instrument = instrument or "Hi 90"
@@ -91,7 +71,8 @@ def create_configuration(
         pixel_parameter=pixel_parameter,
         map_data_type=map_data_type,
         lo_species=lo_species,
-        output_directory=output_directory
+        output_directory=output_directory,
+        custom_spice_path=custom_spice_path
     )
 
 

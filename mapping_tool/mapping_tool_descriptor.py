@@ -1,4 +1,6 @@
 from dataclasses import dataclass
+from pathlib import Path
+from typing import Optional
 
 from imap_processing.ena_maps.utils.naming import MapDescriptor
 from imap_processing.spice.geometry import SpiceFrame
@@ -8,6 +10,7 @@ from imap_processing.spice.geometry import SpiceFrame
 class MappingToolDescriptor(MapDescriptor):
     quantity_suffix: str = "CUSTOM"
     spice_frame: SpiceFrame = SpiceFrame.ECLIPJ2000
+    kernel_path: Optional[Path] = None
 
     def __post_init__(self) -> None:
         self.duration = MapDescriptor.parse_map_duration(self.duration)

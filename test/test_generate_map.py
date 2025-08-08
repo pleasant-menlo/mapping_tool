@@ -14,7 +14,7 @@ from imap_processing.spice.geometry import SpiceFrame
 from mapping_tool.configuration import DataLevel
 from mapping_tool.generate_map import get_dependencies_for_l3_map, get_data_level_for_descriptor, generate_l3_map, \
     generate_l2_map, generate_map, CustomSpiceFrame
-from test.test_builders import create_map_descriptor, create_l2_map_descriptor
+from test.test_builders import create_map_descriptor
 
 
 class TestGenerateMap(unittest.TestCase):
@@ -233,29 +233,33 @@ class TestGenerateMap(unittest.TestCase):
         self.assertIn(f"Processing for {hi_descriptor.to_string()} failed",
                       str(e.exception.__notes__))
 
+    @patch("mapping_tool.generate_map.spiceypy")
     @patch("mapping_tool.generate_map.DependencyCollector.collect_spice_kernels")
     @patch("mapping_tool.generate_map.DependencyCollector.get_pointing_sets")
     @patch("mapping_tool.generate_map.Hi")
     @patch("mapping_tool.generate_map.Lo")
     @patch("mapping_tool.generate_map.Ultra")
-    def test_generate_l2_map(self, mock_ultra, mock_lo, mock_hi, mock_get_pointing_sets, mock_collect_spice_kernels):
+    def test_generate_l2_map(self, mock_ultra, mock_lo, mock_hi, mock_get_pointing_sets, mock_collect_spice_kernels,
+                             mock_spiceypy):
         mock_collect_spice_kernels.return_value = ["imap_science_0001.tf", "imap_sclk_0000.tsc"]
         mock_get_pointing_sets.return_value = ["imap_hi_l1c_pset-1_20250101_v000.cdf",
                                                "imap_hi_l1c_pset-2_20250101_v000.cdf"]
-        hi_descriptor = create_l2_map_descriptor(instrument=MappableInstrumentShortName.HI)
-        lo_descriptor = create_l2_map_descriptor(instrument=MappableInstrumentShortName.LO)
-        ultra_descriptor = create_l2_map_descriptor(instrument=MappableInstrumentShortName.ULTRA)
+        hi_descriptor = create_map_descriptor(instrument=MappableInstrumentShortName.HI, survival_corrected="nsp",
+                                              custom_spice_path=Path("path1"))
+        lo_descriptor = create_map_descriptor(instrument=MappableInstrumentShortName.LO, survival_corrected="nsp",
+                                              custom_spice_path=Path("path2"))
+        ultra_descriptor = create_map_descriptor(instrument=MappableInstrumentShortName.ULTRA, survival_corrected="nsp")
 
         cases = [
-            (hi_descriptor, mock_hi,),
-            (lo_descriptor, mock_lo),
-            (ultra_descriptor, mock_ultra),
+            (hi_descriptor, mock_hi, 1),
+            (lo_descriptor, mock_lo, 0),
+            (ultra_descriptor, mock_ultra, 0),
         ]
 
         start_date = datetime(2020, 1, 1)
         end_date = datetime(2020, 1, 2)
 
-        for descriptor, mock_processor_class in cases:
+        for descriptor, mock_processor_class, num_furnsh_calls in cases:
             with self.subTest(descriptor.to_string()):
                 mock_collect_spice_kernels.reset_mock()
                 mock_get_pointing_sets.reset_mock()
@@ -295,6 +299,12 @@ class TestGenerateMap(unittest.TestCase):
                 mock_processor.cleanup.assert_called_once()
 
                 self.assertEqual(expected_map, actual_map)
+
+        mock_spiceypy.furnsh.assert_has_calls([
+            call("path1"),
+            call("path2")
+        ])
+        self.assertEqual(2, mock_spiceypy.furnsh.call_count)
 
     @patch("mapping_tool.generate_map.DependencyCollector.collect_spice_kernels")
     @patch("mapping_tool.generate_map.DependencyCollector.get_pointing_sets")
