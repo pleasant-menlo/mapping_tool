@@ -174,6 +174,7 @@ class TestGenerateMap(unittest.TestCase):
                 self.assertEqual(expected_science_inputs, actual_input_filename_lists)
                 self.assertEqual(expected_input_metadata, actual_input_metadata)
 
+                mock_processor.return_value.process.assert_called_once_with(descriptor.spice_frame)
                 mock_collect_spice_kernels.assert_called_once_with(start_date=start_date, end_date=end_date)
 
                 mock_download.assert_has_calls([

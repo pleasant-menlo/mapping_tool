@@ -8,6 +8,7 @@ from imap_processing.ena_maps.utils.naming import MapDescriptor, MappableInstrum
 
 from pathlib import Path
 
+from imap_processing.spice.geometry import SpiceFrame
 from jsonschema import validate
 
 import yaml
@@ -115,6 +116,11 @@ class Configuration:
 
         instrument, sensor = self.parse_instrument(self.instrument)
 
+        try:
+            spice_frame = SpiceFrame[self.spice_frame_name]
+        except KeyError:
+            raise ValueError(f'Unknown Spice Frame {self.spice_frame_name}')
+
         return MappingToolDescriptor(
             frame_descriptor=frame_descriptors[self.reference_frame],
             resolution_str=resolution,
@@ -126,5 +132,6 @@ class Configuration:
             species=self.lo_species or 'h',
             survival_corrected="sp" if self.survival_corrected else "nsp",
             spin_phase=spin_phase[self.spin_phase.lower()],
-            coordinate_system="custom"
+            coordinate_system="custom",
+            spice_frame=spice_frame,
         )

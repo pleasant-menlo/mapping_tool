@@ -1,11 +1,13 @@
 from dataclasses import dataclass
 
 from imap_processing.ena_maps.utils.naming import MapDescriptor
+from imap_processing.spice.geometry import SpiceFrame
 
 
 @dataclass
 class MappingToolDescriptor(MapDescriptor):
     quantity_suffix: str = "CUSTOM"
+    spice_frame: SpiceFrame = SpiceFrame.ECLIPJ2000
 
     def __post_init__(self) -> None:
         self.duration = MapDescriptor.parse_map_duration(self.duration)

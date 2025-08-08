@@ -2,6 +2,7 @@ from pathlib import Path
 from typing import Dict, Optional, Literal
 
 from imap_processing.ena_maps.utils.naming import MappableInstrumentShortName, MapDescriptor
+from imap_processing.spice.geometry import SpiceFrame
 
 from mapping_tool.configuration import Configuration, CanonicalMapPeriod
 from mapping_tool.mapping_tool_descriptor import MappingToolDescriptor
@@ -18,7 +19,8 @@ def create_map_descriptor(
         survival_corrected: str = "sp",
         spin_phase: str = "ram",
         coordinate_system: str = "hae",
-        quantity_suffix: str = "CUSTOM"
+        quantity_suffix: str = "CUSTOM",
+        spice_frame: SpiceFrame = SpiceFrame.ECLIPJ2000
 ):
     return MappingToolDescriptor(
         frame_descriptor=frame_descriptor,
@@ -32,6 +34,7 @@ def create_map_descriptor(
         spin_phase=spin_phase,
         coordinate_system=coordinate_system,
         quantity_suffix=quantity_suffix,
+        spice_frame=spice_frame,
     )
 
 

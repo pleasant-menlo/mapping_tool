@@ -162,6 +162,15 @@ class TestConfiguration(TestCase):
                 descriptor = input_config.get_map_descriptor()
                 self.assertEqual(expected, descriptor.coordinate_system)
 
+    def test_get_map_descriptors_raises_error_for_invalid_spice_frame_name(self):
+        spice_frame_name = "Bad"
+        input_config = create_configuration(spice_frame_name=spice_frame_name)
+
+        with self.assertRaises(ValueError) as error:
+            _ = input_config.get_map_descriptor()
+
+        self.assertEqual(str(error.exception), f"Unknown Spice Frame {spice_frame_name}")
+
     def test_get_map_descriptors_resolution(self):
         cases = [
             ("square", 2, "2deg"),

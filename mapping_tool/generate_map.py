@@ -105,7 +105,7 @@ def generate_l3_map(descriptor: MappingToolDescriptor, start: datetime, end: dat
     )
 
     try:
-        processed_files = processor.process()
+        processed_files = processor.process(descriptor.spice_frame)
     except Exception as e:
         e.add_note(f"Processing for {descriptor.to_string()} failed")
         raise e
