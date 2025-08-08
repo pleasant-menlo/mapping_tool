@@ -309,12 +309,12 @@ class TestGenerateMap(unittest.TestCase):
 
         start_date = datetime(2020, 1, 1)
         end_date = datetime(2020, 1, 2)
-        descriptor = create_l2_map_descriptor(instrument=MappableInstrumentShortName.HI,
-                                              coordinate_system="SOME_CUSTOM_FRAME")
+        descriptor = create_map_descriptor(instrument=MappableInstrumentShortName.HI,
+                                           spice_frame=SpiceFrame.IMAP_RTN)
 
         def mock_do_processing(deps):
             self.assertEqual(deps, mock_hi_processor.pre_processing.return_value)
-            self.assertEqual(CustomSpiceFrame("SOME_CUSTOM_FRAME"),
+            self.assertEqual(SpiceFrame.IMAP_RTN,
                              MapDescriptor.from_string(descriptor.to_string()).map_spice_coord_frame)
 
         mock_hi_processor.post_processing.return_value = [Path("some_path")]
