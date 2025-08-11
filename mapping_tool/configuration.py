@@ -65,6 +65,7 @@ class Configuration:
     lo_species: Optional[str] = None
     output_directory: Optional[Path] = Path('.')
     quantity_suffix: str = 'CUSTOM'
+    custom_spice_path: str = None
 
     @classmethod
     def from_file(cls, config_path: Path):

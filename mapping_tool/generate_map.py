@@ -152,9 +152,7 @@ def generate_l2_map(descriptor: MappingToolDescriptor, start_date: datetime, end
         )
 
         downloaded_deps = processor.pre_processing()
-        print("CUSTOM SPICE PATH !!!!!!!!!!!!!!!!!!!!!!!!!", descriptor.kernel_path)
         if descriptor.kernel_path:
-            print("furnshing")
             spiceypy.furnsh(str(descriptor.kernel_path))
         try:
             results = processor.do_processing(downloaded_deps)

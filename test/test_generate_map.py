@@ -333,7 +333,7 @@ class TestGenerateMap(unittest.TestCase):
         _ = generate_l2_map(descriptor, start_date, end_date)
 
         normal_pipeline_descriptor = "h90-ena-h-sf-nsp-ram-hae-2deg-6mo"
-        self.assertEqual(SpiceFrame.ECLIPJ2000,
+        self.assertEqual(SpiceFrame.IMAP_HAE,
                          MapDescriptor.from_string(normal_pipeline_descriptor).map_spice_coord_frame)
 
     @patch("mapping_tool.generate_map.DependencyCollector.get_pointing_sets")
