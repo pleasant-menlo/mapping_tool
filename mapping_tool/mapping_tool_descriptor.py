@@ -7,9 +7,14 @@ from imap_processing.spice.geometry import SpiceFrame
 
 
 @dataclass
+class CustomSpiceFrame:
+    name: str
+
+
+@dataclass
 class MappingToolDescriptor(MapDescriptor):
     quantity_suffix: str = "CUSTOM"
-    spice_frame: SpiceFrame = SpiceFrame.ECLIPJ2000
+    spice_frame: SpiceFrame | CustomSpiceFrame = SpiceFrame.ECLIPJ2000
     kernel_path: Optional[Path] = None
 
     def __post_init__(self) -> None:

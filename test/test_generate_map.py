@@ -13,7 +13,7 @@ from imap_processing.spice.geometry import SpiceFrame
 
 from mapping_tool.configuration import DataLevel
 from mapping_tool.generate_map import get_dependencies_for_l3_map, get_data_level_for_descriptor, generate_l3_map, \
-    generate_l2_map, generate_map, CustomSpiceFrame
+    generate_l2_map, generate_map
 from test.test_builders import create_map_descriptor
 
 

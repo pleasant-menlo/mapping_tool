@@ -22,11 +22,6 @@ import spiceypy
 from mapping_tool.mapping_tool_descriptor import MappingToolDescriptor
 
 
-@dataclasses.dataclass
-class CustomSpiceFrame:
-    name: str
-
-
 def get_dependencies_for_l3_map(map_descriptor: MappingToolDescriptor) -> list[MappingToolDescriptor]:
     match map_descriptor:
         case MapDescriptor(principal_data="spx"):

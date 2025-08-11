@@ -9,7 +9,9 @@ from unittest.mock import patch
 
 from mapping_tool import config_schema
 from mapping_tool.configuration import Configuration, CanonicalMapPeriod, DataLevel
-from mapping_tool.mapping_tool_descriptor import MappingToolDescriptor
+from imap_processing.spice.geometry import SpiceFrame
+
+from mapping_tool.mapping_tool_descriptor import CustomSpiceFrame
 from test.test_builders import create_configuration, create_config_dict, create_canonical_map_period, \
     create_map_descriptor
 from test.test_helpers import get_example_config_path
@@ -156,14 +158,17 @@ class TestConfiguration(TestCase):
 
     def test_get_map_descriptors_spice_frame_name_and_path(self):
         cases = [
-            ("ECLIPJ2000", Path("path_to_kernel"), "custom"),
-            ("IMAP_HNU", Path("path_to_kernel_again"), "custom"),
+            ("ECLIPJ2000", None, "custom", SpiceFrame),
+            ("IMAP_HNU", None, "custom", SpiceFrame),
+            ("IMAP_CUSTOM", Path("path_to_custom_kernel"), "custom", CustomSpiceFrame),
+            ("ECLIPJ2000", Path("path_to_custom_kernel"), "custom", CustomSpiceFrame),
         ]
-        for spice_frame_name, spice_path, expected in cases:
-            with self.subTest(f"{spice_frame_name}, {expected}"):
+        for spice_frame_name, spice_path, expected_name, expected_type in cases:
+            with self.subTest(f"{spice_frame_name}, {expected_name}"):
                 input_config = create_configuration(spice_frame_name=spice_frame_name, kernel_path=spice_path)
                 descriptor = input_config.get_map_descriptor()
-                self.assertEqual(expected, descriptor.coordinate_system)
+                self.assertIsInstance(descriptor.spice_frame, expected_type)
+                self.assertEqual(expected_name, descriptor.coordinate_system)
                 self.assertEqual(spice_path, descriptor.kernel_path)
 
     def test_get_map_descriptors_raises_error_for_invalid_spice_frame_name(self):
@@ -173,7 +178,8 @@ class TestConfiguration(TestCase):
         with self.assertRaises(ValueError) as error:
             _ = input_config.get_map_descriptor()
 
-        self.assertEqual(str(error.exception), f"Unknown Spice Frame {spice_frame_name}")
+        self.assertEqual(str(error.exception),
+                         f"Unknown Spice Frame {spice_frame_name} with no custom kernel path provided")
 
     def test_get_map_descriptors_resolution(self):
         cases = [

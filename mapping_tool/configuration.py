@@ -14,7 +14,7 @@ from jsonschema import validate
 import yaml
 
 from mapping_tool import config_schema
-from mapping_tool.mapping_tool_descriptor import MappingToolDescriptor
+from mapping_tool.mapping_tool_descriptor import MappingToolDescriptor, CustomSpiceFrame
 
 
 @dataclass
@@ -119,10 +119,13 @@ class Configuration:
 
         instrument, sensor = self.parse_instrument(self.instrument)
 
-        try:
-            spice_frame = SpiceFrame[self.spice_frame_name]
-        except KeyError:
-            raise ValueError(f'Unknown Spice Frame {self.spice_frame_name}')
+        if self.kernel_path is None:
+            try:
+                spice_frame = SpiceFrame[self.spice_frame_name]
+            except KeyError:
+                raise ValueError(f'Unknown Spice Frame {self.spice_frame_name} with no custom kernel path provided')
+        else:
+            spice_frame = CustomSpiceFrame(name=self.spice_frame_name)
 
         return MappingToolDescriptor(
             frame_descriptor=frame_descriptors[self.reference_frame],
