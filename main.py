@@ -17,24 +17,6 @@ from spacepy.pycdf import CDF
 from mapping_tool.configuration import Configuration
 
 import imap_data_access
-from imap_data_access import ScienceFilePath
-
-
-def prune_empty_data_dir_folders(folder_path: Path):
-    data_dir_path = imap_data_access.config["DATA_DIR"]
-
-    assert folder_path.is_relative_to(data_dir_path), ValueError(
-        "Meant to be called only on paths within the imap data directory!")
-
-    if not folder_path.exists() or folder_path.name == "imap":
-        return
-
-    for file in folder_path.rglob("*"):
-        if file.is_file():
-            break
-    else:
-        folder_path.rmdir()
-        prune_empty_data_dir_folders(folder_path.parent)
 
 
 def get_output_filename(descriptor: MappingToolDescriptor, start_date: datetime):
@@ -42,18 +24,16 @@ def get_output_filename(descriptor: MappingToolDescriptor, start_date: datetime)
     return f"imap_{descriptor.instrument.name.lower()}_{data_level}_{descriptor.to_mapping_tool_string()}_{start_date.strftime("%Y%m%d")}_v000.cdf"
 
 
-def cleanup_l2_l3_dependencies(descriptor: MappingToolDescriptor, start_date: datetime):
-    data_level = get_data_level_for_descriptor(descriptor)
-    filename = f"imap_{descriptor.instrument.name.lower()}_{data_level}_{descriptor.to_string()}_{start_date.strftime("%Y%m%d")}_v000.cdf"
-    science_file_path = ScienceFilePath(filename)
-    file_path = science_file_path.construct_path()
+def cleanup_l2_l3_dependencies(descriptor: MappingToolDescriptor):
+    l2_path = imap_data_access.config["DATA_DIR"] / 'imap' / descriptor.instrument.name.lower() / 'l2'
+    l3_path = imap_data_access.config["DATA_DIR"] / 'imap' / descriptor.instrument.name.lower() / 'l3'
 
-    file_path.unlink(missing_ok=True)
-    prune_empty_data_dir_folders(file_path.parent)
-
-    dependencies = get_dependencies_for_l3_map(descriptor)
-    for dependency in dependencies:
-        cleanup_l2_l3_dependencies(dependency, start_date)
+    if l2_path.exists():
+        logger.info(f"Cleaning up {l2_path}")
+        shutil.rmtree(l2_path)
+    if l3_path.exists():
+        logger.info(f"Cleaning up {l3_path}")
+        shutil.rmtree(l3_path)
 
 
 def do_mapping_tool(config: Configuration):
@@ -81,7 +61,7 @@ def do_mapping_tool(config: Configuration):
         except Exception:
             logger.error(f"Failed to generate map: {map_details} with error\n{traceback.format_exc()}")
         finally:
-            cleanup_l2_l3_dependencies(descriptor, start_date)
+            cleanup_l2_l3_dependencies(descriptor)
 
 
 if __name__ == "__main__":

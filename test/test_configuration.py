@@ -161,9 +161,10 @@ class TestConfiguration(TestCase):
         ]
         for spice_frame_name, spice_path, expected in cases:
             with self.subTest(f"{spice_frame_name}, {expected}"):
-                input_config = create_configuration(spice_frame_name=spice_frame_name, custom_spice_path=spice_path)
+                input_config = create_configuration(spice_frame_name=spice_frame_name, kernel_path=spice_path)
                 descriptor = input_config.get_map_descriptor()
                 self.assertEqual(expected, descriptor.coordinate_system)
+                self.assertEqual(spice_path, descriptor.kernel_path)
 
     def test_get_map_descriptors_raises_error_for_invalid_spice_frame_name(self):
         spice_frame_name = "Bad"

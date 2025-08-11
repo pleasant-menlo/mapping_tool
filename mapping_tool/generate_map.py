@@ -96,6 +96,8 @@ def generate_l3_map(descriptor: MappingToolDescriptor, start: datetime, end: dat
     for kernel in spice_kernel_paths:
         kernel_path = imap_data_access.download(kernel)
         spiceypy.furnsh(str(kernel_path))
+    if descriptor.kernel_path is not None:
+        spiceypy.furnsh(str(descriptor.kernel_path))
 
     processing_input_collection = ProcessingInputCollection(*[ScienceInput(dep.name) for dep in input_maps])
 

@@ -65,7 +65,6 @@ class Configuration:
     lo_species: Optional[str] = None
     output_directory: Optional[Path] = Path('.')
     quantity_suffix: str = 'CUSTOM'
-    custom_spice_path: str = None
 
     @classmethod
     def from_file(cls, config_path: Path):
@@ -138,4 +137,5 @@ class Configuration:
             spin_phase=spin_phase[self.spin_phase.lower()],
             coordinate_system="custom",
             spice_frame=spice_frame,
+            kernel_path=self.kernel_path
         )

@@ -21,7 +21,7 @@ def create_map_descriptor(
         coordinate_system: str = "hae",
         quantity_suffix: str = "CUSTOM",
         spice_frame: SpiceFrame = SpiceFrame.ECLIPJ2000,
-        custom_spice_path: Optional[Path] = None
+        kernel_path: Optional[Path] = None
 ):
     return MappingToolDescriptor(
         frame_descriptor=frame_descriptor,
@@ -36,7 +36,7 @@ def create_map_descriptor(
         coordinate_system=coordinate_system,
         quantity_suffix=quantity_suffix,
         spice_frame=spice_frame,
-        kernel_path=custom_spice_path
+        kernel_path=kernel_path
     )
 
 
@@ -56,7 +56,7 @@ def create_configuration(
         map_data_type: str = "ENA Intensity",
         lo_species: str = "h",
         output_directory: Path = Path("."),
-        custom_spice_path: Optional[Path] = None
+        kernel_path: Optional[Path] = None
 ):
     canonical_period = canonical_map_period if canonical_map_period is not None else create_canonical_map_period()
     instrument = instrument or "Hi 90"
@@ -72,7 +72,7 @@ def create_configuration(
         map_data_type=map_data_type,
         lo_species=lo_species,
         output_directory=output_directory,
-        custom_spice_path=custom_spice_path
+        kernel_path=kernel_path
     )
 
 

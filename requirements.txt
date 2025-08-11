@@ -1,5 +1,5 @@
 argparse==1.4.0
-imap_processing==0.18.0
+imap_processing@git+https://github.com/IMAP-Science-Operations-Center/imap_processing.git
 jsonschema==4.25.0
 pyYAML>=6.0.2
 imap-l3-processing@git+https://github.com/IMAP-Science-Operations-Center/imap_L3_processing.git

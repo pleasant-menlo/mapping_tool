@@ -1,4 +1,4 @@
-import json
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -13,9 +13,8 @@ from imap_processing.ena_maps.utils.naming import MappableInstrumentShortName
 import main
 from main import do_mapping_tool, cleanup_l2_l3_dependencies
 from mapping_tool.mapping_tool_descriptor import MappingToolDescriptor
-from test.test_builders import create_map_descriptor, create_config_dict, create_configuration, \
-    create_canonical_map_period
-from test.test_helpers import run_periodically
+from test.test_builders import create_map_descriptor, create_configuration, create_canonical_map_period
+from test.test_helpers import run_periodically, get_example_config_path
 
 
 class TestMain(unittest.TestCase):
@@ -94,8 +93,8 @@ class TestMain(unittest.TestCase):
         ])
 
         mock_cleanup.assert_has_calls([
-            call(hi_descriptor, map_date_ranges[0][0]),
-            call(hi_descriptor, map_date_ranges[1][0]),
+            call(hi_descriptor),
+            call(hi_descriptor),
         ])
 
     @patch('main.CDF')
@@ -124,10 +123,9 @@ class TestMain(unittest.TestCase):
         ])
 
         mock_cleanup_l2_l3_dependencies.assert_has_calls([
-            call(map_descriptor, datetime(2025, 1, 1, 0, 0, tzinfo=timezone.utc)),
-            call(map_descriptor, datetime(2025, 7, 2, 15, 0, tzinfo=timezone.utc)),
-            call(map_descriptor, datetime(2026, 1, 1, 6, 0, tzinfo=timezone.utc))
-
+            call(map_descriptor),
+            call(map_descriptor),
+            call(map_descriptor)
         ])
 
     def test_cleanup_dependencies(self):
@@ -140,13 +138,14 @@ class TestMain(unittest.TestCase):
                         imap_data_access.config["DATA_DIR"] = test_deletes_stuff_here
 
                         descriptor = MappingToolDescriptor.from_string("h90-ena-h-sf-sp-full-custom-4deg-6mo")
-                        start_date = "20250606"
 
                         l1c_dir = test_deletes_stuff_here / "imap/hi/l1c/2025/06"
                         l2_imap_data_folder_path = test_deletes_stuff_here / "imap/hi/l2/2025/06/"
                         l3_imap_data_folder_path = test_deletes_stuff_here / "imap/hi/l3/2025/06/"
+                        lo_l2_dir = test_deletes_stuff_here / "imap/lo/l2"
                         l1c_dir.mkdir(parents=True)
                         l2_imap_data_folder_path.mkdir(parents=True)
+                        lo_l2_dir.mkdir(parents=True)
 
                         l3 = l3_imap_data_folder_path / "imap_hi_l3_h90-ena-h-sf-sp-full-custom-4deg-6mo_20250606_v000.cdf"
                         l2_ram = l2_imap_data_folder_path / "imap_hi_l2_h90-ena-h-sf-nsp-ram-custom-4deg-6mo_20250606_v000.cdf"
@@ -161,12 +160,14 @@ class TestMain(unittest.TestCase):
                         l2_anti.touch()
                         l1c.touch()
 
-                        cleanup_l2_l3_dependencies(descriptor, datetime.strptime(start_date, "%Y%m%d"))
+                        cleanup_l2_l3_dependencies(descriptor)
 
                         data_folder = test_deletes_stuff_here / "imap"
                         expected_folder_structure = [
                             data_folder / "hi",
+                            data_folder / "lo",
                             data_folder / "hi/l1c",
+                            data_folder / "lo/l2",
                             data_folder / "hi/l1c/2025",
                             data_folder / "hi/l1c/2025/06",
                             data_folder / "hi/l1c/2025/06/imap_hi_l1c_pset_20250606_v000.cdf",
@@ -191,31 +192,11 @@ class TestMain(unittest.TestCase):
 
     @run_periodically(timedelta(days=1))
     def test_main_integration(self):
-        config_json = {
-            "canonical_map_period": {
-                "year": 2025,
-                "quarter": 3,
-                "map_period": 3,
-                "number_of_maps": 1
-            },
-            "instrument": "Hi 90",
-            "spin_phase": "Ram",
-            "reference_frame": "spacecraft",
-            "survival_corrected": True,
-            "spice_frame_name": "IMAP_HAE",
-            "pixelation_scheme": "square",
-            "pixel_parameter": 4,
-            "map_data_type": "ENA Intensity",
-            "lo_species": "h",
-            "output_directory": ".",
-            "quantity_suffix": "test"
-        }
-
         with tempfile.TemporaryDirectory() as temporary_directory:
             tmp_dir = Path(temporary_directory)
 
-            with open(tmp_dir / "config.json", "w") as config_file:
-                json.dump(config_json, config_file)
+            shutil.copy(get_example_config_path() / "integration_test_config.json", tmp_dir / "config.json")
+            shutil.copy(get_example_config_path() / "imap_science_100.tf", tmp_dir / "spice_kernel.tf")
 
             process_result = subprocess.run([sys.executable, main.__file__, "config.json"], cwd=temporary_directory,
                                             text=True)
@@ -223,6 +204,5 @@ class TestMain(unittest.TestCase):
             if process_result.returncode != 0:
                 self.fail("Process failed:\n" + process_result.stderr)
 
-            print(process_result.stderr)
             self.assertTrue(
                 (tmp_dir / "imap_hi_l3_h90-enaTEST-h-sf-sp-ram-custom-4deg-3mo_20250702_v000.cdf").exists())

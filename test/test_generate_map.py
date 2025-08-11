@@ -34,7 +34,7 @@ class TestGenerateMap(unittest.TestCase):
         sensor90_descriptor = create_map_descriptor(sensor="90")
         sensor45_descriptor = create_map_descriptor(sensor="45")
 
-        descriptor_with_no_dependencies = create_map_descriptor(survival_corrected="nsp", sensor="90")
+        descriptor_with_no_dependencies = create_map_descriptor(sensor="90", survival_corrected="nsp")
 
         cases = [
             (spectral_index_descriptor, [ena_descriptor]),
@@ -75,8 +75,8 @@ class TestGenerateMap(unittest.TestCase):
     @patch('mapping_tool.generate_map.generate_l3_map')
     @patch('mapping_tool.generate_map.generate_l2_map')
     def test_generate_map(self, mock_generate_l2, mock_generate_l3):
-        map_descriptor = create_map_descriptor(principal_data="spx", spin_phase="full",
-                                               instrument=MappableInstrumentShortName.HI)
+        map_descriptor = create_map_descriptor(instrument=MappableInstrumentShortName.HI, principal_data="spx",
+                                               spin_phase="full")
 
         l2_ram_map = Path("ram")
         l2_antiram_map = Path("anti")
@@ -91,24 +91,24 @@ class TestGenerateMap(unittest.TestCase):
         output_map = generate_map(map_descriptor, start_date, end_date)
 
         mock_generate_l2.assert_has_calls([
-            call(create_map_descriptor(spin_phase="ram", instrument=MappableInstrumentShortName.HI,
-                                       survival_corrected='nsp'), start_date, end_date),
-            call(create_map_descriptor(spin_phase="anti", instrument=MappableInstrumentShortName.HI,
-                                       survival_corrected='nsp'), start_date, end_date),
+            call(create_map_descriptor(instrument=MappableInstrumentShortName.HI, survival_corrected='nsp',
+                                       spin_phase="ram"), start_date, end_date),
+            call(create_map_descriptor(instrument=MappableInstrumentShortName.HI, survival_corrected='nsp',
+                                       spin_phase="anti"), start_date, end_date),
         ])
 
         mock_generate_l3.assert_has_calls([
-            call(create_map_descriptor(spin_phase="full", instrument=MappableInstrumentShortName.HI), start_date,
+            call(create_map_descriptor(instrument=MappableInstrumentShortName.HI, spin_phase="full"), start_date,
                  end_date, [l2_ram_map, l2_antiram_map]),
-            call(create_map_descriptor(spin_phase="full", instrument=MappableInstrumentShortName.HI,
-                                       principal_data='spx'), start_date, end_date, [l3_full_map]),
+            call(create_map_descriptor(instrument=MappableInstrumentShortName.HI, principal_data='spx',
+                                       spin_phase="full"), start_date, end_date, [l3_full_map]),
         ])
 
         self.assertEqual(l3_spx_map, output_map)
 
     def test_generate_l3_map_raises_exception_when_called_with_non_l2_or_l3_map(self):
-        map_descriptor = create_map_descriptor(principal_data="spx", spin_phase="full",
-                                               instrument=MappableInstrumentShortName.GLOWS)
+        map_descriptor = create_map_descriptor(instrument=MappableInstrumentShortName.GLOWS, principal_data="spx",
+                                               spin_phase="full")
         start_date = datetime(2020, 1, 1)
         end_date = datetime(2020, 7, 1)
 
@@ -126,9 +126,12 @@ class TestGenerateMap(unittest.TestCase):
     @patch("mapping_tool.generate_map.UltraProcessor")
     def test_generate_l3_map(self, mock_ultra, mock_lo, mock_hi, mock_collect_spice_kernels, mock_download,
                              mock_furnsh):
-        hi_descriptor = create_map_descriptor(instrument=MappableInstrumentShortName.HI)
-        lo_descriptor = create_map_descriptor(instrument=MappableInstrumentShortName.LO)
-        ultra_descriptor = create_map_descriptor(instrument=MappableInstrumentShortName.ULTRA)
+        hi_descriptor = create_map_descriptor(instrument=MappableInstrumentShortName.HI,
+                                              kernel_path=Path('custom/kernel/path'))
+        lo_descriptor = create_map_descriptor(instrument=MappableInstrumentShortName.LO,
+                                              kernel_path=Path('custom/kernel/path'))
+        ultra_descriptor = create_map_descriptor(instrument=MappableInstrumentShortName.ULTRA,
+                                                 kernel_path=Path('custom/kernel/path'))
 
         cases = [
             (hi_descriptor, mock_hi),
@@ -185,6 +188,7 @@ class TestGenerateMap(unittest.TestCase):
                 mock_furnsh.assert_has_calls([
                     call(os.path.join('path', 'to', 'spice_file')),
                     call(os.path.join('path', 'to', 'spice_file')),
+                    call(os.path.join('custom', 'kernel', 'path')),
                 ])
 
                 mock_processor.return_value.process.assert_called_once()
@@ -245,9 +249,9 @@ class TestGenerateMap(unittest.TestCase):
         mock_get_pointing_sets.return_value = ["imap_hi_l1c_pset-1_20250101_v000.cdf",
                                                "imap_hi_l1c_pset-2_20250101_v000.cdf"]
         hi_descriptor = create_map_descriptor(instrument=MappableInstrumentShortName.HI, survival_corrected="nsp",
-                                              custom_spice_path=Path("path1"))
+                                              kernel_path=Path("path1"))
         lo_descriptor = create_map_descriptor(instrument=MappableInstrumentShortName.LO, survival_corrected="nsp",
-                                              custom_spice_path=Path("path2"))
+                                              kernel_path=Path("path2"))
         ultra_descriptor = create_map_descriptor(instrument=MappableInstrumentShortName.ULTRA, survival_corrected="nsp")
 
         cases = [
@@ -319,8 +323,7 @@ class TestGenerateMap(unittest.TestCase):
 
         start_date = datetime(2020, 1, 1)
         end_date = datetime(2020, 1, 2)
-        descriptor = create_map_descriptor(instrument=MappableInstrumentShortName.HI,
-                                           spice_frame=SpiceFrame.IMAP_RTN)
+        descriptor = create_map_descriptor(instrument=MappableInstrumentShortName.HI, spice_frame=SpiceFrame.IMAP_RTN)
 
         def mock_do_processing(deps):
             self.assertEqual(deps, mock_hi_processor.pre_processing.return_value)
