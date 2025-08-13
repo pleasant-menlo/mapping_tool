@@ -7,6 +7,8 @@ from typing import Dict
 from unittest import TestCase
 from unittest.mock import patch
 
+import yaml
+
 from mapping_tool import config_schema
 from mapping_tool.configuration import Configuration, CanonicalMapPeriod, DataLevel
 from imap_processing.spice.geometry import SpiceFrame
@@ -38,7 +40,8 @@ class TestConfiguration(TestCase):
                     lo_species=None,
                     output_directory=Path('.'),
                     quantity_suffix="CUSTOM",
-                    kernel_path=Path("path/to/another_kernel")
+                    kernel_path=Path("path/to/another_kernel"),
+                    raw_config=yaml.dump(yaml.safe_load(example_config_path.read_text()))
                 )
 
                 self.assertEqual(expected_config, config)
@@ -56,6 +59,7 @@ class TestConfiguration(TestCase):
                 config: Configuration = Configuration.from_file(example_config_path)
 
                 expected_config: Configuration = Configuration(
+                    raw_config=yaml.dump(yaml.safe_load(example_config_path.read_text())),
                     canonical_map_period=CanonicalMapPeriod(year=2025, quarter=1, map_period=6, number_of_maps=1),
                     instrument='Ultra 45',
                     spin_phase="Ram",
@@ -100,8 +104,8 @@ class TestConfiguration(TestCase):
 
                 mock_validate.assert_called_with(expected_config, config_schema.schema)
 
-    @patch("mapping_tool.configuration.json.load")
-    def test_from_file_fails_validation_with_invalid_config(self, mock_load):
+    @patch("mapping_tool.configuration.json.loads")
+    def test_from_file_fails_validation_with_invalid_config(self, mock_loads):
         validation_error_cases = [
             ("invalid instrument", {"instrument": "90"}),
             ("invalid spin phase", {"spin_phase": "none"}),
@@ -111,7 +115,7 @@ class TestConfiguration(TestCase):
         ]
         for name, case in validation_error_cases:
             with self.subTest(name):
-                mock_load.return_value = create_config_dict(case)
+                mock_loads.return_value = create_config_dict(case)
                 with self.assertRaises(jsonschema.exceptions.ValidationError):
                     Configuration.from_file(get_example_config_path() / "test_l2_config.json")
 

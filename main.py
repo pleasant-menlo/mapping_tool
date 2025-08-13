@@ -58,6 +58,7 @@ def do_mapping_tool(config: Configuration):
             with CDF(str(output_path), readonly=False) as cdf:
                 cdf.attrs['Logical_source'] = descriptor.to_mapping_tool_string()
                 cdf.attrs['Logical_file_id'] = output_path.stem
+                cdf.attrs['Mapper_tool_configuration'] = config.raw_config
         except Exception:
             logger.error(f"Failed to generate map: {map_details} with error\n{traceback.format_exc()}")
         finally:

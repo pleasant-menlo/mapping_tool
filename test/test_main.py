@@ -33,6 +33,7 @@ class TestMain(unittest.TestCase):
                                               quantity_suffix="TEST")
 
         mock_configuration.get_map_descriptor.return_value = hi_descriptor
+        mock_configuration.raw_config = "config: something \n another_thing: something_2"
 
         mock_generate_map.side_effect = [
             Path('path/to/cdf/imap_hi_l3_h90-ena-h-sf-sp-ram-hae-2deg-6mo_20250101_v000.cdf'),
@@ -78,10 +79,12 @@ class TestMain(unittest.TestCase):
         ])
 
         self.assertEqual('h90-enaTEST-h-sf-sp-ram-hae-2deg-6mo', mock_cdf_file_1.attrs["Logical_source"])
+        self.assertEqual(mock_configuration.raw_config, mock_cdf_file_1.attrs.get("Mapper_tool_configuration"))
         self.assertEqual('imap_hi_l3_h90-enaTEST-h-sf-sp-ram-hae-2deg-6mo_20250101_v000',
                          mock_cdf_file_1.attrs["Logical_file_id"])
 
         self.assertEqual('h90-enaTEST-h-sf-sp-ram-hae-2deg-6mo', mock_cdf_file_2.attrs["Logical_source"])
+        self.assertEqual(mock_configuration.raw_config, mock_cdf_file_2.attrs.get("Mapper_tool_configuration"))
         self.assertEqual('imap_hi_l3_h90-enaTEST-h-sf-sp-ram-hae-2deg-6mo_20260101_v000',
                          mock_cdf_file_2.attrs["Logical_file_id"])
 
@@ -105,13 +108,13 @@ class TestMain(unittest.TestCase):
                                                        _mock_copy, _mock_cdf):
         config = create_configuration(canonical_map_period=create_canonical_map_period(number_of_maps=3))
 
-        mock_generate_map.side_effect = [Path('path/to/imap_l3_hi_h90-enaCUSTOM-h-sf-nsp-ram-custom-4deg-6mo'),
+        mock_generate_map.side_effect = [Path('path/to/imap_l3_hi_h90-enaCUSTOM-h-sf-nsp-ram-eclipj2000-4deg-6mo'),
                                          Exception("failed to generate map"),
-                                         Path('path/to/other/imap_l3_hi_h90-enaCUSTOM-h-sf-nsp-ram-custom-4deg-6mo')]
+                                         Path('path/to/other/imap_l3_hi_h90-enaCUSTOM-h-sf-nsp-ram-eclipj2000-4deg-6mo')]
 
         do_mapping_tool(config)
 
-        map_descriptor = MappingToolDescriptor.from_string("h90-ena-h-sf-nsp-ram-custom-4deg-6mo")
+        map_descriptor = MappingToolDescriptor.from_string("h90-ena-h-sf-nsp-ram-eclipj2000-4deg-6mo")
 
         mock_generate_map.assert_has_calls([
             call(map_descriptor, datetime(2025, 1, 1, 0, 0, tzinfo=timezone.utc),
@@ -205,4 +208,4 @@ class TestMain(unittest.TestCase):
                 self.fail("Process failed:\n" + process_result.stderr)
 
             self.assertTrue(
-                (tmp_dir / "imap_hi_l3_h90-enaTEST-h-sf-sp-ram-custom-4deg-3mo_20250702_v000.cdf").exists())
+                (tmp_dir / "imap_hi_l3_h90-enaTEST-h-sf-sp-ram-imaphae-4deg-3mo_20250702_v000.cdf").exists())

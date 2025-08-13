@@ -61,6 +61,7 @@ def create_configuration(
     canonical_period = canonical_map_period if canonical_map_period is not None else create_canonical_map_period()
     instrument = instrument or "Hi 90"
     return Configuration(
+        raw_config="raw_configuration",
         canonical_map_period=canonical_period,
         instrument=instrument,
         spin_phase=spin_phase,

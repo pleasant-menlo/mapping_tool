@@ -51,8 +51,9 @@ class MapSettings:
     end_date: datetime
 
 
-@dataclass
+@dataclass(frozen=True)
 class Configuration:
+    raw_config: str
     canonical_map_period: CanonicalMapPeriod
     instrument: str
     spin_phase: str
@@ -67,15 +68,20 @@ class Configuration:
     output_directory: Optional[Path] = Path('.')
     quantity_suffix: str = 'CUSTOM'
 
+
     @classmethod
     def from_file(cls, config_path: Path):
         if config_path.suffix not in ['.json', '.yaml']:
             raise ValueError(f'Configuration file {config_path} must have .json or .yaml extension')
         with open(str(config_path), 'r') as f:
+            raw_text = f.read()
             if config_path.suffix == '.json':
-                config = json.load(f)
+                config = json.loads(raw_text)
             elif config_path.suffix == '.yaml':
-                config = yaml.safe_load(f)
+                config = yaml.safe_load(raw_text)
+
+            raw_yaml = yaml.dump(yaml.safe_load(raw_text))
+
             schema = config_schema.schema
             validate(config, schema)
             config["canonical_map_period"] = CanonicalMapPeriod(**config["canonical_map_period"])
@@ -83,7 +89,7 @@ class Configuration:
                 config["output_directory"] = Path(config["output_directory"])
             if config.get("kernel_path") is not None:
                 config["kernel_path"] = Path(config["kernel_path"])
-            return cls(**config)
+            return cls(raw_yaml, **config)
 
     @classmethod
     def parse_instrument(cls, instrument_sensor: str):
@@ -124,9 +130,10 @@ class Configuration:
             try:
                 spice_frame = MapDescriptor.get_map_coord_frame(self.spice_frame_name)
             except NotImplementedError:
-                spice_frame = SpiceFrame[self.spice_frame_name]
-            except KeyError:
-                raise ValueError(f'Unknown Spice Frame {self.spice_frame_name} with no custom kernel path provided')
+                try:
+                    spice_frame = SpiceFrame[self.spice_frame_name]
+                except KeyError:
+                    raise ValueError(f'Unknown Spice Frame {self.spice_frame_name} with no custom kernel path provided')
         else:
             spice_frame = CustomSpiceFrame(name=self.spice_frame_name)
 
