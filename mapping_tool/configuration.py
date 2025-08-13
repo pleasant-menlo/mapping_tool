@@ -1,4 +1,5 @@
 import enum
+import re
 from datetime import timedelta, datetime, timezone
 import json
 from dataclasses import dataclass
@@ -121,11 +122,15 @@ class Configuration:
 
         if self.kernel_path is None:
             try:
+                spice_frame = MapDescriptor.get_map_coord_frame(self.spice_frame_name)
+            except NotImplementedError:
                 spice_frame = SpiceFrame[self.spice_frame_name]
             except KeyError:
                 raise ValueError(f'Unknown Spice Frame {self.spice_frame_name} with no custom kernel path provided')
         else:
             spice_frame = CustomSpiceFrame(name=self.spice_frame_name)
+
+        coordinate_system = re.sub(r"[^A-Za-z0-9]", "", self.spice_frame_name).lower()
 
         return MappingToolDescriptor(
             frame_descriptor=frame_descriptors[self.reference_frame],
@@ -138,7 +143,7 @@ class Configuration:
             species=self.lo_species or 'h',
             survival_corrected="sp" if self.survival_corrected else "nsp",
             spin_phase=spin_phase[self.spin_phase.lower()],
-            coordinate_system="custom",
+            coordinate_system=coordinate_system,
             spice_frame=spice_frame,
             kernel_path=self.kernel_path
         )

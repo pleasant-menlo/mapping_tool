@@ -158,10 +158,11 @@ class TestConfiguration(TestCase):
 
     def test_get_map_descriptors_spice_frame_name_and_path(self):
         cases = [
-            ("ECLIPJ2000", None, "custom", SpiceFrame),
-            ("IMAP_HNU", None, "custom", SpiceFrame),
-            ("IMAP_CUSTOM", Path("path_to_custom_kernel"), "custom", CustomSpiceFrame),
-            ("ECLIPJ2000", Path("path_to_custom_kernel"), "custom", CustomSpiceFrame),
+            ("ECLIPJ2000", None, "eclipj2000", SpiceFrame),
+            ("hae", None, "hae", SpiceFrame),
+            ("IMAP_HNU", None, "imaphnu", SpiceFrame),
+            ("IMAP_CUSTOM", Path("path_to_custom_kernel"), "imapcustom", CustomSpiceFrame),
+            ("ECLIPJ2000", Path("path_to_custom_kernel"), "eclipj2000", CustomSpiceFrame),
         ]
         for spice_frame_name, spice_path, expected_name, expected_type in cases:
             with self.subTest(f"{spice_frame_name}, {expected_name}"):
