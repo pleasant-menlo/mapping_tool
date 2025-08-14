@@ -60,13 +60,15 @@ class TimeRange:
 
 def parse_yaml_no_datetime_conversion(text: str) -> dict:
     class NoDatesSafeLoader(SafeLoader):
-        pass
+        yaml_implicit_resolvers = {}
 
-    for ch, resolvers in list(NoDatesSafeLoader.yaml_implicit_resolvers.items()):
+    for ch, resolvers in list(SafeLoader.yaml_implicit_resolvers.items()):
         NoDatesSafeLoader.yaml_implicit_resolvers[ch] = [(tag, regexp) for tag, regexp in resolvers
                                                          if tag != "tag:yaml.org,2002:timestamp"
                                                          ]
 
+    print( yaml.load(text, Loader=NoDatesSafeLoader))
+    print( yaml.safe_load(text))
     return yaml.load(text, Loader=NoDatesSafeLoader)
 
 @dataclass(frozen=True)
@@ -154,7 +156,7 @@ class Configuration:
         }
 
         resolution = f"{self.pixel_parameter}deg" if self.pixelation_scheme.lower() == "square" else f"nside{self.pixel_parameter}"
-        duration = str(self.canonical_map_period.map_period) + "mo"
+        duration = "0mo" if self.canonical_map_period is None else str(self.canonical_map_period.map_period) + "mo"
 
         instrument, sensor = self.parse_instrument(self.instrument)
 
@@ -186,5 +188,12 @@ class Configuration:
             spice_frame=spice_frame,
             kernel_path=self.kernel_path
         )
+
+    def get_map_date_ranges(self) -> list[tuple[datetime, datetime]]:
+        if self.canonical_map_period is not None:
+            return self.canonical_map_period.calculate_date_ranges()
+        else:
+            return [(time_range.start, time_range.end) for time_range in self.time_ranges]
+
 
 

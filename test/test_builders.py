@@ -1,3 +1,4 @@
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Dict, Optional, Literal
 
@@ -56,13 +57,16 @@ def create_configuration(
         map_data_type: str = "ENA Intensity",
         lo_species: str = "h",
         output_directory: Path = Path("."),
-        kernel_path: Optional[Path] = None
+        kernel_path: Optional[Path] = None,
+        time_ranges = None
 ):
-    canonical_period = canonical_map_period if canonical_map_period is not None else create_canonical_map_period()
+    if canonical_map_period is None and time_ranges is None:
+        canonical_map_period = canonical_map_period if canonical_map_period is not None else create_canonical_map_period()
+
     instrument = instrument or "Hi 90"
     return Configuration(
         raw_config="raw_configuration",
-        canonical_map_period=canonical_period,
+        canonical_map_period=canonical_map_period,
         instrument=instrument,
         spin_phase=spin_phase,
         reference_frame=reference_frame,
@@ -73,7 +77,8 @@ def create_configuration(
         map_data_type=map_data_type,
         lo_species=lo_species,
         output_directory=output_directory,
-        kernel_path=kernel_path
+        kernel_path=kernel_path,
+        time_ranges=time_ranges
     )
 
 def create_canonical_map_period_dict():
@@ -102,3 +107,7 @@ def create_config_dict(args: Dict):
     config.update(args)
 
     return config
+
+
+def create_utc_datetime():
+    return datetime.now().replace(tzinfo=timezone.utc)

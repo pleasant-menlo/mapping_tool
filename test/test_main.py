@@ -1,3 +1,4 @@
+import logging
 import shutil
 import subprocess
 import sys
@@ -45,7 +46,7 @@ class TestMain(unittest.TestCase):
             (datetime(2026, 1, 1, tzinfo=timezone.utc), datetime(2027, 1, 1, tzinfo=timezone.utc))
         ]
 
-        mock_configuration.canonical_map_period.calculate_date_ranges.return_value = map_date_ranges
+        mock_configuration.get_map_date_ranges.return_value = map_date_ranges
         mock_configuration.output_directory = Path("path/to/output")
         mock_configuration.quantity_suffix = "TEST"
 
@@ -69,7 +70,7 @@ class TestMain(unittest.TestCase):
         do_mapping_tool(mock_configuration)
 
         mock_configuration.get_map_descriptor.assert_called_once()
-        mock_configuration.canonical_map_period.calculate_date_ranges.assert_called_once()
+        mock_configuration.get_map_date_ranges.assert_called_once()
 
         main.logger.info.assert_has_calls([
             call('Generating map: h90-enaTEST-h-sf-sp-ram-hae-2deg-6mo 2025-01-01 to 2026-01-01'),
@@ -116,10 +117,14 @@ class TestMain(unittest.TestCase):
         config = create_configuration(canonical_map_period=create_canonical_map_period(number_of_maps=3))
 
         mock_generate_map.side_effect = [Path('path/to/imap_l3_hi_h90-enaCUSTOM-h-sf-nsp-ram-eclipj2000-4deg-6mo'),
-                                         Exception("failed to generate map"),
+                                         Exception("Expected failure generating map"),
                                          Path('path/to/other/imap_l3_hi_h90-enaCUSTOM-h-sf-nsp-ram-eclipj2000-4deg-6mo')]
 
-        do_mapping_tool(config)
+        with self.assertLogs(main.logger, logging.ERROR) as log_context:
+            do_mapping_tool(config)
+        log_message = log_context.output[0]
+        self.assertIn("Failed to generate map:", log_message )
+        self.assertIn("Expected failure generating map", log_message )
 
         map_descriptor = MappingToolDescriptor.from_string("h90-ena-h-sf-nsp-ram-eclipj2000-4deg-6mo")
 

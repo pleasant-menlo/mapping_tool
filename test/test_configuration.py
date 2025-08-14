@@ -14,7 +14,7 @@ from imap_processing.spice.geometry import SpiceFrame
 
 from mapping_tool.mapping_tool_descriptor import CustomSpiceFrame
 from test.test_builders import create_configuration, create_config_dict, create_canonical_map_period, \
-    create_map_descriptor, create_canonical_map_period_dict
+    create_map_descriptor, create_canonical_map_period_dict, create_utc_datetime
 from test.test_helpers import get_example_config_path
 from imap_processing.ena_maps.utils.naming import MappableInstrumentShortName
 
@@ -232,6 +232,27 @@ class TestConfiguration(TestCase):
                 descriptor = input_config.get_map_descriptor()
                 self.assertEqual(expected, descriptor.resolution_str)
 
+    def test_get_map_descriptors_resolution(self):
+        start_1 = create_utc_datetime()
+        end_1 = start_1 + timedelta(hours=1)
+        start_2 = end_1 + timedelta(days=23)
+        end_2 = start_2 + timedelta(hours=24)
+        time_ranges = [
+            TimeRange(start=start_1, end=end_1),
+            TimeRange(start=start_2, end=end_2),
+        ]
+
+        cases = [
+            ({"canonical_map_period": create_canonical_map_period()}, "6mo"),
+            ({"time_ranges": time_ranges}, "0mo"),
+        ]
+
+        for timing_type, expected in cases:
+            with self.subTest(f"{timing_type},{expected}"):
+                input_config = create_configuration(**timing_type)
+                descriptor = input_config.get_map_descriptor()
+                self.assertEqual(expected, descriptor.duration)
+
     def test_get_map_descriptors_instrument_and_sensor(self):
         cases = [
             ("hi 45", MappableInstrumentShortName.HI, "45", "h45"),
@@ -254,6 +275,61 @@ class TestConfiguration(TestCase):
                 self.assertEqual(instrument, descriptor.instrument)
                 self.assertEqual(sensor, descriptor.sensor)
                 self.assertEqual(instrument_descriptor, descriptor.instrument_descriptor)
+
+    def test_get_map_date_ranges_when_config_has_date_ranges(self):
+        start_1 = create_utc_datetime()
+        end_1 = start_1 + timedelta(hours=1)
+        start_2 = end_1 + timedelta(days=23)
+        end_2 = start_2 + timedelta(hours=24)
+        time_ranges = [
+            TimeRange(start=start_1, end=end_1),
+            TimeRange(start=start_2, end=end_2),
+        ]
+        input_config = create_configuration(time_ranges=time_ranges)
+
+        actual_date_ranges = input_config.get_map_date_ranges()
+        expected_date_ranges = [(start_1, end_1), (start_2, end_2)]
+
+        self.assertEqual(expected_date_ranges, actual_date_ranges)
+
+    def test_get_map_date_ranges_canonical(self):
+        # @formatter:off
+        cases = [
+            (2010, 1, 3, 1, [(datetime(2010, 1, 1, 0, 0, tzinfo=timezone.utc), datetime(2010, 4, 2, 7, 30, tzinfo=timezone.utc))]),
+            (2012, 2, 3, 1, [(datetime(2012, 4, 1, 7, 30, tzinfo=timezone.utc), datetime(2012, 7, 1, 15, 0, tzinfo=timezone.utc))]),
+            (2013, 3, 3, 1, [(datetime(2013, 7, 2, 15, 0, tzinfo=timezone.utc), datetime(2013, 10, 1, 22, 30, tzinfo=timezone.utc))]),
+            (2017, 4, 3, 1, [(datetime(2017, 10, 1, 22, 30, tzinfo=timezone.utc), datetime(2018, 1, 1, 6, 0, tzinfo=timezone.utc))]),
+
+            (2010, 1, 6, 1, [(datetime(2010, 1, 1, 0, 0, tzinfo=timezone.utc), datetime(2010, 7, 2, 15, 0, tzinfo=timezone.utc))]),
+            (2012, 2, 6, 1, [(datetime(2012, 4, 1, 7, 30, tzinfo=timezone.utc), datetime(2012, 9, 30, 22, 30, tzinfo=timezone.utc))]),
+            (2013, 3, 6, 1, [(datetime(2013, 7, 2, 15, 0, tzinfo=timezone.utc), datetime(2014, 1, 1, 6, 0, tzinfo=timezone.utc))]),
+            (2017, 4, 6, 1, [(datetime(2017, 10, 1, 22, 30, tzinfo=timezone.utc), datetime(2018, 4, 2, 13, 30, tzinfo=timezone.utc))]),
+
+            (2010, 1, 12, 1, [(datetime(2010, 1, 1, 0, 0, tzinfo=timezone.utc), datetime(2011, 1, 1, 6, 0, tzinfo=timezone.utc))]),
+            (2012, 2, 12, 1, [(datetime(2012, 4, 1, 7, 30, tzinfo=timezone.utc), datetime(2013, 4, 1, 13, 30, tzinfo=timezone.utc))]),
+            (2013, 3, 12, 1, [(datetime(2013, 7, 2, 15, 0, tzinfo=timezone.utc), datetime(2014, 7, 2, 21, 0, tzinfo=timezone.utc))]),
+            (2017, 4, 12, 1, [(datetime(2017, 10, 1, 22, 30, tzinfo=timezone.utc), datetime(2018, 10, 2, 4, 30, tzinfo=timezone.utc))]),
+
+            (2010, 1, 3, 2, [(datetime(2010, 1, 1, 0, 0, tzinfo=timezone.utc), datetime(2010, 4, 2, 7, 30, tzinfo=timezone.utc)),
+                             (datetime(2010, 4, 2, 7, 30, tzinfo=timezone.utc), datetime(2010, 7, 2, 15, 0, tzinfo=timezone.utc))]),
+            (2010, 2, 12, 2, [(datetime(2010, 4, 2, 7, 30, tzinfo=timezone.utc), datetime(2011, 4, 2, 13, 30, tzinfo=timezone.utc)),
+                              (datetime(2011, 4, 2, 13, 30, tzinfo=timezone.utc), datetime(2012, 4, 1, 19, 30, tzinfo=timezone.utc))]),
+            (2012, 4, 6, 3, [(datetime(2012, 9, 30, 22, 30, tzinfo=timezone.utc), datetime(2013, 4, 1, 13, 30, tzinfo=timezone.utc)),
+                             (datetime(2013, 4, 1, 13, 30, tzinfo=timezone.utc), datetime(2013, 10, 1, 4, 30, tzinfo=timezone.utc)),
+                             (datetime(2013, 10, 1, 4, 30, tzinfo=timezone.utc), datetime(2014, 4, 1, 19, 30, tzinfo=timezone.utc))]),
+        ]
+        # @formatter:on
+        for year, quarter, period, number_of_maps, expected in cases:
+            with self.subTest(f"year: {year}, quarter: {quarter}, period: {period}, num_maps: {number_of_maps}"):
+                canonical_map_period = create_canonical_map_period(year=year, quarter=quarter, map_period=period,
+                                                                   number_of_maps=number_of_maps)
+                input_config = create_configuration(canonical_map_period=canonical_map_period)
+
+                date_range = input_config.get_map_date_ranges()
+
+                self.assertEqual(expected, date_range)
+
+
 
 
 class TestCanonicalMapPeriod(TestCase):
