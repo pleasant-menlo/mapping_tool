@@ -67,8 +67,6 @@ def parse_yaml_no_datetime_conversion(text: str) -> dict:
                                                          if tag != "tag:yaml.org,2002:timestamp"
                                                          ]
 
-    print( yaml.load(text, Loader=NoDatesSafeLoader))
-    print( yaml.safe_load(text))
     return yaml.load(text, Loader=NoDatesSafeLoader)
 
 @dataclass(frozen=True)
@@ -110,8 +108,14 @@ class Configuration:
             if "time_ranges" in config:
                 time_ranges = []
                 for time_range in config["time_ranges"]:
-                    start = time_range["start"] if isinstance(time_range["start"], datetime) else datetime.fromisoformat(time_range["start"])
-                    end = time_range["end"] if isinstance(time_range["end"], datetime) else datetime.fromisoformat(time_range["end"])
+                    start = datetime.fromisoformat(time_range["start"])
+                    if start.tzinfo is None:
+                        start = start.replace(tzinfo=timezone.utc)
+
+                    end = datetime.fromisoformat(time_range["end"])
+                    if end.tzinfo is None:
+                        end = end.replace(tzinfo=timezone.utc)
+
                     time_ranges.append(TimeRange(start, end))
 
                 config["time_ranges"] = time_ranges

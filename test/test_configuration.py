@@ -55,8 +55,8 @@ class TestConfiguration(TestCase):
                     time_ranges=[
                         TimeRange(start=datetime(2025, 1, 1, 1, 1, 1, 100000, tzinfo=timezone(timedelta(seconds=3600))),
                                   end=datetime(2025, 1, 2, 2, 2, 2, 200000, tzinfo=timezone(timedelta(seconds=7200)))),
-                        TimeRange(start=datetime(2025, 1, 3, 3, 3, 3, 300000),
-                                  end=datetime(2025, 1, 4, 0, 0))
+                        TimeRange(start=datetime(2025, 1, 3, 3, 3, 3, 300000, tzinfo=timezone.utc),
+                                  end=datetime(2025, 1, 4, 0, 0, tzinfo=timezone.utc))
                     ],
                     instrument="Hi 90",
                     spin_phase="Ram",
@@ -232,7 +232,7 @@ class TestConfiguration(TestCase):
                 descriptor = input_config.get_map_descriptor()
                 self.assertEqual(expected, descriptor.resolution_str)
 
-    def test_get_map_descriptors_resolution(self):
+    def test_get_map_descriptors_duration(self):
         start_1 = create_utc_datetime()
         end_1 = start_1 + timedelta(hours=1)
         start_2 = end_1 + timedelta(days=23)

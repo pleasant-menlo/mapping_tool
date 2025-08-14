@@ -4,10 +4,9 @@
 #  map_period: 3
 #  number_of_maps: 1
 
-# Should these just be date strings rather than date times? e.g. 20250101 or 2025-01-01
 time_ranges:
-  - start: 2025-04-15T00:00:00.1234+04:00
-    end: 2025-05-01T00:00:00.1234+04:00
+  - start: 2025-04-15
+    end: 2025-05-01
 instrument: Hi 90
 
 spin_phase: ram
