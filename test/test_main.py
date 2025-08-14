@@ -56,11 +56,14 @@ class TestMain(unittest.TestCase):
         mock_cdf_file_1.attrs = {
             "Logical_source": "old logical source",
             "Logical_file_id": "old logical file_id",
+            "Data_type": [f"L2_{hi_descriptor.to_string()}>other_stuff"],
         }
 
         mock_cdf_file_2.attrs = {
             "Logical_source": "old logical source",
             "Logical_file_id": "old logical file_id",
+            "Data_type": [f"L2_{hi_descriptor.to_string()}>more_other_stuff"],
+
         }
 
         do_mapping_tool(mock_configuration)
@@ -78,15 +81,19 @@ class TestMain(unittest.TestCase):
             call(hi_descriptor, map_date_ranges[1][0], map_date_ranges[1][1]),
         ])
 
-        self.assertEqual('h90-enaTEST-h-sf-sp-ram-hae-2deg-6mo', mock_cdf_file_1.attrs["Logical_source"])
+        self.assertEqual('h90-enaTEST-h-sf-sp-ram-hae-2deg-6mo_generated-by-mapper-tool', mock_cdf_file_1.attrs["Logical_source"])
         self.assertEqual(mock_configuration.raw_config, mock_cdf_file_1.attrs.get("Mapper_tool_configuration"))
         self.assertEqual('imap_hi_l3_h90-enaTEST-h-sf-sp-ram-hae-2deg-6mo_20250101_v000',
                          mock_cdf_file_1.attrs["Logical_file_id"])
+        self.assertEqual('L2_h90-enaTEST-h-sf-sp-ram-hae-2deg-6mo>other_stuff',
+                         mock_cdf_file_1.attrs["Data_type"])
 
-        self.assertEqual('h90-enaTEST-h-sf-sp-ram-hae-2deg-6mo', mock_cdf_file_2.attrs["Logical_source"])
+        self.assertEqual('h90-enaTEST-h-sf-sp-ram-hae-2deg-6mo_generated-by-mapper-tool', mock_cdf_file_2.attrs["Logical_source"])
         self.assertEqual(mock_configuration.raw_config, mock_cdf_file_2.attrs.get("Mapper_tool_configuration"))
         self.assertEqual('imap_hi_l3_h90-enaTEST-h-sf-sp-ram-hae-2deg-6mo_20260101_v000',
                          mock_cdf_file_2.attrs["Logical_file_id"])
+        self.assertEqual('L2_h90-enaTEST-h-sf-sp-ram-hae-2deg-6mo>more_other_stuff',
+                         mock_cdf_file_2.attrs["Data_type"])
 
         mock_copy_file.assert_has_calls([
             call(Path('path/to/cdf/imap_hi_l3_h90-ena-h-sf-sp-ram-hae-2deg-6mo_20250101_v000.cdf'),

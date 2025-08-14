@@ -51,14 +51,18 @@ def do_mapping_tool(config: Configuration):
         logger.info(f"Generating map: {map_details}")
         try:
             generated_map_path = generate_map(descriptor, start_date, end_date)
-            map_name_with_quantity_suffix = generated_map_path.name.replace(generated_map_path.name.split("_")[3],
+            map_name_with_quantity_suffix = generated_map_path.name.replace(descriptor.to_string(),
                                                                             descriptor.to_mapping_tool_string())
+
             output_path = config.output_directory / map_name_with_quantity_suffix
             shutil.copy(generated_map_path, output_path)
             with CDF(str(output_path), readonly=False) as cdf:
-                cdf.attrs['Logical_source'] = descriptor.to_mapping_tool_string()
+                cdf.attrs['Logical_source'] = descriptor.to_mapping_tool_string() + "_generated-by-mapper-tool"
                 cdf.attrs['Logical_file_id'] = output_path.stem
                 cdf.attrs['Mapper_tool_configuration'] = config.raw_config
+                cdf.attrs['Data_type'] = cdf.attrs['Data_type'][0].replace(descriptor.to_string(),
+                                                  descriptor.to_mapping_tool_string())
+
         except Exception:
             logger.error(f"Failed to generate map: {map_details} with error\n{traceback.format_exc()}")
         finally:
