@@ -2,7 +2,7 @@ import enum
 import re
 from datetime import timedelta, datetime, timezone
 import json
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Optional
 
 from imap_processing.ena_maps.utils.naming import MapDescriptor, MappableInstrumentShortName
@@ -13,6 +13,7 @@ from imap_processing.spice.geometry import SpiceFrame
 from jsonschema import validate
 
 import yaml
+from yaml import SafeLoader
 
 from mapping_tool import config_schema
 from mapping_tool.mapping_tool_descriptor import MappingToolDescriptor, CustomSpiceFrame
@@ -51,10 +52,26 @@ class MapSettings:
     end_date: datetime
 
 
+@dataclass
+class TimeRange:
+    start: datetime
+    end: datetime
+
+
+def parse_yaml_no_datetime_conversion(text: str) -> dict:
+    class NoDatesSafeLoader(SafeLoader):
+        pass
+
+    for ch, resolvers in list(NoDatesSafeLoader.yaml_implicit_resolvers.items()):
+        NoDatesSafeLoader.yaml_implicit_resolvers[ch] = [(tag, regexp) for tag, regexp in resolvers
+                                                         if tag != "tag:yaml.org,2002:timestamp"
+                                                         ]
+
+    return yaml.load(text, Loader=NoDatesSafeLoader)
+
 @dataclass(frozen=True)
 class Configuration:
     raw_config: str
-    canonical_map_period: CanonicalMapPeriod
     instrument: str
     spin_phase: str
     reference_frame: str
@@ -63,6 +80,8 @@ class Configuration:
     pixelation_scheme: str
     pixel_parameter: int
     map_data_type: str
+    canonical_map_period: Optional[CanonicalMapPeriod] = None
+    time_ranges: Optional[list[TimeRange]] = None
     kernel_path: Path = None
     lo_species: Optional[str] = None
     output_directory: Optional[Path] = Path('.')
@@ -78,13 +97,26 @@ class Configuration:
             if config_path.suffix == '.json':
                 config = json.loads(raw_text)
             elif config_path.suffix == '.yaml':
-                config = yaml.safe_load(raw_text)
+                config = parse_yaml_no_datetime_conversion(raw_text)
 
             raw_yaml = yaml.dump(yaml.safe_load(raw_text))
 
             schema = config_schema.schema
             validate(config, schema)
-            config["canonical_map_period"] = CanonicalMapPeriod(**config["canonical_map_period"])
+
+
+            if "time_ranges" in config:
+                time_ranges = []
+                for time_range in config["time_ranges"]:
+                    start = time_range["start"] if isinstance(time_range["start"], datetime) else datetime.fromisoformat(time_range["start"])
+                    end = time_range["end"] if isinstance(time_range["end"], datetime) else datetime.fromisoformat(time_range["end"])
+                    time_ranges.append(TimeRange(start, end))
+
+                config["time_ranges"] = time_ranges
+            else:
+                canonical_map_period = CanonicalMapPeriod(**config["canonical_map_period"])
+                config["canonical_map_period"] = canonical_map_period
+
             if config.get("output_directory") is not None:
                 config["output_directory"] = Path(config["output_directory"])
             if config.get("kernel_path") is not None:
@@ -154,3 +186,5 @@ class Configuration:
             spice_frame=spice_frame,
             kernel_path=self.kernel_path
         )
+
+

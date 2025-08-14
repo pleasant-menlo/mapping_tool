@@ -1,0 +1,15 @@
+time_ranges:
+  - start: 2025-01-01T01:01:01.1+01:00
+    end: 2025-01-02T02:02:02.2+02:00
+  - start: 2025-01-03T03:03:03.3
+    end: 2025-01-04
+instrument: Hi 90
+
+spin_phase: Ram
+reference_frame: spacecraft
+survival_corrected: true
+spice_frame_name: ECLIPJ2000
+pixelation_scheme: square
+pixel_parameter: 2
+map_data_type: ENA Intensity
+kernel_path: path/to/another_kernel

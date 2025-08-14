@@ -24,6 +24,27 @@ schema = {
                 "number_of_maps"
             ]
         },
+        "time_ranges": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+                "type": "object",
+                "properties": {
+                    "start": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "end": {
+                        "type": "string",
+                        "format": "date-time"
+                    }
+                },
+                "required": [
+                    "start",
+                    "end"
+                ]
+            }
+        },
         "instrument": {
             "type": "string",
             "enum": [
@@ -117,7 +138,6 @@ schema = {
         }
     },
     "required": [
-        "canonical_map_period",
         "instrument",
         "spin_phase",
         "reference_frame",
@@ -126,5 +146,9 @@ schema = {
         "pixelation_scheme",
         "pixel_parameter",
         "map_data_type"
+    ],
+    "oneOf": [
+        { "required": ["time_ranges"] },
+        { "required": ["canonical_map_period"] },
     ]
 }

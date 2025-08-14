@@ -1,5 +1,4 @@
-import datetime
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 from pathlib import Path
 
 import jsonschema.exceptions
@@ -10,12 +9,12 @@ from unittest.mock import patch
 import yaml
 
 from mapping_tool import config_schema
-from mapping_tool.configuration import Configuration, CanonicalMapPeriod, DataLevel
+from mapping_tool.configuration import Configuration, CanonicalMapPeriod, DataLevel, TimeRange
 from imap_processing.spice.geometry import SpiceFrame
 
 from mapping_tool.mapping_tool_descriptor import CustomSpiceFrame
 from test.test_builders import create_configuration, create_config_dict, create_canonical_map_period, \
-    create_map_descriptor
+    create_map_descriptor, create_canonical_map_period_dict
 from test.test_helpers import get_example_config_path
 from imap_processing.ena_maps.utils.naming import MappableInstrumentShortName
 
@@ -29,6 +28,36 @@ class TestConfiguration(TestCase):
 
                 expected_config: Configuration = Configuration(
                     canonical_map_period=CanonicalMapPeriod(year=2025, quarter=1, map_period=6, number_of_maps=1),
+                    instrument="Hi 90",
+                    spin_phase="Ram",
+                    reference_frame="spacecraft",
+                    survival_corrected=True,
+                    spice_frame_name="ECLIPJ2000",
+                    pixelation_scheme="square",
+                    pixel_parameter=2,
+                    map_data_type="ENA Intensity",
+                    lo_species=None,
+                    output_directory=Path('.'),
+                    quantity_suffix="CUSTOM",
+                    kernel_path=Path("path/to/another_kernel"),
+                    raw_config=yaml.dump(yaml.safe_load(example_config_path.read_text()))
+                )
+
+                self.assertEqual(expected_config, config)
+
+    def test_from_file_parses_time_ranges(self):
+        for extension in ["json", "yaml"]:
+            with self.subTest(extension):
+                example_config_path = get_example_config_path() / f"test_l2_config_defined_time_ranges.{extension}"
+                config: Configuration = Configuration.from_file(example_config_path)
+
+                expected_config: Configuration = Configuration(
+                    time_ranges=[
+                        TimeRange(start=datetime(2025, 1, 1, 1, 1, 1, 100000, tzinfo=timezone(timedelta(seconds=3600))),
+                                  end=datetime(2025, 1, 2, 2, 2, 2, 200000, tzinfo=timezone(timedelta(seconds=7200)))),
+                        TimeRange(start=datetime(2025, 1, 3, 3, 3, 3, 300000),
+                                  end=datetime(2025, 1, 4, 0, 0))
+                    ],
                     instrument="Hi 90",
                     spin_phase="Ram",
                     reference_frame="spacecraft",
@@ -107,11 +136,14 @@ class TestConfiguration(TestCase):
     @patch("mapping_tool.configuration.json.loads")
     def test_from_file_fails_validation_with_invalid_config(self, mock_loads):
         validation_error_cases = [
-            ("invalid instrument", {"instrument": "90"}),
-            ("invalid spin phase", {"spin_phase": "none"}),
-            ("invalid reference frame", {"reference_frame": "spacecraft kinematic"}),
-            ("invalid survival probability corrected", {"survival_corrected": "YES"}),
-            ("invalid map_data_type", {"map_data_type": "Directions"})
+            ("invalid instrument", {"instrument": "90", **create_canonical_map_period_dict()}),
+            ("invalid spin phase", {"spin_phase": "none", **create_canonical_map_period_dict()}),
+            ("invalid reference frame", {"reference_frame": "spacecraft kinematic", **create_canonical_map_period_dict()}),
+            ("invalid survival probability corrected", {"survival_corrected": "YES", **create_canonical_map_period_dict()}),
+            ("invalid cannot have both canonical and time_ranges included", {"time_ranges": {"start": "2025-01-03T03:03:03.3", "stop": "2025-01-04T03:03:03.3"}}),
+            ("invalid must include either time ranges or canonical map period", {}),
+            ("invalid map_data_type", {"map_data_type": "Directions", **create_canonical_map_period_dict()}),
+
         ]
         for name, case in validation_error_cases:
             with self.subTest(name):

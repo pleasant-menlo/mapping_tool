@@ -76,15 +76,19 @@ def create_configuration(
         kernel_path=kernel_path
     )
 
-
-def create_config_dict(args: Dict):
-    config = {
-        "canonical_map_period": {
+def create_canonical_map_period_dict():
+    return {
+        "canonical_map_period":{
             "year": 2025,
             "quarter": 1,
             "map_period": 6,
             "number_of_maps": 1
-        },
+        }
+    }
+
+
+def create_config_dict(args: Dict):
+    config = {
         "instrument": "Hi 90",
         "spin_phase": "Ram",
         "reference_frame": "spacecraft",
@@ -96,4 +100,5 @@ def create_config_dict(args: Dict):
         "lo_species": "h"
     }
     config.update(args)
+
     return config
