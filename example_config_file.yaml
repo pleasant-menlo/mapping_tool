@@ -7,6 +7,8 @@
 time_ranges:
   - start: 2025-04-15
     end: 2025-05-01
+  - start: 2025-06-15
+    end: 2025-08-01
 instrument: Hi 90
 
 spin_phase: ram

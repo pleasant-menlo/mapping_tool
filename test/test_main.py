@@ -10,12 +10,13 @@ from unittest.mock import patch, call, Mock
 import imap_data_access
 
 from imap_processing.ena_maps.utils.naming import MappableInstrumentShortName
+from spacepy.pycdf import CDF
 
 import main
 from main import do_mapping_tool, cleanup_l2_l3_dependencies
 from mapping_tool.mapping_tool_descriptor import MappingToolDescriptor
 from test.test_builders import create_map_descriptor, create_configuration, create_canonical_map_period
-from test.test_helpers import run_periodically, get_example_config_path
+from test.test_helpers import run_periodically, get_example_config_path, get_test_cdf_file_path
 
 
 class TestMain(unittest.TestCase):
@@ -64,7 +65,6 @@ class TestMain(unittest.TestCase):
             "Logical_source": "old logical source",
             "Logical_file_id": "old logical file_id",
             "Data_type": [f"L2_{hi_descriptor.to_string()}>more_other_stuff"],
-
         }
 
         do_mapping_tool(mock_configuration)
@@ -107,6 +107,30 @@ class TestMain(unittest.TestCase):
             call(hi_descriptor),
             call(hi_descriptor),
         ])
+
+    @patch('main.generate_map')
+    def test_ena_maps_with_multiple_date_ranges_are_concatenated_into_a_single_cdf_file(self, mock_generate_map):
+        l2_maps = [get_test_cdf_file_path() / 'l2_ena_20250115.cdf', get_test_cdf_file_path() / 'l2_ena_20250215.cdf']
+        l3_maps = [get_test_cdf_file_path() / 'l3_ena_20250115.cdf', get_test_cdf_file_path() / 'l3_ena_20250215.cdf']
+        for created_maps in [l2_maps, l3_maps]:
+            with self.subTest():
+                with tempfile.TemporaryDirectory() as tmpdir:
+                    tmp_path = Path(tmpdir)
+                    map_config = create_configuration(output_directory=tmp_path)
+
+                    mock_generate_map.side_effect = created_maps
+
+                    expected_ena_intensity_shape = (2, 9, 180, 90)
+
+                    do_mapping_tool(map_config)\
+
+                    generated_cdf = next(tmp_path.glob('*.cdf'))
+
+                    with CDF(str(generated_cdf)) as cdf:
+                        self.assertEqual(cdf['epoch'].shape, (2,))
+                        self.assertEqual(cdf['ena_intensity'].shape, expected_ena_intensity_shape)
+
+
 
     @patch('main.CDF')
     @patch('main.shutil.copy')

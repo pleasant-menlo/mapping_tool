@@ -10,6 +10,10 @@ def get_example_config_path():
     return Path(__name__).parent / "example_configuration_files"
 
 
+def get_test_cdf_file_path():
+    return Path(__name__).parent / "cdf_files"
+
+
 @dataclass
 class PeriodicallyRunTest:
     test_name: str

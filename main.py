@@ -3,7 +3,9 @@ import shutil
 import traceback
 from datetime import datetime
 
-from mapping_tool.generate_map import generate_map, get_dependencies_for_l3_map, get_data_level_for_descriptor
+import numpy as np
+
+from mapping_tool.generate_map import generate_map, get_data_level_for_descriptor
 from mapping_tool.mapping_tool_descriptor import MappingToolDescriptor
 
 logger = logging.getLogger(__name__)
@@ -40,6 +42,7 @@ def do_mapping_tool(config: Configuration):
     map_date_ranges = config.get_map_date_ranges()
 
     descriptor = config.get_map_descriptor()
+    output_map_paths = []
     for start_date, end_date in map_date_ranges:
         map_details = f'{descriptor.to_mapping_tool_string()} {start_date.strftime("%Y-%m-%d")} to {end_date.strftime("%Y-%m-%d")}'
 
@@ -51,22 +54,30 @@ def do_mapping_tool(config: Configuration):
         logger.info(f"Generating map: {map_details}")
         try:
             generated_map_path = generate_map(descriptor, start_date, end_date)
-            map_name_with_quantity_suffix = generated_map_path.name.replace(descriptor.to_string(),
-                                                                            descriptor.to_mapping_tool_string())
-
-            output_path = config.output_directory / map_name_with_quantity_suffix
-            shutil.copy(generated_map_path, output_path)
-            with CDF(str(output_path), readonly=False) as cdf:
-                cdf.attrs['Logical_source'] = descriptor.to_mapping_tool_string() + "_generated-by-mapper-tool"
-                cdf.attrs['Logical_file_id'] = output_path.stem
-                cdf.attrs['Mapper_tool_configuration'] = config.raw_config
-                cdf.attrs['Data_type'] = cdf.attrs['Data_type'][0].replace(descriptor.to_string(),
-                                                  descriptor.to_mapping_tool_string())
+            output_map_paths.append(generated_map_path)
 
         except Exception:
             logger.error(f"Failed to generate map: {map_details} with error\n{traceback.format_exc()}")
         finally:
             cleanup_l2_l3_dependencies(descriptor)
+
+        data = []
+        for path in output_map_paths:
+            with CDF(str(path)) as cdf:
+                epoch = cdf["epoch"][...]
+                for var in cdf:
+                    if "DEPEND_0" in var.attrs:
+                        data.append((epoch, var))
+
+        sorted_data = sorted(data, key=lambda tup: tup[0])
+        final_output_path = config.output_directory / get_output_filename(descriptor, sorted_data[0][0])
+
+        with CDF(str(final_output_path), readonly=False) as cdf:
+            cdf.attrs['Logical_source'] = descriptor.to_mapping_tool_string() + "_generated-by-mapper-tool"
+            cdf.attrs['Logical_file_id'] = final_output_path.stem
+            cdf.attrs['Mapper_tool_configuration'] = config.raw_config
+            cdf.attrs['Data_type'] = cdf.attrs['Data_type'][0].replace(descriptor.to_string(),
+                                                                       descriptor.to_mapping_tool_string())
 
 
 if __name__ == "__main__":
