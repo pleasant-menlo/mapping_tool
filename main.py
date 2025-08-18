@@ -61,21 +61,35 @@ def do_mapping_tool(config: Configuration):
         except Exception:
             logger.error(f"Failed to generate map: {map_details} with error\n{traceback.format_exc()}")
 
-    first_map_path = output_map_paths[0]
-    with CDF(str(final_output_path), str(first_map_path), readonly=False) as cdf:
+    sorted_paths = sort_cdfs_by_epoch(output_map_paths)
+    save_output_cdf(final_output_path, sorted_paths, config)
+    cleanup_l2_l3_dependencies(descriptor)
+
+def sort_cdfs_by_epoch(cdf_files: list[Path]) -> list[Path]:
+    sorted_epochs_and_paths = []
+    for path in cdf_files:
+        with CDF(str(path)) as cdf:
+            sorted_epochs_and_paths.append((cdf["epoch"][0], path))
+    sorted_epochs_and_paths.sort(key=lambda date: date[0])
+    return [path for date, path in sorted_epochs_and_paths]
+
+def save_output_cdf(output_path: Path, map_cdf_paths: list[Path], config: Configuration):
+    descriptor = config.get_map_descriptor()
+
+    first_map_path = map_cdf_paths[0]
+    with CDF(str(output_path), str(first_map_path), readonly=False) as cdf:
         cdf.attrs['Logical_source'] = descriptor.to_mapping_tool_string() + "_generated-by-mapper-tool"
-        cdf.attrs['Logical_file_id'] = final_output_path.stem
+        cdf.attrs['Logical_file_id'] = output_path.stem
         cdf.attrs['Mapper_tool_configuration'] = config.raw_config
         cdf.attrs['Data_type'] = cdf.attrs['Data_type'][0].replace(descriptor.to_string(),
                                                                    descriptor.to_mapping_tool_string())
-        for additional_map_path in output_map_paths[1:]:
+        for additional_map_path in map_cdf_paths[1:]:
             with CDF(str(additional_map_path)) as additional_map:
                 cdf['epoch'][...] = np.concatenate((cdf['epoch'][...], additional_map['epoch'][...]))
                 for var in cdf:
                     if "DEPEND_0" in cdf[var].attrs and cdf[var].attrs['DEPEND_0'] == "epoch":
                         cdf[var][...] = np.concatenate((cdf.raw_var(var)[...], additional_map.raw_var(var)[...]))
 
-    cleanup_l2_l3_dependencies(descriptor)
 
 
 # def concatenate_map_files()

@@ -27,7 +27,8 @@ class TestMain(unittest.TestCase):
     @patch('main.shutil.copy')
     @patch('main.generate_map')
     @patch('main.cleanup_l2_l3_dependencies')
-    def test_do_mapping_tool(self, mock_cleanup, mock_generate_map, mock_copy_file, mock_cdf):
+    @patch('main.sort_cdfs_by_epoch')
+    def test_do_mapping_tool(self, mock_sort_cdfs_by_epoch, mock_cleanup, mock_generate_map, mock_copy_file, mock_cdf):
         self.assertTrue(hasattr(main, "logger"))
         main.logger = Mock()
 
@@ -41,6 +42,7 @@ class TestMain(unittest.TestCase):
 
         generated_cdf_path_1 = Path('path/to/cdf/imap_hi_l3_h90-ena-h-sf-sp-ram-hae-2deg-6mo_20250101_v000.cdf')
         generated_cdf_path_2 = Path('path/to/cdf/imap_hi_l3_h90-ena-h-sf-sp-ram-hae-2deg-6mo_20260101_v000.cdf')
+        mock_sort_cdfs_by_epoch.return_value = [generated_cdf_path_1, generated_cdf_path_2]
         mock_generate_map.side_effect = [
             generated_cdf_path_1,
             generated_cdf_path_2,
@@ -73,8 +75,9 @@ class TestMain(unittest.TestCase):
 
         do_mapping_tool(mock_configuration)
 
-        mock_configuration.get_map_descriptor.assert_called_once()
+        self.assertEqual(2, mock_configuration.get_map_descriptor.call_count)
         mock_configuration.get_map_date_ranges.assert_called_once()
+        mock_sort_cdfs_by_epoch.assert_called_once_with([generated_cdf_path_1, generated_cdf_path_2])
 
         output_map_path = str(mock_configuration.output_directory /  'imap_hi_l3_h90-enaTEST-h-sf-sp-ram-hae-2deg-6mo_20250101_v000.cdf')
         mock_cdf.assert_has_calls([
@@ -108,8 +111,8 @@ class TestMain(unittest.TestCase):
 
     @patch('main.generate_map')
     def test_ena_maps_with_multiple_date_ranges_are_concatenated_into_a_single_cdf_file(self, mock_generate_map):
-        l2_maps = ("l2_maps", [get_test_cdf_file_path() / 'l2_ena_20250115.cdf', get_test_cdf_file_path() / 'l2_ena_20250215.cdf'])
-        l3_maps = ("l3_maps", [get_test_cdf_file_path() / 'l3_ena_20250115.cdf', get_test_cdf_file_path() / 'l3_ena_20250215.cdf'])
+        l2_maps = ("l2_maps", [get_test_cdf_file_path() / 'l2_ena_20250215.cdf', get_test_cdf_file_path() / 'l2_ena_20250115.cdf'])
+        l3_maps = ("l3_maps", [get_test_cdf_file_path() / 'l3_ena_20250215.cdf', get_test_cdf_file_path() / 'l3_ena_20250115.cdf'])
         for name, created_maps in [l2_maps, l3_maps]:
             with self.subTest(name):
                 with tempfile.TemporaryDirectory() as tmpdir:
@@ -162,7 +165,8 @@ class TestMain(unittest.TestCase):
     @patch('main.shutil.copy')
     @patch('main.cleanup_l2_l3_dependencies')
     @patch('main.generate_map')
-    def test_continues_to_generate_maps_when_one_fails(self, mock_generate_map, mock_cleanup_l2_l3_dependencies,
+    @patch('main.sort_cdfs_by_epoch')
+    def test_continues_to_generate_maps_when_one_fails(self, mock_sort_cdfs_by_epoch, mock_generate_map, mock_cleanup_l2_l3_dependencies,
                                                        _mock_copy, _mock_cdf):
         config = create_configuration(canonical_map_period=create_canonical_map_period(number_of_maps=3))
 

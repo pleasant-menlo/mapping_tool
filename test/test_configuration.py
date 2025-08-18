@@ -292,6 +292,22 @@ class TestConfiguration(TestCase):
 
         self.assertEqual(expected_date_ranges, actual_date_ranges)
 
+    def test_get_map_date_ranges_sorts_input_ranges(self):
+        start_1 = create_utc_datetime()
+        end_1 = start_1 + timedelta(hours=1)
+        start_2 = end_1 + timedelta(days=23)
+        end_2 = start_2 + timedelta(hours=24)
+        time_ranges = [
+            TimeRange(start=start_2, end=end_2),
+            TimeRange(start=start_1, end=end_1),
+        ]
+        input_config = create_configuration(time_ranges=time_ranges)
+
+        actual_date_ranges = input_config.get_map_date_ranges()
+        expected_date_ranges = [(start_1, end_1), (start_2, end_2)]
+
+        self.assertEqual(expected_date_ranges, actual_date_ranges)
+
     def test_get_map_date_ranges_canonical(self):
         # @formatter:off
         cases = [

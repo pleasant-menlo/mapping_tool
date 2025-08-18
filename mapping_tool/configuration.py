@@ -197,6 +197,7 @@ class Configuration:
         if self.canonical_map_period is not None:
             return self.canonical_map_period.calculate_date_ranges()
         else:
+            self.time_ranges.sort(key=lambda time_range: time_range.start)
             return [(time_range.start, time_range.end) for time_range in self.time_ranges]
 
 
