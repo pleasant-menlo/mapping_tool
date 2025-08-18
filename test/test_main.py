@@ -6,17 +6,19 @@ import tempfile
 import unittest
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
-from unittest.mock import patch, call, Mock
+from unittest.mock import patch, call, Mock, MagicMock
 import imap_data_access
+import numpy as np
 
 from imap_processing.ena_maps.utils.naming import MappableInstrumentShortName
-from spacepy.pycdf import CDF
+from spacepy.pycdf import CDF, Var
 
 import main
 from main import do_mapping_tool, cleanup_l2_l3_dependencies
+from mapping_tool.configuration import TimeRange
 from mapping_tool.mapping_tool_descriptor import MappingToolDescriptor
 from test.test_builders import create_map_descriptor, create_configuration, create_canonical_map_period
-from test.test_helpers import run_periodically, get_example_config_path, get_test_cdf_file_path
+from test.test_helpers import run_periodically, get_example_config_path, get_test_cdf_file_path, utcdatetime
 
 
 class TestMain(unittest.TestCase):
@@ -37,9 +39,11 @@ class TestMain(unittest.TestCase):
         mock_configuration.get_map_descriptor.return_value = hi_descriptor
         mock_configuration.raw_config = "config: something \n another_thing: something_2"
 
+        generated_cdf_path_1 = Path('path/to/cdf/imap_hi_l3_h90-ena-h-sf-sp-ram-hae-2deg-6mo_20250101_v000.cdf')
+        generated_cdf_path_2 = Path('path/to/cdf/imap_hi_l3_h90-ena-h-sf-sp-ram-hae-2deg-6mo_20260101_v000.cdf')
         mock_generate_map.side_effect = [
-            Path('path/to/cdf/imap_hi_l3_h90-ena-h-sf-sp-ram-hae-2deg-6mo_20250101_v000.cdf'),
-            Path('path/to/cdf/imap_hi_l3_h90-ena-h-sf-sp-ram-hae-2deg-6mo_20260101_v000.cdf'),
+            generated_cdf_path_1,
+            generated_cdf_path_2,
         ]
 
         map_date_ranges = [
@@ -51,8 +55,8 @@ class TestMain(unittest.TestCase):
         mock_configuration.output_directory = Path("path/to/output")
         mock_configuration.quantity_suffix = "TEST"
 
-        mock_cdf_file_1 = Mock()
-        mock_cdf_file_2 = Mock()
+        mock_cdf_file_1 = MagicMock()
+        mock_cdf_file_2 = MagicMock()
         mock_cdf.return_value.__enter__.side_effect = [mock_cdf_file_1, mock_cdf_file_2]
 
         mock_cdf_file_1.attrs = {
@@ -72,6 +76,17 @@ class TestMain(unittest.TestCase):
         mock_configuration.get_map_descriptor.assert_called_once()
         mock_configuration.get_map_date_ranges.assert_called_once()
 
+        output_map_path = str(mock_configuration.output_directory /  'imap_hi_l3_h90-enaTEST-h-sf-sp-ram-hae-2deg-6mo_20250101_v000.cdf')
+        mock_cdf.assert_has_calls([
+            call(output_map_path, str(generated_cdf_path_1), readonly=False),
+            call().__enter__(),
+            call(str(generated_cdf_path_2)),
+            call().__enter__(),
+            call().__exit__(None, None, None),
+            call().__exit__(None, None, None)
+        ])
+        self.assertEqual(2, mock_cdf.call_count)
+
         main.logger.info.assert_has_calls([
             call('Generating map: h90-enaTEST-h-sf-sp-ram-hae-2deg-6mo 2025-01-01 to 2026-01-01'),
             call('Generating map: h90-enaTEST-h-sf-sp-ram-hae-2deg-6mo 2026-01-01 to 2027-01-01'),
@@ -89,46 +104,57 @@ class TestMain(unittest.TestCase):
         self.assertEqual('L2_h90-enaTEST-h-sf-sp-ram-hae-2deg-6mo>other_stuff',
                          mock_cdf_file_1.attrs["Data_type"])
 
-        self.assertEqual('h90-enaTEST-h-sf-sp-ram-hae-2deg-6mo_generated-by-mapper-tool', mock_cdf_file_2.attrs["Logical_source"])
-        self.assertEqual(mock_configuration.raw_config, mock_cdf_file_2.attrs.get("Mapper_tool_configuration"))
-        self.assertEqual('imap_hi_l3_h90-enaTEST-h-sf-sp-ram-hae-2deg-6mo_20260101_v000',
-                         mock_cdf_file_2.attrs["Logical_file_id"])
-        self.assertEqual('L2_h90-enaTEST-h-sf-sp-ram-hae-2deg-6mo>more_other_stuff',
-                         mock_cdf_file_2.attrs["Data_type"])
-
-        mock_copy_file.assert_has_calls([
-            call(Path('path/to/cdf/imap_hi_l3_h90-ena-h-sf-sp-ram-hae-2deg-6mo_20250101_v000.cdf'),
-                 Path('path/to/output/imap_hi_l3_h90-enaTEST-h-sf-sp-ram-hae-2deg-6mo_20250101_v000.cdf')),
-            call(Path('path/to/cdf/imap_hi_l3_h90-ena-h-sf-sp-ram-hae-2deg-6mo_20260101_v000.cdf'),
-                 Path('path/to/output/imap_hi_l3_h90-enaTEST-h-sf-sp-ram-hae-2deg-6mo_20260101_v000.cdf')),
-        ])
-
-        mock_cleanup.assert_has_calls([
-            call(hi_descriptor),
-            call(hi_descriptor),
-        ])
+        mock_cleanup.assert_called_once_with(hi_descriptor)
 
     @patch('main.generate_map')
     def test_ena_maps_with_multiple_date_ranges_are_concatenated_into_a_single_cdf_file(self, mock_generate_map):
-        l2_maps = [get_test_cdf_file_path() / 'l2_ena_20250115.cdf', get_test_cdf_file_path() / 'l2_ena_20250215.cdf']
-        l3_maps = [get_test_cdf_file_path() / 'l3_ena_20250115.cdf', get_test_cdf_file_path() / 'l3_ena_20250215.cdf']
-        for created_maps in [l2_maps, l3_maps]:
-            with self.subTest():
+        l2_maps = ("l2_maps", [get_test_cdf_file_path() / 'l2_ena_20250115.cdf', get_test_cdf_file_path() / 'l2_ena_20250215.cdf'])
+        l3_maps = ("l3_maps", [get_test_cdf_file_path() / 'l3_ena_20250115.cdf', get_test_cdf_file_path() / 'l3_ena_20250215.cdf'])
+        for name, created_maps in [l2_maps, l3_maps]:
+            with self.subTest(name):
                 with tempfile.TemporaryDirectory() as tmpdir:
                     tmp_path = Path(tmpdir)
-                    map_config = create_configuration(output_directory=tmp_path)
+                    map_config = create_configuration(
+                        output_directory=tmp_path,
+                        time_ranges=[TimeRange(utcdatetime(), utcdatetime()), TimeRange(utcdatetime(), utcdatetime())]
+                    )
 
                     mock_generate_map.side_effect = created_maps
 
-                    expected_ena_intensity_shape = (2, 9, 180, 90)
+                    expected_data_variable_shape = (2, 9, 180, 90)
+                    expected_energy_shape= (9,)
 
-                    do_mapping_tool(map_config)\
+                    do_mapping_tool(map_config)
 
                     generated_cdf = next(tmp_path.glob('*.cdf'))
 
                     with CDF(str(generated_cdf)) as cdf:
-                        self.assertEqual(cdf['epoch'].shape, (2,))
-                        self.assertEqual(cdf['ena_intensity'].shape, expected_ena_intensity_shape)
+                        expected_epochs = [datetime(2025, 1, 15, 0, 0),
+                                           datetime(2025, 2, 15, 0, 0)]
+                        np.testing.assert_array_equal(expected_epochs, cdf['epoch'][...])
+
+                        np.testing.assert_array_equal(cdf['epoch_delta'][...], [100, 101])
+
+                        self.assertEqual(expected_data_variable_shape, cdf['exposure_factor'].shape)
+                        np.testing.assert_array_equal(cdf['exposure_factor'][:,0,0,0], [1,20])
+
+                        self.assertEqual(expected_data_variable_shape, cdf['obs_date'].shape)
+                        np.testing.assert_array_equal(cdf.raw_var('obs_date')[:, 0, 0, 0], [2, 21])
+
+                        self.assertEqual(expected_data_variable_shape, cdf['ena_intensity'].shape)
+                        np.testing.assert_array_equal(cdf['ena_intensity'][:, 0, 0, 0], [3, 22])
+
+                        self.assertEqual(expected_data_variable_shape, cdf['ena_intensity_stat_unc'].shape)
+                        np.testing.assert_array_equal(cdf['ena_intensity_stat_unc'][:, 0, 0, 0], [4, 23])
+
+                        self.assertEqual(expected_data_variable_shape, cdf['ena_intensity_sys_err'].shape)
+                        np.testing.assert_array_equal(cdf['ena_intensity_sys_err'][:, 0, 0, 0], [5, 24])
+
+                        self.assertEqual(expected_data_variable_shape, cdf['obs_date_range'].shape)
+                        np.testing.assert_array_equal(cdf['obs_date_range'][:, 0, 0, 0], [6, 25])
+
+                        self.assertEqual(expected_energy_shape, cdf['energy'].shape)
+
 
 
 
@@ -161,11 +187,7 @@ class TestMain(unittest.TestCase):
                  datetime(2026, 7, 2, 21, 0, tzinfo=timezone.utc)),
         ])
 
-        mock_cleanup_l2_l3_dependencies.assert_has_calls([
-            call(map_descriptor),
-            call(map_descriptor),
-            call(map_descriptor)
-        ])
+        mock_cleanup_l2_l3_dependencies.assert_called_once_with(map_descriptor)
 
     def test_cleanup_dependencies(self):
         for one_of_the_deps_failed_to_generate in [True, False]:

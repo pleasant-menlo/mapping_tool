@@ -42,42 +42,43 @@ def do_mapping_tool(config: Configuration):
     map_date_ranges = config.get_map_date_ranges()
 
     descriptor = config.get_map_descriptor()
+
+    first_start_date = map_date_ranges[0][0]
+    output_filename = get_output_filename(descriptor, first_start_date)
+    final_output_path = config.output_directory / output_filename
+    if final_output_path.exists():
+        logger.info(f"Skipping generation of map: {output_filename}, because it already exists!")
+        return
+
     output_map_paths = []
     for start_date, end_date in map_date_ranges:
         map_details = f'{descriptor.to_mapping_tool_string()} {start_date.strftime("%Y-%m-%d")} to {end_date.strftime("%Y-%m-%d")}'
-
-        output_filename = get_output_filename(descriptor, start_date)
-        if (config.output_directory / output_filename).exists():
-            logger.info(f"Skipping generation of map: {output_filename}, because it already exists!")
-            continue
 
         logger.info(f"Generating map: {map_details}")
         try:
             generated_map_path = generate_map(descriptor, start_date, end_date)
             output_map_paths.append(generated_map_path)
-
         except Exception:
             logger.error(f"Failed to generate map: {map_details} with error\n{traceback.format_exc()}")
-        finally:
-            cleanup_l2_l3_dependencies(descriptor)
 
-        data = []
-        for path in output_map_paths:
-            with CDF(str(path)) as cdf:
-                epoch = cdf["epoch"][...]
+    first_map_path = output_map_paths[0]
+    with CDF(str(final_output_path), str(first_map_path), readonly=False) as cdf:
+        cdf.attrs['Logical_source'] = descriptor.to_mapping_tool_string() + "_generated-by-mapper-tool"
+        cdf.attrs['Logical_file_id'] = final_output_path.stem
+        cdf.attrs['Mapper_tool_configuration'] = config.raw_config
+        cdf.attrs['Data_type'] = cdf.attrs['Data_type'][0].replace(descriptor.to_string(),
+                                                                   descriptor.to_mapping_tool_string())
+        for additional_map_path in output_map_paths[1:]:
+            with CDF(str(additional_map_path)) as additional_map:
+                cdf['epoch'][...] = np.concatenate((cdf['epoch'][...], additional_map['epoch'][...]))
                 for var in cdf:
-                    if "DEPEND_0" in var.attrs:
-                        data.append((epoch, var))
+                    if "DEPEND_0" in cdf[var].attrs and cdf[var].attrs['DEPEND_0'] == "epoch":
+                        cdf[var][...] = np.concatenate((cdf.raw_var(var)[...], additional_map.raw_var(var)[...]))
 
-        sorted_data = sorted(data, key=lambda tup: tup[0])
-        final_output_path = config.output_directory / get_output_filename(descriptor, sorted_data[0][0])
+    cleanup_l2_l3_dependencies(descriptor)
 
-        with CDF(str(final_output_path), readonly=False) as cdf:
-            cdf.attrs['Logical_source'] = descriptor.to_mapping_tool_string() + "_generated-by-mapper-tool"
-            cdf.attrs['Logical_file_id'] = final_output_path.stem
-            cdf.attrs['Mapper_tool_configuration'] = config.raw_config
-            cdf.attrs['Data_type'] = cdf.attrs['Data_type'][0].replace(descriptor.to_string(),
-                                                                       descriptor.to_mapping_tool_string())
+
+# def concatenate_map_files()
 
 
 if __name__ == "__main__":

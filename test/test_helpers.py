@@ -1,9 +1,11 @@
 import json
 from dataclasses import dataclass
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, tzinfo
 from pathlib import Path
 from typing import Optional
 from unittest import skip, skipIf, SkipTest
+
+import pytz
 
 
 def get_example_config_path():
@@ -12,6 +14,10 @@ def get_example_config_path():
 
 def get_test_cdf_file_path():
     return Path(__name__).parent / "cdf_files"
+
+
+def utcdatetime():
+    return datetime.now(tz=pytz.utc)
 
 
 @dataclass
