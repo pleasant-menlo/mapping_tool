@@ -40,30 +40,30 @@ def cleanup_l2_l3_dependencies(descriptor: MappingToolDescriptor):
 
 def do_mapping_tool(config: Configuration):
     map_date_ranges = config.get_map_date_ranges()
-
     descriptor = config.get_map_descriptor()
 
-    first_start_date = map_date_ranges[0][0]
-    output_filename = get_output_filename(descriptor, first_start_date)
-    final_output_path = config.output_directory / output_filename
-    if final_output_path.exists():
-        logger.info(f"Skipping generation of map: {output_filename}, because it already exists!")
-        return
+    try:
+        first_start_date = map_date_ranges[0][0]
+        output_filename = get_output_filename(descriptor, first_start_date)
+        final_output_path = config.output_directory / output_filename
+        if final_output_path.exists():
+            logger.info(f"Skipping generation of map: {output_filename}, because it already exists!")
+            return
 
-    output_map_paths = []
-    for start_date, end_date in map_date_ranges:
-        map_details = f'{descriptor.to_mapping_tool_string()} {start_date.strftime("%Y-%m-%d")} to {end_date.strftime("%Y-%m-%d")}'
+        output_map_paths = []
+        for start_date, end_date in map_date_ranges:
+            map_details = f'{descriptor.to_mapping_tool_string()} {start_date.strftime("%Y-%m-%d")} to {end_date.strftime("%Y-%m-%d")}'
 
-        logger.info(f"Generating map: {map_details}")
-        try:
+            logger.info(f"Generating map: {map_details}")
             generated_map_path = generate_map(descriptor, start_date, end_date)
             output_map_paths.append(generated_map_path)
-        except Exception:
-            logger.error(f"Failed to generate map: {map_details} with error\n{traceback.format_exc()}")
 
-    sorted_paths = sort_cdfs_by_epoch(output_map_paths)
-    save_output_cdf(final_output_path, sorted_paths, config)
-    cleanup_l2_l3_dependencies(descriptor)
+        sorted_paths = sort_cdfs_by_epoch(output_map_paths)
+        save_output_cdf(final_output_path, sorted_paths, config)
+    except Exception:
+        logger.error(f"Failed to generate map: {descriptor.to_mapping_tool_string()} with error\n{traceback.format_exc()}")
+    finally:
+        cleanup_l2_l3_dependencies(descriptor)
 
 def sort_cdfs_by_epoch(cdf_files: list[Path]) -> list[Path]:
     sorted_epochs_and_paths = []

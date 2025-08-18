@@ -30,7 +30,7 @@ class TestMain(unittest.TestCase):
     @patch('main.sort_cdfs_by_epoch')
     def test_do_mapping_tool(self, mock_sort_cdfs_by_epoch, mock_cleanup, mock_generate_map, mock_copy_file, mock_cdf):
         self.assertTrue(hasattr(main, "logger"))
-        main.logger = Mock()
+        main.logger.info = Mock()
 
         mock_configuration = Mock()
 
@@ -134,7 +134,7 @@ class TestMain(unittest.TestCase):
                     with CDF(str(generated_cdf)) as cdf:
                         expected_epochs = [datetime(2025, 1, 15, 0, 0),
                                            datetime(2025, 2, 15, 0, 0)]
-                        np.testing.assert_array_equal(expected_epochs, cdf['epoch'][...])
+                        np.testing.assert_array_equal(cdf['epoch'][...], expected_epochs)
 
                         np.testing.assert_array_equal(cdf['epoch_delta'][...], [100, 101])
 
@@ -166,13 +166,12 @@ class TestMain(unittest.TestCase):
     @patch('main.cleanup_l2_l3_dependencies')
     @patch('main.generate_map')
     @patch('main.sort_cdfs_by_epoch')
-    def test_continues_to_generate_maps_when_one_fails(self, mock_sort_cdfs_by_epoch, mock_generate_map, mock_cleanup_l2_l3_dependencies,
+    def test_generate_maps_raises_exception_when_one_map_fails(self, mock_sort_cdfs_by_epoch, mock_generate_map, mock_cleanup_l2_l3_dependencies,
                                                        _mock_copy, _mock_cdf):
         config = create_configuration(canonical_map_period=create_canonical_map_period(number_of_maps=3))
 
         mock_generate_map.side_effect = [Path('path/to/imap_l3_hi_h90-enaCUSTOM-h-sf-nsp-ram-eclipj2000-4deg-6mo'),
-                                         Exception("Expected failure generating map"),
-                                         Path('path/to/other/imap_l3_hi_h90-enaCUSTOM-h-sf-nsp-ram-eclipj2000-4deg-6mo')]
+                                         Exception("Expected failure generating map")]
 
         with self.assertLogs(main.logger, logging.ERROR) as log_context:
             do_mapping_tool(config)
@@ -182,14 +181,6 @@ class TestMain(unittest.TestCase):
 
         map_descriptor = MappingToolDescriptor.from_string("h90-ena-h-sf-nsp-ram-eclipj2000-4deg-6mo")
 
-        mock_generate_map.assert_has_calls([
-            call(map_descriptor, datetime(2025, 1, 1, 0, 0, tzinfo=timezone.utc),
-                 datetime(2025, 7, 2, 15, 0, tzinfo=timezone.utc)),
-            call(map_descriptor, datetime(2025, 7, 2, 15, 0, tzinfo=timezone.utc),
-                 datetime(2026, 1, 1, 6, 0, tzinfo=timezone.utc)),
-            call(map_descriptor, datetime(2026, 1, 1, 6, 0, tzinfo=timezone.utc),
-                 datetime(2026, 7, 2, 21, 0, tzinfo=timezone.utc)),
-        ])
 
         mock_cleanup_l2_l3_dependencies.assert_called_once_with(map_descriptor)
 
@@ -254,6 +245,21 @@ class TestMain(unittest.TestCase):
 
             mock_generate_map.assert_not_called()
             self.assertEqual("text", existing_file.read_text())
+
+    @patch("main.generate_map")
+    @patch("main.save_output_cdf")
+    @patch("main.cleanup_l2_l3_dependencies")
+    @patch("main.CDF")
+    def test_cleanup_is_called_after_exception_on_save(self, mock_cdf, mock_cleanup, mock_save_output_cdf, mock_generate_map):
+        config = create_configuration()
+
+        mock_generate_map.return_value = Path("")
+        mock_save_output_cdf.side_effect = Exception
+
+        do_mapping_tool(config)
+
+        mock_cleanup.assert_called_once_with(config.get_map_descriptor())
+
 
     @run_periodically(timedelta(days=1))
     def test_main_integration(self):
