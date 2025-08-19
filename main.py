@@ -91,10 +91,6 @@ def save_output_cdf(output_path: Path, map_cdf_paths: list[Path], config: Config
                         cdf[var][...] = np.concatenate((cdf.raw_var(var)[...], additional_map.raw_var(var)[...]))
 
 
-
-# def concatenate_map_files()
-
-
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('config_file', type=Path)

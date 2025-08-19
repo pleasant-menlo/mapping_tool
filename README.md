@@ -13,7 +13,10 @@ Quick links:
     cd mapping_tool
      ```
 
-2. [Install](https://www.python.org/downloads/) Python version 3.13
+2. [Download](https://www.python.org/downloads/) and install Python version 3.13
+   * Alternatively, a package manager like Homebrew or Chocolatey can be used 
+     * macOS: `brew install python@3.13`
+     * Windows: `choco install python313`
 
 
 3. Setup a virtual environment
@@ -32,7 +35,7 @@ Quick links:
       
 5. Install dependencies
      ```shell
-    pip install -r requirements.txt
+    pip install -r requirements.txt --prefer-binary
     ```
 
 ## Usage
@@ -42,7 +45,7 @@ From within the virtual environment, run the following:
 ```
 
 ## Configuration File Parameters
-The map to be created is defined by the configuration file passed to `main.py`. The configuration can be specified in YAML or JSON. An annotated example file can be found [here](./example_config_file.yaml). Available options and their corresponding values are:
+The map to be created is defined by the configuration file passed to `main.py`. The configuration can be specified in YAML or JSON. An annotated example file can be found [here](./example_config_file.yaml). Additional examples can be found in the [example_configuration_files](./example_configuration_files) directory. Available options and their corresponding values are:
 * `canonical_map_period` - Specification of the time periods to be used for map creation. Either a canonical map period or a list of custom time ranges can be specified, but not both.
   * `year` - The year corresponding to the first map
   * `quarter` - The quarter corresponding to the first map
@@ -96,14 +99,19 @@ The map to be created is defined by the configuration file passed to `main.py`. 
 
 
 ### Troubleshooting
-If there is a problem installing dependencies for SciPy on macOS, follow the steps below. The OpenBLAS linear algebra C package needs to be installed
+* If there is a problem installing dependencies for SciPy on macOS, follow the steps below. The OpenBLAS linear algebra C package needs to be installed
 first: https://docs.scipy.org/doc/scipy-1.16.0/building/index.html
 
-```shell
+    ```shell
     brew install gfortran openblas pkg-config
     brew info openblas | grep PKG_CONFIG_PATH
     export PKG_CONFIG_PATH=<path from above command>
     pip install -r requirements.txt
-```
+    ```
 
+* If there is an error installing netCDF on macOS (i.e. `ValueError: did not find netCDF version 4 headers`), you may have to install netCDF prior to pip install:
+    ```shell
+    brew install netcdf
+    pip install -r requirements.txt
+    ```
 
