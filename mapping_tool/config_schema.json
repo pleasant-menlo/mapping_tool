@@ -1,0 +1,176 @@
+{
+    "type": "object",
+    "title": "Mapping Tool Configuration Schema",
+    "properties": {
+        "canonical_map_period": {
+            "type": "object",
+            "description": "The period of a set of one or more canonical maps",
+            "properties": {
+                "year": {
+                    "description": "The starting year of the map (eg. 2025)",
+                    "type": "integer"
+                },
+                "quarter": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 4,
+                    "description": "The starting quarter of the map with 1-4 corresponding to either January, April, July, October"
+                },
+                "map_period": {
+                    "type": "integer",
+                    "description": "The cadence of a set of one or more maps to be produced in months"
+                },
+                "number_of_maps": {
+                    "type": "integer",
+                    "description": "The number of maps to be produced"
+                }
+            },
+            "required": [
+                "year",
+                "quarter",
+                "map_period",
+                "number_of_maps"
+            ]
+        },
+        "time_ranges": {
+            "type": "array",
+            "minItems": 1,
+            "description": "Allows for the specification of custom ranges. Canonical maps must not be set when specifying if time ranges are used.",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "start": {
+                        "type": "string",
+                        "format": "date-time",
+                        "description": "the start datetime for a custom range in an ISO 8601 compliant format. (eg 2025-04-05)"
+                    },
+                    "end": {
+                        "type": "string",
+                        "format": "date-time",
+                        "description": "the end datetime for a custom range in an ISO 8601 compliant format. (eg 2025-04-05)"
+                    }
+                },
+                "required": [
+                    "start",
+                    "end"
+                ]
+            }
+        },
+        "instrument": {
+            "type": "string",
+            "enum": [
+                "Hi 45",
+                "Hi 90",
+                "Hi combined",
+                "Ultra 45",
+                "Ultra 90",
+                "Ultra combined",
+                "Lo",
+                "lo",
+                "GLOWS",
+                "glows",
+                "IDEX",
+                "idex"
+            ],
+            "description": "The instrument(s) for the produced map"
+        },
+        "spin_phase": {
+            "type": "string",
+            "description": "The spin-phase for the produced map",
+            "enum": [
+                "ram",
+                "Ram",
+                "Anti-ram",
+                "anti-ram",
+                "Full spin",
+                "full spin"
+            ]
+        },
+        "reference_frame": {
+            "type": "string",
+            "enum": [
+                "spacecraft",
+                "heliospheric"
+            ],
+            "description": "The reference frame for the produced map"
+        },
+        "survival_corrected": {
+            "type": "boolean",
+            "description": "Whether the map is survival corrected"
+        },
+        "spice_frame_name": {
+            "type": "string",
+            "description": "The name of the spice frame to use. Must exist in default spice kernels or custom kernel provided in kernel_path property"
+        },
+        "pixelation_scheme": {
+            "type": "string",
+            "enum": [
+                "Square",
+                "square",
+                "HEALPIX",
+                "healpix"
+            ],
+            "description": "The pixelation scheme for the produced map, (e.g. square)"
+        },
+        "pixel_parameter": {
+            "type": "integer",
+            "enum": [
+                2,
+                4,
+                6,
+                16,
+                32,
+                64,
+                128,
+                256,
+                512
+            ],
+            "description": "Either the degree for a rectangular map or the n-side for a  healpix map. Must be a integer value."
+        },
+        "map_data_type": {
+            "type": "string",
+            "enum": [
+                "ENA Intensity",
+                "Spectral Index"
+            ],
+            "description": "The primary data product (ENA Intensity or Spectral Index)"
+        },
+        "lo_species": {
+            "type": "string",
+            "enum": [
+                "H",
+                "h",
+                "O",
+                "o"
+            ],
+            "description": "The species used for the map. Only valid for IMAP-Lo. (e.g H, o)"
+        },
+        "output_directory": {
+            "type": "string",
+            "description": "The output directory for the produced map"
+        },
+        "quantity_suffix": {
+            "type": "string",
+            "description": "The suffix to append to the quantity section in the output file descriptor",
+            "pattern": "[a-zA-Z]*"
+        },
+        "kernel_path": {
+            "type": "string",
+            "description": "The location of a custom spice kernel to use during map creation."
+        }
+    },
+    "required": [
+        "instrument",
+        "spin_phase",
+        "reference_frame",
+        "survival_corrected",
+        "spice_frame_name",
+        "pixelation_scheme",
+        "pixel_parameter",
+        "map_data_type"
+    ],
+    "oneOf": [
+        { "required": ["time_ranges"] },
+        { "required": ["canonical_map_period"] }
+    ]
+}
