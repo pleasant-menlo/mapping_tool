@@ -1,4 +1,4 @@
-import dataclasses
+import sys
 from dataclasses import replace
 import logging
 from datetime import datetime
@@ -14,7 +14,7 @@ from imap_l3_processing.hi.hi_processor import HiProcessor
 from imap_l3_processing.ultra.l3.ultra_processor import UltraProcessor
 from imap_l3_processing.lo.lo_processor import LoProcessor
 from imap_processing.cli import Hi, Lo, Ultra
-from imap_data_access import ProcessingInputCollection, ScienceInput, SPICEInput
+from imap_data_access import ProcessingInputCollection, ScienceInput, SPICEInput, download
 
 from mapping_tool.dependency_collector import DependencyCollector
 import spiceypy
@@ -159,10 +159,13 @@ def generate_l2_map(descriptor: MappingToolDescriptor, start_date: datetime, end
 
     map_details = f'{descriptor.to_string()} {start_date.strftime("%Y-%m-%d")} to {end_date.strftime("%Y-%m-%d")}'
     psets = DependencyCollector.get_pointing_sets(descriptor, start_date, end_date)
-
     if len(psets) == 0:
-        logging.getLogger("generate_l2_map").error(f"No pointing sets found for {map_details}")
         raise ValueError(f"No pointing sets found for {map_details}")
+    for i, pset in enumerate(psets, start=1):
+        print(f"\rDownloading psets {i}/{len(psets)}... ", end="")
+        sys.stdout.flush()
+        download(pset)
+    print("")
 
     processing_input_collection = ProcessingInputCollection(
         *[ScienceInput(pset) for pset in psets],

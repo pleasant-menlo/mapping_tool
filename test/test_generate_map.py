@@ -18,6 +18,11 @@ from test.test_builders import create_map_descriptor
 
 
 class TestGenerateMap(unittest.TestCase):
+    def setUp(self):
+        download_patch = patch("mapping_tool.generate_map.download")
+        self.mock_download = download_patch.start()
+        self.addCleanup(download_patch.stop)
+
     def test_get_dependencies_for_l3_map_returns_correct_dependencies(self):
         # @formatter:off
         ultra_sp_descriptor = create_map_descriptor(instrument=MappableInstrumentShortName.ULTRA, spin_phase='full', survival_corrected='sp')
@@ -302,6 +307,9 @@ class TestGenerateMap(unittest.TestCase):
                 mock_collect_spice_kernels.assert_called_once_with(start_date=start_date, end_date=end_date)
                 mock_get_pointing_sets.assert_called_once_with(descriptor, start_date, end_date)
 
+                self.mock_download.assert_has_calls([call("imap_hi_l1c_pset-1_20250101_v000.cdf"),
+                                               call("imap_hi_l1c_pset-2_20250101_v000.cdf")])
+
                 expected_dependency_str = ProcessingInputCollection(
                     ScienceInput("imap_hi_l1c_pset-1_20250101_v000.cdf"),
                     ScienceInput("imap_hi_l1c_pset-2_20250101_v000.cdf"),
@@ -418,8 +426,5 @@ class TestGenerateMap(unittest.TestCase):
         hi_descriptor = create_map_descriptor(instrument=MappableInstrumentShortName.HI)
         map_details = f'{hi_descriptor.to_string()} {start_date.strftime("%Y-%m-%d")} to {end_date.strftime("%Y-%m-%d")}'
         with self.assertRaises(ValueError) as exception_context:
-            logger = logging.getLogger('generate_l2_map')
-            with self.assertLogs(logger, logging.ERROR) as log_context:
-                generate_l2_map(hi_descriptor, start_date, end_date)
+            generate_l2_map(hi_descriptor, start_date, end_date)
         self.assertIn(f"No pointing sets found for {map_details}", str(exception_context.exception))
-        self.assertIn(f"ERROR:generate_l2_map:No pointing sets found for {map_details}", log_context.output)
