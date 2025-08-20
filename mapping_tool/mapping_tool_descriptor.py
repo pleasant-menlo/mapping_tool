@@ -34,6 +34,7 @@ class MappingToolDescriptor(MapDescriptor):
                 self.spin_phase,
                 self.coordinate_system,
                 self.resolution_str,
-                str(self.duration),
+                "custom" if self.duration == "0mo" else str(self.duration),
+                "mapper"
             ]
         )

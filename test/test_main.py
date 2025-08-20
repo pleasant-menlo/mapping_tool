@@ -64,13 +64,13 @@ class TestMain(unittest.TestCase):
         mock_cdf_file_1.attrs = {
             "Logical_source": "old logical source",
             "Logical_file_id": "old logical file_id",
-            "Data_type": [f"L2_{hi_descriptor.to_string()}>other_stuff"],
+            "Data_type": f"L3_{hi_descriptor.to_string()}>other_stuff",
         }
 
         mock_cdf_file_2.attrs = {
             "Logical_source": "old logical source",
             "Logical_file_id": "old logical file_id",
-            "Data_type": [f"L2_{hi_descriptor.to_string()}>more_other_stuff"],
+            "Data_type": f"L3_{hi_descriptor.to_string()}>more_other_stuff",
         }
 
         do_mapping_tool(mock_configuration)
@@ -91,8 +91,8 @@ class TestMain(unittest.TestCase):
         self.assertEqual(2, mock_cdf.call_count)
 
         main.logger.info.assert_has_calls([
-            call('Generating map: h90-enaTEST-h-sf-sp-ram-hae-2deg-6mo 2025-01-01 to 2026-01-01'),
-            call('Generating map: h90-enaTEST-h-sf-sp-ram-hae-2deg-6mo 2026-01-01 to 2027-01-01'),
+            call('Generating map: h90-enaTEST-h-sf-sp-ram-hae-2deg-6mo-mapper 2025-01-01 to 2026-01-01'),
+            call('Generating map: h90-enaTEST-h-sf-sp-ram-hae-2deg-6mo-mapper 2026-01-01 to 2027-01-01'),
         ])
 
         mock_generate_map.assert_has_calls([
@@ -104,7 +104,7 @@ class TestMain(unittest.TestCase):
         self.assertEqual(mock_configuration.raw_config, mock_cdf_file_1.attrs.get("Mapper_tool_configuration"))
         self.assertEqual('imap_hi_l3_h90-enaTEST-h-sf-sp-ram-hae-2deg-6mo-mapper_20250101_v000',
                          mock_cdf_file_1.attrs["Logical_file_id"])
-        self.assertEqual('L2_h90-enaTEST-h-sf-sp-ram-hae-2deg-6mo-mapper>other_stuff',
+        self.assertEqual('L3_h90-enaTEST-h-sf-sp-ram-hae-2deg-6mo-mapper>other_stuff',
                          mock_cdf_file_1.attrs["Data_type"])
 
         mock_cleanup.assert_called_once_with(hi_descriptor)
@@ -158,6 +158,30 @@ class TestMain(unittest.TestCase):
 
                         self.assertEqual(expected_energy_shape, cdf['energy'].shape)
 
+
+
+    @patch('main.generate_map')
+    def test_uses_custom_for_duration_of_custom_time_range_map(self, mock_generate_map):
+        l2_maps = [get_test_cdf_file_path() / 'l2_ena_20250215.cdf', get_test_cdf_file_path() / 'l2_ena_20250115.cdf']
+        with tempfile.TemporaryDirectory() as tmpdir:
+            tmp_path = Path(tmpdir)
+            map_config = create_configuration(
+                output_directory=tmp_path,
+                time_ranges=[TimeRange(utcdatetime(), utcdatetime()), TimeRange(utcdatetime(), utcdatetime())]
+            )
+
+            mock_generate_map.side_effect = l2_maps
+
+            do_mapping_tool(map_config)
+
+            generated_cdf = next(tmp_path.glob('*.cdf'))
+
+            self.assertEqual("imap_hi_l2_h90-enaCUSTOM-h-sf-nsp-ram-eclipj2000-4deg-custom-mapper_20250820_v000.cdf", generated_cdf.name)
+
+            with CDF(str(generated_cdf)) as cdf:
+                self.assertEqual("h90-enaCUSTOM-h-sf-nsp-ram-eclipj2000-4deg-custom-mapper", str(cdf.attrs["Logical_source"]))
+                self.assertEqual("imap_hi_l2_h90-enaCUSTOM-h-sf-nsp-ram-eclipj2000-4deg-custom-mapper_20250820_v000", str(cdf.attrs["Logical_file_id"]))
+                self.assertEqual("L2_h90-enaCUSTOM-h-sf-nsp-ram-eclipj2000-4deg-custom-mapper>Level-2 ENA Intensity Map for Hi90", str(cdf.attrs["Data_type"]))
 
 
 
@@ -238,7 +262,7 @@ class TestMain(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmpdir:
             config = create_configuration(output_directory=Path(tmpdir))
             existing_file = Path(
-                tmpdir) / f"imap_hi_l2_{config.get_map_descriptor().to_mapping_tool_string()}-mapper_20250101_v000.cdf"
+                tmpdir) / f"imap_hi_l2_{config.get_map_descriptor().to_mapping_tool_string()}_20250101_v000.cdf"
             existing_file.write_text("text")
 
             do_mapping_tool(config)
