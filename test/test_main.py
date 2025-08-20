@@ -79,7 +79,7 @@ class TestMain(unittest.TestCase):
         mock_configuration.get_map_date_ranges.assert_called_once()
         mock_sort_cdfs_by_epoch.assert_called_once_with([generated_cdf_path_1, generated_cdf_path_2])
 
-        output_map_path = str(mock_configuration.output_directory /  'imap_hi_l3_h90-enaTEST-h-sf-sp-ram-hae-2deg-6mo_20250101_v000.cdf')
+        output_map_path = str(mock_configuration.output_directory /  'imap_hi_l3_h90-enaTEST-h-sf-sp-ram-hae-2deg-6mo-mapper_20250101_v000.cdf')
         mock_cdf.assert_has_calls([
             call(output_map_path, str(generated_cdf_path_1), readonly=False),
             call().__enter__(),
@@ -100,11 +100,11 @@ class TestMain(unittest.TestCase):
             call(hi_descriptor, map_date_ranges[1][0], map_date_ranges[1][1]),
         ])
 
-        self.assertEqual('h90-enaTEST-h-sf-sp-ram-hae-2deg-6mo_generated-by-mapper-tool', mock_cdf_file_1.attrs["Logical_source"])
+        self.assertEqual('h90-enaTEST-h-sf-sp-ram-hae-2deg-6mo-mapper', mock_cdf_file_1.attrs["Logical_source"])
         self.assertEqual(mock_configuration.raw_config, mock_cdf_file_1.attrs.get("Mapper_tool_configuration"))
-        self.assertEqual('imap_hi_l3_h90-enaTEST-h-sf-sp-ram-hae-2deg-6mo_20250101_v000',
+        self.assertEqual('imap_hi_l3_h90-enaTEST-h-sf-sp-ram-hae-2deg-6mo-mapper_20250101_v000',
                          mock_cdf_file_1.attrs["Logical_file_id"])
-        self.assertEqual('L2_h90-enaTEST-h-sf-sp-ram-hae-2deg-6mo>other_stuff',
+        self.assertEqual('L2_h90-enaTEST-h-sf-sp-ram-hae-2deg-6mo-mapper>other_stuff',
                          mock_cdf_file_1.attrs["Data_type"])
 
         mock_cleanup.assert_called_once_with(hi_descriptor)
@@ -238,7 +238,7 @@ class TestMain(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmpdir:
             config = create_configuration(output_directory=Path(tmpdir))
             existing_file = Path(
-                tmpdir) / f"imap_hi_l2_{config.get_map_descriptor().to_mapping_tool_string()}_20250101_v000.cdf"
+                tmpdir) / f"imap_hi_l2_{config.get_map_descriptor().to_mapping_tool_string()}-mapper_20250101_v000.cdf"
             existing_file.write_text("text")
 
             do_mapping_tool(config)
@@ -254,9 +254,10 @@ class TestMain(unittest.TestCase):
         config = create_configuration()
 
         mock_generate_map.return_value = Path("")
-        mock_save_output_cdf.side_effect = Exception
+        mock_save_output_cdf.side_effect = Exception("injected exception")
 
-        do_mapping_tool(config)
+        with self.assertLogs(main.logger, logging.ERROR) as log_context:
+            do_mapping_tool(config)
 
         mock_cleanup.assert_called_once_with(config.get_map_descriptor())
 

@@ -23,7 +23,7 @@ import imap_data_access
 
 def get_output_filename(descriptor: MappingToolDescriptor, start_date: datetime):
     data_level = get_data_level_for_descriptor(descriptor)
-    return f"imap_{descriptor.instrument.name.lower()}_{data_level}_{descriptor.to_mapping_tool_string()}_{start_date.strftime("%Y%m%d")}_v000.cdf"
+    return f"imap_{descriptor.instrument.name.lower()}_{data_level}_{descriptor.to_mapping_tool_string()}-mapper_{start_date.strftime("%Y%m%d")}_v000.cdf"
 
 
 def cleanup_l2_l3_dependencies(descriptor: MappingToolDescriptor):
@@ -78,11 +78,12 @@ def save_output_cdf(output_path: Path, map_cdf_paths: list[Path], config: Config
 
     first_map_path = map_cdf_paths[0]
     with CDF(str(output_path), str(first_map_path), readonly=False) as cdf:
-        cdf.attrs['Logical_source'] = descriptor.to_mapping_tool_string() + "_generated-by-mapper-tool"
+        cdf.attrs['Logical_source'] = descriptor.to_mapping_tool_string() + "-mapper"
         cdf.attrs['Logical_file_id'] = output_path.stem
         cdf.attrs['Mapper_tool_configuration'] = config.raw_config
-        cdf.attrs['Data_type'] = cdf.attrs['Data_type'][0].replace(descriptor.to_string(),
-                                                                   descriptor.to_mapping_tool_string())
+        cdf.attrs['Data_type'] = cdf.attrs['Data_type'][0].replace(
+            descriptor.to_string(),
+            f"{descriptor.to_mapping_tool_string()}-mapper")
         for additional_map_path in map_cdf_paths[1:]:
             with CDF(str(additional_map_path)) as additional_map:
                 cdf['epoch'][...] = np.concatenate((cdf['epoch'][...], additional_map['epoch'][...]))
