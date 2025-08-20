@@ -34,7 +34,7 @@ reference_frame_type: spacecraft
 survival_corrected: false
 
 ## The SPICE frame to be used for the map projection.
-# Some frames (e.g. "hae") are defined by the mission and can be used without supplying a custom spice kernel.
+# Some frames (e.g. "hae" or "IMAP_HAE") are defined by the mission and can be used without supplying a custom spice kernel.
 spice_frame_name: hae
 
 ## The pixelation scheme to be used for map generation.
