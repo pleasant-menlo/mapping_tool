@@ -30,7 +30,7 @@ class TestConfiguration(TestCase):
                     canonical_map_period=CanonicalMapPeriod(year=2025, quarter=1, map_period=6, number_of_maps=1),
                     instrument="Hi 90",
                     spin_phase="Ram",
-                    reference_frame="spacecraft",
+                    reference_frame_type="spacecraft",
                     survival_corrected=True,
                     spice_frame_name="ECLIPJ2000",
                     pixelation_scheme="square",
@@ -60,7 +60,7 @@ class TestConfiguration(TestCase):
                     ],
                     instrument="Hi 90",
                     spin_phase="Ram",
-                    reference_frame="spacecraft",
+                    reference_frame_type="spacecraft",
                     survival_corrected=True,
                     spice_frame_name="ECLIPJ2000",
                     pixelation_scheme="square",
@@ -92,7 +92,7 @@ class TestConfiguration(TestCase):
                     canonical_map_period=CanonicalMapPeriod(year=2025, quarter=1, map_period=6, number_of_maps=1),
                     instrument='Ultra 45',
                     spin_phase="Ram",
-                    reference_frame="spacecraft",
+                    reference_frame_type="spacecraft",
                     survival_corrected=True,
                     spice_frame_name="IMAP_HNU",
                     pixelation_scheme="square",
@@ -122,7 +122,7 @@ class TestConfiguration(TestCase):
                     ),
                     "instrument": "Hi 90",
                     "spin_phase": "Ram",
-                    "reference_frame": "spacecraft",
+                    "reference_frame_type": "spacecraft",
                     "survival_corrected": True,
                     "spice_frame_name": "ECLIPJ2000",
                     "pixelation_scheme": "square",
@@ -138,7 +138,7 @@ class TestConfiguration(TestCase):
         validation_error_cases = [
             ("invalid instrument", {"instrument": "90", **create_canonical_map_period_dict()}),
             ("invalid spin phase", {"spin_phase": "none", **create_canonical_map_period_dict()}),
-            ("invalid reference frame", {"reference_frame": "spacecraft kinematic", **create_canonical_map_period_dict()}),
+            ("invalid reference frame", {"reference_frame_type": "spacecraft kinematic", **create_canonical_map_period_dict()}),
             ("invalid survival probability corrected", {"survival_corrected": "YES", **create_canonical_map_period_dict()}),
             ("invalid cannot have both canonical and time_ranges included", {"time_ranges": {"start": "2025-01-03T03:03:03.3", "stop": "2025-01-04T03:03:03.3"}}),
             ("invalid must include either time ranges or canonical map period", {}),
@@ -160,7 +160,7 @@ class TestConfiguration(TestCase):
 
         for case, expected in cases:
             with self.subTest(f"{case}, {expected}"):
-                input_config = create_configuration(reference_frame=case)
+                input_config = create_configuration(reference_frame_type=case)
                 descriptor = input_config.get_map_descriptor()
                 self.assertEqual(expected, descriptor.frame_descriptor)
 

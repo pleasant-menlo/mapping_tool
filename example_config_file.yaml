@@ -13,10 +13,10 @@ canonical_map_period:
 
 # Example of a list of custom date ranges definition:
 #time_ranges:
-#  - start: 2025-06-15 # The start date of the first map period
-#    end: 2025-08-01 # The end date of the first map period
-#  - start: 2025-04-15 # The start date of a second map
-#    end: 2025-05-01 # The end date of a second map
+#  - start: 2026-01-01 # The start date of the first map
+#    end: 2026-03-01   # The end date of the first map
+#  - start: 2026-03-01 # The start date of the second map
+#    end: 2026-04-01   # The end date of the second map
 
 ## The instrument to be used to generate the map.
 # Valid options are: "Hi 45", "Hi 90", "Hi combined", "Ultra 45", "Ultra 90", "Ultra combined", "Lo"
@@ -26,12 +26,12 @@ instrument: Hi 90
 # valid options are: "ram", "anti-ram", "full spin"
 spin_phase: ram
 
-## The reference frame to be used for the map projection.
+## The reference frame type to be used for the map projection.
 # valid options are: "spacecraft", "heliospheric"
-reference_frame: spacecraft
+reference_frame_type: spacecraft
 
 ## Boolean value indicating whether the map should be survival-probability corrected
-survival_corrected: true
+survival_corrected: false
 
 ## The SPICE frame to be used for the map projection.
 # Some frames (e.g. "hae") are defined by the mission and can be used without supplying a custom spice kernel.
@@ -51,7 +51,7 @@ map_data_type: ENA Intensity
 
 ## The species used to create the map. Optional property, which only applies to IMAP-Lo maps.
 # Valid parameters are "h" or "o"
-lo_species: h
+#lo_species: h
 
 ## Optional text suffix to be added to the map data type in the descriptor of the output file.
 quantity_suffix: suffix

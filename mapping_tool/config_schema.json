@@ -86,7 +86,7 @@
                 "full spin"
             ]
         },
-        "reference_frame": {
+        "reference_frame_type": {
             "type": "string",
             "enum": [
                 "spacecraft",
@@ -162,7 +162,7 @@
     "required": [
         "instrument",
         "spin_phase",
-        "reference_frame",
+        "reference_frame_type",
         "survival_corrected",
         "spice_frame_name",
         "pixelation_scheme",

@@ -7,7 +7,7 @@ canonical_map_period:
 instrument: Hi combined
 
 spin_phase: Full spin
-reference_frame: spacecraft
+reference_frame_type: spacecraft
 survival_corrected: true
 spice_frame_name: ECLIPJ2000
 pixelation_scheme: square

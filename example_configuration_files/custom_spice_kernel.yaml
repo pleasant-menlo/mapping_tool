@@ -8,7 +8,7 @@ time_ranges:
     end: 2026-04-01
 instrument: Hi 90
 spin_phase: ram
-reference_frame: spacecraft
+reference_frame_type: spacecraft
 survival_corrected: true
 spice_frame_name: CUSTOM_FRAME # This is a custom SPICE frame name defined in the "spice_kernel.tf"
 pixelation_scheme: square

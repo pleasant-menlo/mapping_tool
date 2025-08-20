@@ -71,7 +71,7 @@ The map to be created is defined by the configuration file passed to `main.py`. 
 * `spin_phase` - The spin phase to be used to generate the map. Valid options are: "ram", "anti-ram", "full spin".
 
 
-* `reference_frame` - The reference frame to be used for the map projection. Valid options are: "spacecraft", "heliospheric".
+* `reference_frame_type` - The reference frame type to be used for the map projection. Valid options are: "spacecraft", "heliospheric".
 
 
 * `survival_corrected` - Boolean value indicating whether the map should be survival-probability corrected.

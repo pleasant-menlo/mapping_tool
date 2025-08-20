@@ -8,7 +8,7 @@ canonical_map_period:
   number_of_maps: 1     # The number of maps to be calculated for the output CDF file
 instrument: Hi 90
 spin_phase: ram
-reference_frame: spacecraft
+reference_frame_type: spacecraft
 survival_corrected: true
 spice_frame_name: hae
 pixelation_scheme: square

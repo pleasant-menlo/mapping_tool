@@ -74,7 +74,7 @@ class Configuration:
     raw_config: str
     instrument: str
     spin_phase: str
-    reference_frame: str
+    reference_frame_type: str
     survival_corrected: bool
     spice_frame_name: str
     pixelation_scheme: str
@@ -178,7 +178,7 @@ class Configuration:
         coordinate_system = re.sub(r"[^A-Za-z0-9]", "", self.spice_frame_name).lower()
 
         return MappingToolDescriptor(
-            frame_descriptor=frame_descriptors[self.reference_frame],
+            frame_descriptor=frame_descriptors[self.reference_frame_type],
             resolution_str=resolution,
             duration=duration,
             instrument=instrument,

@@ -7,7 +7,7 @@ canonical_map_period:
 instrument: Ultra 45
 
 spin_phase: Ram
-reference_frame: spacecraft
+reference_frame_type: spacecraft
 survival_corrected: true
 spice_frame_name: IMAP_HNU
 pixelation_scheme: square
