@@ -7,10 +7,7 @@ import numpy as np
 
 from mapping_tool.generate_map import generate_map, get_data_level_for_descriptor
 from mapping_tool.mapping_tool_descriptor import MappingToolDescriptor
-
 logger = logging.getLogger(__name__)
-
-logging.getLogger("imap_processing").setLevel(logging.WARNING)
 
 import argparse
 from pathlib import Path
@@ -47,19 +44,21 @@ def do_mapping_tool(config: Configuration):
         output_filename = get_output_filename(descriptor, first_start_date)
         final_output_path = config.output_directory / output_filename
         if final_output_path.exists():
-            logger.info(f"Skipping generation of map: {output_filename}, because it already exists!")
+            print(f"Skipping generation of map: {output_filename}, because it already exists!")
             return
 
         output_map_paths = []
-        for start_date, end_date in map_date_ranges:
+        for i, (start_date, end_date) in enumerate(map_date_ranges, start=1):
             map_details = f'{descriptor.to_mapping_tool_string()} {start_date.strftime("%Y-%m-%d")} to {end_date.strftime("%Y-%m-%d")}'
 
+            print(f"Generating map {i}/{len(map_date_ranges)}...")
             logger.info(f"Generating map: {map_details}")
             generated_map_path = generate_map(descriptor, start_date, end_date)
             output_map_paths.append(generated_map_path)
 
         sorted_paths = sort_cdfs_by_epoch(output_map_paths)
         save_output_cdf(final_output_path, sorted_paths, config)
+        print(f"Created file {final_output_path}")
     except Exception:
         logger.error(f"Failed to generate map: {descriptor.to_mapping_tool_string()} with error\n{traceback.format_exc()}")
     finally:
@@ -97,7 +96,15 @@ def save_output_cdf(output_path: Path, map_cdf_paths: list[Path], config: Config
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('config_file', type=Path)
+    parser.add_argument('-v', '--verbose', action='count', default=0)
     args = parser.parse_args()
+    if args.verbose > 0:
+        log_level = logging.INFO
+    else:
+        log_level = logging.ERROR
+    logging.basicConfig(level=log_level, force=True)
+    logging.captureWarnings(True)
+
     configuration = Configuration.from_file(args.config_file)
 
     do_mapping_tool(configuration)

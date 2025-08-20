@@ -23,12 +23,13 @@ from test.test_helpers import run_periodically, get_example_config_path, get_tes
 
 class TestMain(unittest.TestCase):
 
+    @patch('main.print')
     @patch('main.CDF')
     @patch('main.shutil.copy')
     @patch('main.generate_map')
     @patch('main.cleanup_l2_l3_dependencies')
     @patch('main.sort_cdfs_by_epoch')
-    def test_do_mapping_tool(self, mock_sort_cdfs_by_epoch, mock_cleanup, mock_generate_map, mock_copy_file, mock_cdf):
+    def test_do_mapping_tool(self, mock_sort_cdfs_by_epoch, mock_cleanup, mock_generate_map, mock_copy_file, mock_cdf, mock_print):
         self.assertTrue(hasattr(main, "logger"))
         main.logger.info = Mock()
 
@@ -108,6 +109,9 @@ class TestMain(unittest.TestCase):
                          mock_cdf_file_1.attrs["Data_type"])
 
         mock_cleanup.assert_called_once_with(hi_descriptor)
+        mock_print.assert_has_calls([
+            call(f"Created file {output_map_path}")
+        ])
 
     @patch('main.generate_map')
     def test_ena_maps_with_multiple_date_ranges_are_concatenated_into_a_single_cdf_file(self, mock_generate_map):
