@@ -85,7 +85,7 @@ class Configuration:
     kernel_path: Path = None
     lo_species: Optional[str] = None
     output_directory: Optional[Path] = Path('.')
-    quantity_suffix: str = 'CUSTOM'
+    quantity_suffix: str = ""
 
 
     @classmethod

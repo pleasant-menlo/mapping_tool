@@ -13,7 +13,7 @@ class CustomSpiceFrame:
 
 @dataclass
 class MappingToolDescriptor(MapDescriptor):
-    quantity_suffix: str = "CUSTOM"
+    quantity_suffix: str = ""
     spice_frame: SpiceFrame | CustomSpiceFrame = SpiceFrame.ECLIPJ2000
     kernel_path: Optional[Path] = None
 

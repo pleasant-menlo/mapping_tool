@@ -176,12 +176,12 @@ class TestMain(unittest.TestCase):
 
             generated_cdf = next(tmp_path.glob('*.cdf'))
 
-            self.assertEqual("imap_hi_l2_h90-enaCUSTOM-h-sf-nsp-ram-eclipj2000-4deg-custom-mapper_20250820_v000.cdf", generated_cdf.name)
+            self.assertEqual("imap_hi_l2_h90-ena-h-sf-nsp-ram-eclipj2000-4deg-custom-mapper_20250820_v000.cdf", generated_cdf.name)
 
             with CDF(str(generated_cdf)) as cdf:
-                self.assertEqual("h90-enaCUSTOM-h-sf-nsp-ram-eclipj2000-4deg-custom-mapper", str(cdf.attrs["Logical_source"]))
-                self.assertEqual("imap_hi_l2_h90-enaCUSTOM-h-sf-nsp-ram-eclipj2000-4deg-custom-mapper_20250820_v000", str(cdf.attrs["Logical_file_id"]))
-                self.assertEqual("L2_h90-enaCUSTOM-h-sf-nsp-ram-eclipj2000-4deg-custom-mapper>Level-2 ENA Intensity Map for Hi90", str(cdf.attrs["Data_type"]))
+                self.assertEqual("h90-ena-h-sf-nsp-ram-eclipj2000-4deg-custom-mapper", str(cdf.attrs["Logical_source"]))
+                self.assertEqual("imap_hi_l2_h90-ena-h-sf-nsp-ram-eclipj2000-4deg-custom-mapper_20250820_v000", str(cdf.attrs["Logical_file_id"]))
+                self.assertEqual("L2_h90-ena-h-sf-nsp-ram-eclipj2000-4deg-custom-mapper>Level-2 ENA Intensity Map for Hi90", str(cdf.attrs["Data_type"]))
 
 
 

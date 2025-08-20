@@ -38,7 +38,7 @@ class TestConfiguration(TestCase):
                     map_data_type="ENA Intensity",
                     lo_species=None,
                     output_directory=Path('.'),
-                    quantity_suffix="CUSTOM",
+                    quantity_suffix="",
                     kernel_path=Path("path/to/another_kernel"),
                     raw_config=yaml.dump(yaml.safe_load(example_config_path.read_text()))
                 )
@@ -68,7 +68,7 @@ class TestConfiguration(TestCase):
                     map_data_type="ENA Intensity",
                     lo_species=None,
                     output_directory=Path('.'),
-                    quantity_suffix="CUSTOM",
+                    quantity_suffix="",
                     kernel_path=Path("path/to/another_kernel"),
                     raw_config=yaml.dump(yaml.safe_load(example_config_path.read_text()))
                 )
