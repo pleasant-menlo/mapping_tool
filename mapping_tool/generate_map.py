@@ -102,7 +102,7 @@ def generate_map(descriptor: MappingToolDescriptor, start: datetime, end: dateti
         deps = get_dependencies_for_l3_map(descriptor)
         logger.info("identified dependencies %s", deps)
         for dependency in deps:
-            logger.info("generating dependency %s", dependency.to_mapping_tool_string())
+            print(f"Generating intermediate map {dependency.to_mapping_tool_string()}")
             map_deps.append(generate_map(dependency, start, end))
         logger.info("generating l3 map %s", descriptor.to_mapping_tool_string())
         return generate_l3_map(descriptor, start, end, map_deps)

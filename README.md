@@ -44,6 +44,8 @@ From within the virtual environment, run the following:
     python main.py {path to config file}
 ```
 
+Adding `-v` or `--verbose` to the command will include lots of diagnostic information.
+
 ## Configuration File Parameters
 The map to be created is defined by the configuration file passed to `main.py`. The configuration can be specified in YAML or JSON. An annotated example file can be found [here](./example_config_file.yaml). Additional examples can be found in the [example_configuration_files](./example_configuration_files) directory. Available options and their corresponding values are:
 * `canonical_map_period` - Specification of the time periods to be used for map creation. Either a canonical map period or a list of custom time ranges can be specified, but not both.

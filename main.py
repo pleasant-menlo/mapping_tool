@@ -95,8 +95,8 @@ def save_output_cdf(output_path: Path, map_cdf_paths: list[Path], config: Config
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument('config_file', type=Path)
-    parser.add_argument('-v', '--verbose', action='count', default=0)
+    parser.add_argument('config_file', type=Path, help="Path to configuration file in YAML or JSON format")
+    parser.add_argument('-v', '--verbose', action='count', default=0, help='Increase verbosity')
     args = parser.parse_args()
     if args.verbose > 0:
         log_level = logging.INFO
