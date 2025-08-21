@@ -1,8 +1,9 @@
+from __future__ import annotations
 import enum
 import re
 from datetime import timedelta, datetime, timezone
 from dataclasses import dataclass
-from typing import Optional, Self
+from typing import Optional
 
 from imap_processing.ena_maps.utils.naming import MapDescriptor, MappableInstrumentShortName
 
@@ -38,7 +39,7 @@ class CanonicalMapPeriod:
         return dates
 
 
-class DataLevel(enum.StrEnum):
+class DataLevel(enum.Enum):
     L2 = 'l2'
     L3 = 'l3'
     NA = 'no applicable level'
@@ -88,7 +89,7 @@ class Configuration:
 
 
     @classmethod
-    def from_file(cls, config_path: Path) -> Self:
+    def from_file(cls, config_path: Path) -> Configuration:
         if config_path.suffix not in ['.json', '.yaml']:
             raise ValueError(f'Configuration file {config_path} must have .json or .yaml extension')
         with open(str(config_path), 'r') as f:
@@ -96,7 +97,7 @@ class Configuration:
             return cls.parse_config(raw_text)
 
     @classmethod
-    def parse_config(cls, config_text: str) -> Self:
+    def parse_config(cls, config_text: str) -> Configuration:
         config = parse_yaml_no_datetime_conversion(config_text)
 
         raw_yaml = yaml.dump(yaml.safe_load(config_text))

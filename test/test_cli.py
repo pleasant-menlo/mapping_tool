@@ -247,7 +247,7 @@ class TestCli(unittest.TestCase):
                         cleanup_l2_l3_dependencies(descriptor)
 
                         data_folder = test_deletes_stuff_here / "imap"
-                        expected_folder_structure = [
+                        expected_folder_structure = {
                             data_folder / "hi",
                             data_folder / "lo",
                             data_folder / "hi/l1c",
@@ -255,9 +255,9 @@ class TestCli(unittest.TestCase):
                             data_folder / "hi/l1c/2025",
                             data_folder / "hi/l1c/2025/06",
                             data_folder / "hi/l1c/2025/06/imap_hi_l1c_pset_20250606_v000.cdf",
-                        ]
+                        }
 
-                        self.assertEqual(expected_folder_structure, list(data_folder.rglob("*")))
+                        self.assertEqual(expected_folder_structure, set(data_folder.rglob("*")))
                 finally:
                     imap_data_access.config["DATA_DIR"] = original_imap_data_dir
 

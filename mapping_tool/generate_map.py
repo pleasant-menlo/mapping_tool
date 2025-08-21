@@ -143,7 +143,11 @@ def generate_l3_map(descriptor: MappingToolDescriptor, start: datetime, end: dat
     try:
         processed_files = processor.process(descriptor.spice_frame)
     except Exception as e:
-        e.add_note(f"Processing for {descriptor.to_string()} failed")
+        note = f"Processing for {descriptor.to_string()} failed"
+        if hasattr(e, "add_note"):
+            e.add_note(note)
+        else:
+            e.__notes__ = [note]
         raise e
 
     if len(processed_files) < 1:
@@ -197,7 +201,11 @@ def generate_l2_map(descriptor: MappingToolDescriptor, start_date: datetime, end
             results = processor.do_processing(downloaded_deps)
             paths = processor.post_processing(results, downloaded_deps)
         except Exception as e:
-            e.add_note(f"Processing for {descriptor.to_string()} failed")
+            note = f"Processing for {descriptor.to_string()} failed"
+            if hasattr(e, "add_note"):
+                e.add_note(note)
+            else:
+                e.__notes__ = [note]
             raise e
         finally:
             processor.cleanup()

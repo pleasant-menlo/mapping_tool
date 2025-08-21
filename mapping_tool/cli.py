@@ -19,7 +19,7 @@ import imap_data_access
 
 def get_output_filename(descriptor: MappingToolDescriptor, start_date: datetime):
     data_level = get_data_level_for_descriptor(descriptor)
-    return f"imap_{descriptor.instrument.name.lower()}_{data_level}_{descriptor.to_mapping_tool_string()}_{start_date.strftime("%Y%m%d")}_v000.cdf"
+    return f"imap_{descriptor.instrument.name.lower()}_{data_level.value}_{descriptor.to_mapping_tool_string()}_{start_date.strftime('%Y%m%d')}_v000.cdf"
 
 
 def cleanup_l2_l3_dependencies(descriptor: MappingToolDescriptor):
@@ -83,7 +83,7 @@ def save_output_cdf(output_path: Path, map_cdf_paths: list[Path], config: Config
 
         _, data_type_description = str(cdf.attrs["Data_type"]).split(">")
         data_level = get_data_level_for_descriptor(descriptor)
-        cdf.attrs['Data_type'] = f"{data_level.upper()}_{descriptor.to_mapping_tool_string()}>{data_type_description}"
+        cdf.attrs['Data_type'] = f"{data_level.value.upper()}_{descriptor.to_mapping_tool_string()}>{data_type_description}"
 
         for additional_map_path in map_cdf_paths[1:]:
             with CDF(str(additional_map_path)) as additional_map:
