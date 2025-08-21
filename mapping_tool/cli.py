@@ -58,6 +58,7 @@ def do_mapping_tool(config: Configuration):
         sorted_paths = sort_cdfs_by_epoch(output_map_paths)
         save_output_cdf(final_output_path, sorted_paths, config)
         print(f"Created file {final_output_path}")
+        return final_output_path
     except Exception:
         logger.error(f"Failed to generate map: {descriptor.to_mapping_tool_string()} with error\n{traceback.format_exc()}")
     finally:
