@@ -133,8 +133,8 @@ class TestConfiguration(TestCase):
 
                 mock_validate.assert_called_with(expected_config, config_schema.schema)
 
-    @patch("mapping_tool.configuration.json.loads")
-    def test_from_file_fails_validation_with_invalid_config(self, mock_loads):
+    @patch("mapping_tool.configuration.parse_yaml_no_datetime_conversion")
+    def test_from_file_fails_validation_with_invalid_config(self, mock_parse):
         validation_error_cases = [
             ("invalid instrument", {"instrument": "90", **create_canonical_map_period_dict()}),
             ("invalid spin phase", {"spin_phase": "none", **create_canonical_map_period_dict()}),
@@ -147,7 +147,7 @@ class TestConfiguration(TestCase):
         ]
         for name, case in validation_error_cases:
             with self.subTest(name):
-                mock_loads.return_value = create_config_dict(case)
+                mock_parse.return_value = create_config_dict(case)
                 with self.assertRaises(jsonschema.exceptions.ValidationError):
                     Configuration.from_file(get_example_config_path() / "test_l2_config.json")
 

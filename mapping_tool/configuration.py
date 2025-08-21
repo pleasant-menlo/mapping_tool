@@ -13,6 +13,7 @@ from imap_processing.spice.geometry import SpiceFrame
 from jsonschema import validate
 
 import yaml
+from pip._internal.configuration import Configuration
 from yaml import SafeLoader
 
 from mapping_tool import config_schema
@@ -94,40 +95,40 @@ class Configuration:
             raise ValueError(f'Configuration file {config_path} must have .json or .yaml extension')
         with open(str(config_path), 'r') as f:
             raw_text = f.read()
-            if config_path.suffix == '.json':
-                config = json.loads(raw_text)
-            elif config_path.suffix == '.yaml':
-                config = parse_yaml_no_datetime_conversion(raw_text)
+            return cls.parse_config(raw_text)
 
-            raw_yaml = yaml.dump(yaml.safe_load(raw_text))
+    @classmethod
+    def parse_config(cls, config_text: str) -> Configuration:
+        config = parse_yaml_no_datetime_conversion(config_text)
 
-            schema = config_schema.schema
-            validate(config, schema)
+        raw_yaml = yaml.dump(yaml.safe_load(config_text))
 
+        schema = config_schema.schema
+        validate(config, schema)
 
-            if "time_ranges" in config:
-                time_ranges = []
-                for time_range in config["time_ranges"]:
-                    start = datetime.fromisoformat(time_range["start"])
-                    if start.tzinfo is None:
-                        start = start.replace(tzinfo=timezone.utc)
+        if "time_ranges" in config:
+            time_ranges = []
+            for time_range in config["time_ranges"]:
+                start = datetime.fromisoformat(time_range["start"])
+                if start.tzinfo is None:
+                    start = start.replace(tzinfo=timezone.utc)
 
-                    end = datetime.fromisoformat(time_range["end"])
-                    if end.tzinfo is None:
-                        end = end.replace(tzinfo=timezone.utc)
+                end = datetime.fromisoformat(time_range["end"])
+                if end.tzinfo is None:
+                    end = end.replace(tzinfo=timezone.utc)
 
-                    time_ranges.append(TimeRange(start, end))
+                time_ranges.append(TimeRange(start, end))
 
-                config["time_ranges"] = time_ranges
-            else:
-                canonical_map_period = CanonicalMapPeriod(**config["canonical_map_period"])
-                config["canonical_map_period"] = canonical_map_period
+            config["time_ranges"] = time_ranges
+        else:
+            canonical_map_period = CanonicalMapPeriod(**config["canonical_map_period"])
+            config["canonical_map_period"] = canonical_map_period
 
-            if config.get("output_directory") is not None:
-                config["output_directory"] = Path(config["output_directory"])
-            if config.get("kernel_path") is not None:
-                config["kernel_path"] = Path(config["kernel_path"])
-            return cls(raw_yaml, **config)
+        if config.get("output_directory") is not None:
+            config["output_directory"] = Path(config["output_directory"])
+        if config.get("kernel_path") is not None:
+            config["kernel_path"] = Path(config["kernel_path"])
+        return cls(raw_yaml, **config)
 
     @classmethod
     def parse_instrument(cls, instrument_sensor: str):
