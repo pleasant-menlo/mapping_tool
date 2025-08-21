@@ -17,7 +17,7 @@ def get_test_cdf_file_path():
 
 
 def utcdatetime():
-    return datetime.now(tz=pytz.utc)
+    return datetime(2025, 8, 20, tzinfo=pytz.utc)
 
 
 @dataclass
