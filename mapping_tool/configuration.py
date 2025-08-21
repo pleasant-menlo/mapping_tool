@@ -1,9 +1,8 @@
 import enum
 import re
 from datetime import timedelta, datetime, timezone
-import json
-from dataclasses import dataclass, field
-from typing import Optional
+from dataclasses import dataclass
+from typing import Optional, Self
 
 from imap_processing.ena_maps.utils.naming import MapDescriptor, MappableInstrumentShortName
 
@@ -13,7 +12,6 @@ from imap_processing.spice.geometry import SpiceFrame
 from jsonschema import validate
 
 import yaml
-from pip._internal.configuration import Configuration
 from yaml import SafeLoader
 
 from mapping_tool import config_schema
@@ -90,7 +88,7 @@ class Configuration:
 
 
     @classmethod
-    def from_file(cls, config_path: Path):
+    def from_file(cls, config_path: Path) -> Self:
         if config_path.suffix not in ['.json', '.yaml']:
             raise ValueError(f'Configuration file {config_path} must have .json or .yaml extension')
         with open(str(config_path), 'r') as f:
@@ -98,7 +96,7 @@ class Configuration:
             return cls.parse_config(raw_text)
 
     @classmethod
-    def parse_config(cls, config_text: str) -> Configuration:
+    def parse_config(cls, config_text: str) -> Self:
         config = parse_yaml_no_datetime_conversion(config_text)
 
         raw_yaml = yaml.dump(yaml.safe_load(config_text))

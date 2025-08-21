@@ -9,7 +9,7 @@ canonical_map_period:
   year: 2025            # The year corresponding to the first map
   quarter: 2            # The quarter corresponding to the first map
   map_period: 3         # The map period for each map in months (e.g. 3, 6, 12)
-  number_of_maps: 1     # The number of maps to be calculated for the output CDF file
+  number_of_maps: 2     # The number of maps to be calculated for the output CDF file
 
 # Example of a list of custom date ranges definition:
 #time_ranges:
@@ -24,14 +24,14 @@ instrument: Hi 90
 
 ## The spin phase to be used to generate the map.
 # valid options are: "ram", "anti-ram", "full spin"
-spin_phase: ram
+spin_phase: full spin
 
 ## The reference frame type to be used for the map projection.
 # valid options are: "spacecraft", "heliospheric"
 reference_frame_type: spacecraft
 
 ## Boolean value indicating whether the map should be survival-probability corrected
-survival_corrected: false
+survival_corrected: true
 
 ## The SPICE frame to be used for the map projection.
 # Some frames (e.g. "hae" or "IMAP_HAE") are defined by the mission and can be used without supplying a custom spice kernel.
