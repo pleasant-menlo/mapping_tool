@@ -14,6 +14,7 @@ dependencies = [
 
 [tool.uv.sources]
 imap-l3-processing = { git = "https://github.com/IMAP-Science-Operations-Center/imap_L3_processing.git" }
+imap-processing = { url = "https://github.com/pleasant-menlo/imap_processing/releases/download/0.18.1/imap_processing-0.18.1-py3-none-any.whl" }
 
 [tool.setuptools]
 py-modules = ["mapping_tool"]
