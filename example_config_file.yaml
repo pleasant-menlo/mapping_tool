@@ -1,18 +1,60 @@
+# yaml-language-server: $schema=./mapping_tool/config_schema.json
+# Docs: ./README.md
+
+### This is an example of a configuration file to be used for running the IMAP Mapping Tool
+
+## Specification of the time periods to be used for map creation. Either a canonical map period or a list of custom time ranges can be specified, but not both.
+# For the canonical_map_period, all properties below are required. Example of a canonical map period definition:
 canonical_map_period:
-  year: 2025
-  quarter: 3
-  map_period: 3
-  number_of_maps: 1
+  year: 2025            # The year corresponding to the first map
+  quarter: 2            # The quarter corresponding to the first map
+  map_period: 3         # The map period for each map in months (e.g. 3, 6, 12)
+  number_of_maps: 2     # The number of maps to be calculated for the output CDF file
 
-instrument: Ultra 90
+# Example of a list of custom date ranges definition:
+#time_ranges:
+#  - start: 2026-01-01 # The start date of the first map
+#    end: 2026-03-01   # The end date of the first map
+#  - start: 2026-03-01 # The start date of the second map
+#    end: 2026-04-01   # The end date of the second map
 
-spin_phase: Full spin
-reference_frame: spacecraft
-survival_corrected: false
-spice_frame_name: IMAP_GCS
+## The instrument to be used to generate the map.
+# Valid options are: "Hi 45", "Hi 90", "Hi combined", "Ultra 45", "Ultra 90", "Ultra combined", "Lo"
+instrument: Hi 90
+
+## The spin phase to be used to generate the map.
+# valid options are: "ram", "anti-ram", "full spin"
+spin_phase: full spin
+
+## The reference frame type to be used for the map projection.
+# valid options are: "spacecraft", "heliospheric"
+reference_frame_type: spacecraft
+
+## Boolean value indicating whether the map should be survival-probability corrected
+survival_corrected: true
+
+## The SPICE frame to be used for the map projection.
+# Some frames (e.g. "hae" or "IMAP_HAE") are defined by the mission and can be used without supplying a custom spice kernel.
+spice_frame_name: hae
+
+## The pixelation scheme to be used for map generation.
+# Valid options are "square" or "healpix"
 pixelation_scheme: square
-pixel_parameter: 4
+
+## The pixel parameter to be used for map generation. This defines the degree resolution for square maps, and the nside for HEALPix maps
+# Valid options are 2, 4, and 6 for square maps, and 16, 32, 64, 128, 256, and 512 for HEALPix maps
+pixel_parameter: 2
+
+## The primary map data type
+# Valid parameters are "ENA Intensity" or "Spectral Index"
 map_data_type: ENA Intensity
-lo_species: h
-quantity_suffix: SUFFIX
-kernel_path: "./imap_science_100.tf"
+
+## The species used to create the map. Optional property, which only applies to IMAP-Lo maps.
+# Valid parameters are "h" or "o"
+#lo_species: h
+
+## Optional text suffix to be added to the map data type in the descriptor of the output file.
+quantity_suffix: suffix
+
+## Optional path to a SPICE kernel file to be included in map generation. Used in conjunction with the "spice_frame_name" to allow for custom frame definitions.
+#kernel_path: ./spice_kernel.tf

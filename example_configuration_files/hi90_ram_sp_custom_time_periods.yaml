@@ -1,0 +1,17 @@
+# yaml-language-server: $schema=../mapping_tool/config_schema.json
+# Docs: ../README.md
+
+time_ranges:
+  - start: 2026-01-01  # The start date of a first map
+    end: 2026-03-01    # The end date of a first map
+  - start: 2026-03-01  # The start date of the second map period
+    end: 2026-04-01    # The end date of the second map period
+instrument: Hi 90
+spin_phase: ram
+reference_frame_type: spacecraft
+survival_corrected: true
+spice_frame_name: hae
+pixelation_scheme: square
+pixel_parameter: 2
+map_data_type: ENA Intensity
+quantity_suffix: hi90ena

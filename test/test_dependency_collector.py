@@ -59,15 +59,12 @@ class TestDependencyCollector(unittest.TestCase):
 
     @patch('mapping_tool.dependency_collector.imap_data_access.query')
     def test_get_pointing_sets_for_ultra_combined(self, mock_query):
-        expected_pointing_sets = ["u45-pset1", "u45-pset2", "u90-pset1", "u90-pset2", "glows_ultra_pset1",
-                                  "glows_ultra_pset2"]
+        expected_pointing_sets = ["u45-pset1", "u45-pset2", "u90-pset1", "u90-pset2"]
         mock_query.side_effect = [
             [{"file_path": "u45-pset1", "start_date": "u45-pset1", "version": "v000"},
              {"file_path": "u45-pset2", "start_date": "u45-pset2", "version": "v000"}],
             [{"file_path": "u90-pset1", "start_date": "u90-pset1", "version": "v000"},
-             {"file_path": "u90-pset2", "start_date": "u90-pset2", "version": "v000"}],
-            [{"file_path": "glows_ultra_pset1", "start_date": "glows_ultra_pset1", "version": "v000"},
-             {"file_path": "glows_ultra_pset2", "start_date": "glows_ultra_pset2", "version": "v000"}]
+             {"file_path": "u90-pset2", "start_date": "u90-pset2", "version": "v000"}]
         ]
 
         descriptor = MapDescriptor(
@@ -90,8 +87,6 @@ class TestDependencyCollector(unittest.TestCase):
             call(instrument="ultra", data_level="l1c", descriptor="45sensor-spacecraftpset", start_date="20250101",
                  end_date="20250201"),
             call(instrument="ultra", data_level="l1c", descriptor="90sensor-spacecraftpset", start_date="20250101",
-                 end_date="20250201"),
-            call(instrument="glows", data_level="l3e", descriptor="survival-probability-ul", start_date="20250101",
                  end_date="20250201")
         ])
 
@@ -102,16 +97,13 @@ class TestDependencyCollector(unittest.TestCase):
         expected_pointing_sets = [
             "h45-pset1", "h45-pset2",
             "h90-pset1", "h90-pset2",
-            "glows_hi_pset1", "glows_hi_pset2",
         ]
 
         mock_query.side_effect = [
             [{"file_path": "h45-pset1", "start_date": "h45-pset1", "version": "v000"},
              {"file_path": "h45-pset2", "start_date": "h45-pset2", "version": "v000"}],
             [{"file_path": "h90-pset1", "start_date": "h90-pset1", "version": "v000"},
-             {"file_path": "h90-pset2", "start_date": "h90-pset2", "version": "v000"}],
-            [{"file_path": "glows_hi_pset1", "start_date": "glows_hi_pset1", "version": "v000"},
-             {"file_path": "glows_hi_pset2", "start_date": "glows_hi_pset2", "version": "v000"}]
+             {"file_path": "h90-pset2", "start_date": "h90-pset2", "version": "v000"}]
         ]
 
         descriptor = MapDescriptor(
@@ -134,8 +126,6 @@ class TestDependencyCollector(unittest.TestCase):
             call(instrument="hi", data_level="l1c", descriptor="45sensor-pset", start_date="20250101",
                  end_date="20250201"),
             call(instrument="hi", data_level="l1c", descriptor="90sensor-pset", start_date="20250101",
-                 end_date="20250201"),
-            call(instrument="glows", data_level="l3e", descriptor="survival-probability-hi", start_date="20250101",
                  end_date="20250201")
         ])
 
@@ -145,14 +135,11 @@ class TestDependencyCollector(unittest.TestCase):
     def test_get_pointing_sets_for_lo_survival_corrected(self, mock_query):
         expected_pointing_sets = [
             "l90-pset1", "l90-pset2",
-            "glows_lo_pset1", "glows_lo_pset2",
         ]
 
         mock_query.side_effect = [
             [{"file_path": "l90-pset1", "start_date": "l90-pset1", "version": "v000"},
              {"file_path": "l90-pset2", "start_date": "l90-pset2", "version": "v000"}],
-            [{"file_path": "glows_lo_pset1", "start_date": "glows_lo_pset1", "version": "v000"},
-             {"file_path": "glows_lo_pset2", "start_date": "glows_lo_pset2", "version": "v000"}]
         ]
 
         descriptor = MapDescriptor(
@@ -173,8 +160,6 @@ class TestDependencyCollector(unittest.TestCase):
 
         mock_query.assert_has_calls([
             call(instrument="lo", data_level="l1c", descriptor="pset", start_date="20250101",
-                 end_date="20250201"),
-            call(instrument="glows", data_level="l3e", descriptor="survival-probability-lo", start_date="20250101",
                  end_date="20250201")
         ])
 
@@ -185,9 +170,7 @@ class TestDependencyCollector(unittest.TestCase):
         mock_query.side_effect = [
             [{"file_path": "imap_hi_l1c_45sensor-pset_20260101_v001.cdf", "version": "v001", "start_date": "20260101"},
              {"file_path": "imap_hi_l1c_45sensor-pset_20260101_v002.cdf", "version": "v002", "start_date": "20260101"},
-             {"file_path": "imap_hi_l1c_45sensor-pset_20260102_v001.cdf", "version": "v001", "start_date": "20260102"}],
-            [{"file_path": "imap_glows_l3e_survival-probability-hi_20260101_v000.cdf", "version": "v000",
-              "start_date": "20260101"}]
+             {"file_path": "imap_hi_l1c_45sensor-pset_20260102_v001.cdf", "version": "v001", "start_date": "20260102"}]
         ]
         descriptor = MapDescriptor(
             frame_descriptor="sf",
@@ -206,8 +189,7 @@ class TestDependencyCollector(unittest.TestCase):
 
         psets = DependencyCollector.get_pointing_sets(descriptor, start_date, end_date)
 
-        expected_psets = ["imap_hi_l1c_45sensor-pset_20260101_v002.cdf", "imap_hi_l1c_45sensor-pset_20260102_v001.cdf",
-                          "imap_glows_l3e_survival-probability-hi_20260101_v000.cdf"]
+        expected_psets = ["imap_hi_l1c_45sensor-pset_20260101_v002.cdf", "imap_hi_l1c_45sensor-pset_20260102_v001.cdf"]
         self.assertEqual(expected_psets, psets)
 
     @patch('mapping_tool.dependency_collector.requests')

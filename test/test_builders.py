@@ -1,3 +1,4 @@
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Dict, Optional, Literal
 
@@ -48,7 +49,7 @@ def create_configuration(
         canonical_map_period: CanonicalMapPeriod = None,
         instrument: Optional[str] = None,
         spin_phase: str = "Ram",
-        reference_frame: str = "spacecraft",
+        reference_frame_type: str = "spacecraft",
         survival_corrected: bool = False,
         spice_frame_name: str = "ECLIPJ2000",
         pixelation_scheme: str = "square",
@@ -56,15 +57,19 @@ def create_configuration(
         map_data_type: str = "ENA Intensity",
         lo_species: str = "h",
         output_directory: Path = Path("."),
-        kernel_path: Optional[Path] = None
+        kernel_path: Optional[Path] = None,
+        time_ranges = None
 ):
-    canonical_period = canonical_map_period if canonical_map_period is not None else create_canonical_map_period()
+    if canonical_map_period is None and time_ranges is None:
+        canonical_map_period = canonical_map_period if canonical_map_period is not None else create_canonical_map_period()
+
     instrument = instrument or "Hi 90"
     return Configuration(
-        canonical_map_period=canonical_period,
+        raw_config="raw_configuration",
+        canonical_map_period=canonical_map_period,
         instrument=instrument,
         spin_phase=spin_phase,
-        reference_frame=reference_frame,
+        reference_frame_type=reference_frame_type,
         survival_corrected=survival_corrected,
         spice_frame_name=spice_frame_name,
         pixelation_scheme=pixelation_scheme,
@@ -72,21 +77,26 @@ def create_configuration(
         map_data_type=map_data_type,
         lo_species=lo_species,
         output_directory=output_directory,
-        kernel_path=kernel_path
+        kernel_path=kernel_path,
+        time_ranges=time_ranges
     )
 
-
-def create_config_dict(args: Dict):
-    config = {
-        "canonical_map_period": {
+def create_canonical_map_period_dict():
+    return {
+        "canonical_map_period":{
             "year": 2025,
             "quarter": 1,
             "map_period": 6,
             "number_of_maps": 1
-        },
+        }
+    }
+
+
+def create_config_dict(args: Dict):
+    config = {
         "instrument": "Hi 90",
         "spin_phase": "Ram",
-        "reference_frame": "spacecraft",
+        "reference_frame_type": "spacecraft",
         "survival_corrected": True,
         "spice_frame_name": "ECLIPJ2000",
         "pixelation_scheme": "square",
@@ -95,4 +105,9 @@ def create_config_dict(args: Dict):
         "lo_species": "h"
     }
     config.update(args)
+
     return config
+
+
+def create_utc_datetime():
+    return datetime.now().replace(tzinfo=timezone.utc)

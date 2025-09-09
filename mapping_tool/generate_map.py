@@ -1,4 +1,4 @@
-import dataclasses
+import sys
 from dataclasses import replace
 import logging
 from datetime import datetime
@@ -14,15 +14,27 @@ from imap_l3_processing.hi.hi_processor import HiProcessor
 from imap_l3_processing.ultra.l3.ultra_processor import UltraProcessor
 from imap_l3_processing.lo.lo_processor import LoProcessor
 from imap_processing.cli import Hi, Lo, Ultra
-from imap_data_access import ProcessingInputCollection, ScienceInput, SPICEInput
+from imap_data_access import ProcessingInputCollection, ScienceInput, SPICEInput, download
 
 from mapping_tool.dependency_collector import DependencyCollector
 import spiceypy
 
 from mapping_tool.mapping_tool_descriptor import MappingToolDescriptor
 
+logger = logging.getLogger(__name__)
 
 def get_dependencies_for_l3_map(map_descriptor: MappingToolDescriptor) -> list[MappingToolDescriptor]:
+    match map_descriptor.instrument:
+        case MappableInstrumentShortName.HI:
+            return get_dependencies_for_hi_l3_map(map_descriptor)
+        case MappableInstrumentShortName.ULTRA:
+            return get_dependencies_for_ultra_l3_map(map_descriptor)
+        case MappableInstrumentShortName.LO:
+            return get_dependencies_for_lo_l3_map(map_descriptor)
+        case _:
+            raise ValueError("Don't know correct dependencies for this specific instrument", map_descriptor.instrument)
+
+def get_dependencies_for_hi_l3_map(map_descriptor: MappingToolDescriptor) -> list[MappingToolDescriptor]:
     match map_descriptor:
         case MapDescriptor(principal_data="spx"):
             return [replace(map_descriptor, principal_data="ena")]
@@ -46,7 +58,28 @@ def get_dependencies_for_l3_map(map_descriptor: MappingToolDescriptor) -> list[M
         case MapDescriptor(survival_corrected="sp", spin_phase="ram" | "anti"):
             return [replace(map_descriptor, survival_corrected="nsp")]
         case _:
-            return []
+            raise ValueError("Don't know correct dependencies for", map_descriptor)
+
+def get_dependencies_for_ultra_l3_map(map_descriptor: MappingToolDescriptor) -> list[MappingToolDescriptor]:
+    match map_descriptor:
+        case MapDescriptor(principal_data="spx"):
+            return [replace(map_descriptor, principal_data="ena")]
+        case MapDescriptor(sensor="combined"):
+            return [replace(map_descriptor, sensor="45"), replace(map_descriptor, sensor="90")]
+        case MapDescriptor(sensor="90"|"45", survival_corrected="sp"):
+            return [replace(map_descriptor, survival_corrected="nsp")]
+        case _:
+            raise ValueError("Don't know correct dependencies for", map_descriptor)
+
+
+def get_dependencies_for_lo_l3_map(map_descriptor: MappingToolDescriptor) -> list[MappingToolDescriptor]:
+    match map_descriptor:
+        case MapDescriptor(principal_data="spx"):
+            return [replace(map_descriptor, principal_data="ena")]
+        case MapDescriptor(survival_corrected="sp"):
+            return [replace(map_descriptor, survival_corrected="nsp")]
+        case _:
+            raise ValueError("Don't know correct dependencies for", map_descriptor)
 
 
 def get_data_level_for_descriptor(descriptor: MappingToolDescriptor):
@@ -59,13 +92,19 @@ def get_data_level_for_descriptor(descriptor: MappingToolDescriptor):
 
 
 def generate_map(descriptor: MappingToolDescriptor, start: datetime, end: datetime) -> Path:
+    logger.info("preparing to generate map %s", descriptor.to_mapping_tool_string())
     data_level = get_data_level_for_descriptor(descriptor)
     if data_level == DataLevel.L2:
+        logger.info("generating l2 map %s", descriptor.to_mapping_tool_string())
         return generate_l2_map(descriptor, start, end)
     elif data_level == DataLevel.L3:
         map_deps = []
-        for dependency in get_dependencies_for_l3_map(descriptor):
+        deps = get_dependencies_for_l3_map(descriptor)
+        logger.info("identified dependencies %s", deps)
+        for dependency in deps:
+            print(f"Generating intermediate map {dependency.to_mapping_tool_string()}")
             map_deps.append(generate_map(dependency, start, end))
+        logger.info("generating l3 map %s", descriptor.to_mapping_tool_string())
         return generate_l3_map(descriptor, start, end, map_deps)
     else:
         raise ValueError(f"Cannot produce map for instrument: {descriptor.instrument_descriptor}")
@@ -104,7 +143,11 @@ def generate_l3_map(descriptor: MappingToolDescriptor, start: datetime, end: dat
     try:
         processed_files = processor.process(descriptor.spice_frame)
     except Exception as e:
-        e.add_note(f"Processing for {descriptor.to_string()} failed")
+        note = f"Processing for {descriptor.to_string()} failed"
+        if hasattr(e, "add_note"):
+            e.add_note(note)
+        else:
+            e.__notes__ = [note]
         raise e
 
     if len(processed_files) < 1:
@@ -120,10 +163,13 @@ def generate_l2_map(descriptor: MappingToolDescriptor, start_date: datetime, end
 
     map_details = f'{descriptor.to_string()} {start_date.strftime("%Y-%m-%d")} to {end_date.strftime("%Y-%m-%d")}'
     psets = DependencyCollector.get_pointing_sets(descriptor, start_date, end_date)
-
     if len(psets) == 0:
-        logging.getLogger("generate_l2_map").error(f"No pointing sets found for {map_details}")
         raise ValueError(f"No pointing sets found for {map_details}")
+    for i, pset in enumerate(psets, start=1):
+        print(f"\rDownloading psets {i}/{len(psets)}... ", end="")
+        sys.stdout.flush()
+        download(pset)
+    print("")
 
     processing_input_collection = ProcessingInputCollection(
         *[ScienceInput(pset) for pset in psets],
@@ -155,7 +201,11 @@ def generate_l2_map(descriptor: MappingToolDescriptor, start_date: datetime, end
             results = processor.do_processing(downloaded_deps)
             paths = processor.post_processing(results, downloaded_deps)
         except Exception as e:
-            e.add_note(f"Processing for {descriptor.to_string()} failed")
+            note = f"Processing for {descriptor.to_string()} failed"
+            if hasattr(e, "add_note"):
+                e.add_note(note)
+            else:
+                e.__notes__ = [note]
             raise e
         finally:
             processor.cleanup()

@@ -50,13 +50,6 @@ class DependencyCollector:
                                                                                 data_level="l1c",
                                                                                 descriptor=pset_descriptor)))
 
-        if descriptor.survival_corrected == "sp":
-            files.extend(filter_files_by_highest_version(imap_data_access.query(instrument="glows",
-                                                                                start_date=start_date,
-                                                                                end_date=end_date,
-                                                                                data_level="l3e",
-                                                                                descriptor=f"survival-probability-{instrument_for_query[:2]}")))
-
         return [Path(pset['file_path']).name for pset in files]
 
     @classmethod

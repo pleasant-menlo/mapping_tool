@@ -1,0 +1,26 @@
+[project]
+name = "mapping-tool"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "argparse>=1.4.0",
+    "imap-l3-processing",
+    "imap-processing>=0.18.0",
+    "jsonschema>=4.25.0",
+    "pyyaml>=6.0.2",
+]
+
+[tool.uv.sources]
+imap-l3-processing = { git = "https://github.com/IMAP-Science-Operations-Center/imap_L3_processing.git" }
+imap-processing = { url = "https://github.com/pleasant-menlo/imap_processing/releases/download/0.18.1/imap_processing-0.18.1-py3-none-any.whl" }
+
+[tool.setuptools]
+py-modules = ["mapping_tool"]
+
+[tool.hatch]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"

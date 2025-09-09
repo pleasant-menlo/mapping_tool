@@ -18,31 +18,62 @@ from test.test_builders import create_map_descriptor
 
 
 class TestGenerateMap(unittest.TestCase):
+    def setUp(self):
+        download_patch = patch("mapping_tool.generate_map.download")
+        self.mock_download = download_patch.start()
+        self.addCleanup(download_patch.stop)
+
     def test_get_dependencies_for_l3_map_returns_correct_dependencies(self):
-        spectral_index_descriptor = create_map_descriptor(principal_data="spx")
-        ena_descriptor = create_map_descriptor(principal_data="ena")
+        # @formatter:off
+        ultra_sp_descriptor = create_map_descriptor(instrument=MappableInstrumentShortName.ULTRA, spin_phase='full', survival_corrected='sp')
+        ultra_nsp_descriptor = create_map_descriptor(instrument=MappableInstrumentShortName.ULTRA, spin_phase='full', survival_corrected='nsp')
 
-        sp_ram_descriptor = create_map_descriptor(survival_corrected="sp", spin_phase="ram")
-        nsp_ram_descriptor = create_map_descriptor(survival_corrected="nsp", spin_phase="ram")
+        ultra_combined_nsp_descriptor = create_map_descriptor(instrument=MappableInstrumentShortName.ULTRA, sensor='combined', spin_phase='full', survival_corrected='nsp')
+        ultra_45_nsp_descriptor = create_map_descriptor(instrument=MappableInstrumentShortName.ULTRA, sensor='45', spin_phase='full', survival_corrected='nsp')
+        ultra_90_nsp_descriptor = create_map_descriptor(instrument=MappableInstrumentShortName.ULTRA, sensor='90', spin_phase='full', survival_corrected='nsp')
 
-        sp_anti_descriptor = create_map_descriptor(survival_corrected="sp", spin_phase="anti")
-        nsp_anti_descriptor = create_map_descriptor(survival_corrected="nsp", spin_phase="anti")
+        ultra_combined_sp_descriptor = create_map_descriptor(instrument=MappableInstrumentShortName.ULTRA, sensor='combined', spin_phase='full', survival_corrected='sp')
+        ultra_45_sp_descriptor = create_map_descriptor(instrument=MappableInstrumentShortName.ULTRA, sensor='45', spin_phase='full', survival_corrected='sp')
+        ultra_90_sp_descriptor = create_map_descriptor(instrument=MappableInstrumentShortName.ULTRA, sensor='90', spin_phase='full', survival_corrected='sp')
 
-        sp_full_descriptor = create_map_descriptor(survival_corrected="sp", spin_phase="full")
+        ultra_spectral_index_sp_descriptor = create_map_descriptor(instrument=MappableInstrumentShortName.ULTRA, spin_phase='full', survival_corrected='sp', principal_data="spx")
+        ultra_spectral_index_nsp_descriptor = create_map_descriptor(instrument=MappableInstrumentShortName.ULTRA, spin_phase='full', survival_corrected='nsp', principal_data="spx")
 
-        combined_descriptor = create_map_descriptor(sensor="combined")
-        sensor90_descriptor = create_map_descriptor(sensor="90")
-        sensor45_descriptor = create_map_descriptor(sensor="45")
+        lo_sp_descriptor = create_map_descriptor(instrument=MappableInstrumentShortName.LO, spin_phase='ram', survival_corrected='sp', sensor='')
+        lo_nsp_descriptor = create_map_descriptor(instrument=MappableInstrumentShortName.LO, spin_phase='ram', survival_corrected='nsp', sensor='')
+        lo_sp_spx_descriptor = create_map_descriptor(instrument=MappableInstrumentShortName.LO, spin_phase='ram', survival_corrected='sp', sensor='', principal_data="spx")
+        lo_nsp_spx_descriptor = create_map_descriptor(instrument=MappableInstrumentShortName.LO, spin_phase='ram', survival_corrected='nsp', sensor='', principal_data="spx")
 
-        descriptor_with_no_dependencies = create_map_descriptor(sensor="90", survival_corrected="nsp")
+        hi_spectral_index_descriptor = create_map_descriptor(instrument=MappableInstrumentShortName.HI, principal_data="spx")
+        hi_ena_descriptor = create_map_descriptor(instrument=MappableInstrumentShortName.HI, principal_data="ena")
+
+        hi_sp_ram_descriptor = create_map_descriptor(instrument=MappableInstrumentShortName.HI, survival_corrected="sp", spin_phase="ram")
+        hi_nsp_ram_descriptor = create_map_descriptor(instrument=MappableInstrumentShortName.HI, survival_corrected="nsp", spin_phase="ram")
+
+        hi_sp_anti_descriptor = create_map_descriptor(instrument=MappableInstrumentShortName.HI, survival_corrected="sp", spin_phase="anti")
+        hi_nsp_anti_descriptor = create_map_descriptor(instrument=MappableInstrumentShortName.HI, survival_corrected="nsp", spin_phase="anti")
+
+        hi_sp_full_descriptor = create_map_descriptor(instrument=MappableInstrumentShortName.HI, survival_corrected="sp", spin_phase="full")
+
+        hi_combined_descriptor = create_map_descriptor(instrument=MappableInstrumentShortName.HI, sensor="combined", survival_corrected='sp')
+        hi_sensor90_descriptor = create_map_descriptor(instrument=MappableInstrumentShortName.HI, sensor="90", survival_corrected='sp')
+        hi_sensor45_descriptor = create_map_descriptor(instrument=MappableInstrumentShortName.HI, sensor="45", survival_corrected='sp')
+        # @formatter:on
 
         cases = [
-            (spectral_index_descriptor, [ena_descriptor]),
-            (sp_ram_descriptor, [nsp_ram_descriptor]),
-            (sp_anti_descriptor, [nsp_anti_descriptor]),
-            (sp_full_descriptor, [nsp_ram_descriptor, nsp_anti_descriptor]),
-            (combined_descriptor, [sensor90_descriptor, sensor45_descriptor]),
-            (descriptor_with_no_dependencies, []),
+            (ultra_sp_descriptor, [ultra_nsp_descriptor]),
+            (ultra_combined_nsp_descriptor, [ultra_45_nsp_descriptor, ultra_90_nsp_descriptor]),
+            (ultra_combined_sp_descriptor, [ultra_45_sp_descriptor, ultra_90_sp_descriptor]),
+            (ultra_spectral_index_sp_descriptor, [ultra_sp_descriptor]),
+            (ultra_spectral_index_nsp_descriptor, [ultra_nsp_descriptor]),
+            (lo_sp_descriptor, [lo_nsp_descriptor]),
+            (lo_sp_spx_descriptor, [lo_sp_descriptor]),
+            (lo_nsp_spx_descriptor, [lo_nsp_descriptor]),
+            (hi_spectral_index_descriptor, [hi_ena_descriptor]),
+            (hi_sp_ram_descriptor, [hi_nsp_ram_descriptor]),
+            (hi_sp_anti_descriptor, [hi_nsp_anti_descriptor]),
+            (hi_sp_full_descriptor, [hi_nsp_ram_descriptor, hi_nsp_anti_descriptor]),
+            (hi_combined_descriptor, [hi_sensor90_descriptor, hi_sensor45_descriptor])
         ]
 
         for input_descriptor, expected_dependencies in cases:
@@ -276,6 +307,9 @@ class TestGenerateMap(unittest.TestCase):
                 mock_collect_spice_kernels.assert_called_once_with(start_date=start_date, end_date=end_date)
                 mock_get_pointing_sets.assert_called_once_with(descriptor, start_date, end_date)
 
+                self.mock_download.assert_has_calls([call("imap_hi_l1c_pset-1_20250101_v000.cdf"),
+                                               call("imap_hi_l1c_pset-2_20250101_v000.cdf")])
+
                 expected_dependency_str = ProcessingInputCollection(
                     ScienceInput("imap_hi_l1c_pset-1_20250101_v000.cdf"),
                     ScienceInput("imap_hi_l1c_pset-2_20250101_v000.cdf"),
@@ -392,8 +426,5 @@ class TestGenerateMap(unittest.TestCase):
         hi_descriptor = create_map_descriptor(instrument=MappableInstrumentShortName.HI)
         map_details = f'{hi_descriptor.to_string()} {start_date.strftime("%Y-%m-%d")} to {end_date.strftime("%Y-%m-%d")}'
         with self.assertRaises(ValueError) as exception_context:
-            logger = logging.getLogger('generate_l2_map')
-            with self.assertLogs(logger, logging.ERROR) as log_context:
-                generate_l2_map(hi_descriptor, start_date, end_date)
+            generate_l2_map(hi_descriptor, start_date, end_date)
         self.assertIn(f"No pointing sets found for {map_details}", str(exception_context.exception))
-        self.assertIn(f"ERROR:generate_l2_map:No pointing sets found for {map_details}", log_context.output)
