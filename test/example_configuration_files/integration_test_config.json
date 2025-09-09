@@ -9,7 +9,7 @@
   "spin_phase": "Ram",
   "reference_frame": "spacecraft",
   "survival_corrected": true,
-  "spice_frame_name": "IMAP_HAE",
+  "spice_frame_name": "something_terrible",
   "kernel_path": "spice_kernel.tf",
   "pixelation_scheme": "square",
   "pixel_parameter": 4,

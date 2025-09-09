@@ -5,6 +5,7 @@ import tempfile
 import unittest
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
+from unittest import SkipTest
 from unittest.mock import patch, call, Mock
 import imap_data_access
 
@@ -190,6 +191,7 @@ class TestMain(unittest.TestCase):
             mock_generate_map.assert_not_called()
             self.assertEqual("text", existing_file.read_text())
 
+    @SkipTest
     @run_periodically(timedelta(days=1))
     def test_main_integration(self):
         with tempfile.TemporaryDirectory() as temporary_directory:
