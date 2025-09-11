@@ -6,15 +6,15 @@ readme = "README.md"
 requires-python = ">=3.10"
 dependencies = [
     "argparse>=1.4.0",
-    "imap-l3-processing",
-    "imap-processing>=0.18.0",
+    "imap-l3-processing==0.0.1",
+    "imap-processing>=0.19.0",
     "jsonschema>=4.25.0",
     "pyyaml>=6.0.2",
 ]
 
 [tool.uv.sources]
-imap-l3-processing = { git = "https://github.com/IMAP-Science-Operations-Center/imap_L3_processing.git" }
-imap-processing = { url = "https://github.com/pleasant-menlo/imap_processing/releases/download/0.18.1/imap_processing-0.18.1-py3-none-any.whl" }
+imap-l3-processing = { url = "https://github.com/IMAP-Science-Operations-Center/imap_L3_processing/releases/download/v0.0.1/imap_l3_processing-2025.9.11-py3-none-any.whl" }
+imap-processing = { git = "https://github.com/pleasant-menlo/imap_processing.git" }
 
 [tool.setuptools]
 py-modules = ["mapping_tool"]
