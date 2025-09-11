@@ -604,14 +604,14 @@ wheels = [
 
 [[package]]
 name = "imap-data-access"
-version = "0.32.0"
+version = "0.35.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "requests" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/8c/16/c7996defa1c23178f720a02e2be0057157a7434f26c3e0c26227d313e7f8/imap_data_access-0.32.0.tar.gz", hash = "sha256:d67f00a3037b9f1bd3acb032d2b6c45b5b62ba9206292bb7ee19c2118a6c9540", size = 47850, upload-time = "2025-07-17T15:26:00.339Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/d4/fe/85d8da45bbff1b39b0aa2b1e36baee9d3cdda5e53d12a68caa8deb91fb48/imap_data_access-0.35.0.tar.gz", hash = "sha256:a483b127ba7650b43990c9bdaeebdc3e06e6f6dda0ebb8a6a91d0f015c02fe28", size = 48499, upload-time = "2025-09-09T22:07:05.02Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/70/1a/f6dfcf05ab738083485502d0b697f761cb33b2fc7391104de4df62589720/imap_data_access-0.32.0-py3-none-any.whl", hash = "sha256:e13f83bb26a2c0c5f15fe369a997e7a9ba07beab9411db7f2e4bb742f404fab1", size = 34733, upload-time = "2025-07-17T15:25:59.223Z" },
+    { url = "https://files.pythonhosted.org/packages/f7/37/44c40fff59a2e762478b9464def57d7db4e0625dee89b682eb964a6350a8/imap_data_access-0.35.0-py3-none-any.whl", hash = "sha256:df4b7061a808f5859da0a49a39fc0ae5d40979e178bc06ec346e3c260015c0f0", size = 35119, upload-time = "2025-09-09T22:07:03.28Z" },
 ]
 
 [[package]]
@@ -723,8 +723,25 @@ requires-dist = [
 
 [[package]]
 name = "imap-processing"
-version = "0.19.1"
-source = { git = "https://github.com/pleasant-menlo/imap_processing.git#75ab74c85dbaee7155a625d761d59a35165dcc10" }
+version = "0.19.3"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "astropy-healpix" },
+    { name = "cdflib" },
+    { name = "imap-data-access" },
+    { name = "numpy", version = "2.2.6", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.11'" },
+    { name = "numpy", version = "2.3.2", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.11'" },
+    { name = "sammi-cdf" },
+    { name = "scipy", version = "1.15.3", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.11'" },
+    { name = "scipy", version = "1.16.1", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.11'" },
+    { name = "space-packet-parser" },
+    { name = "spiceypy" },
+    { name = "xarray" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/75/d3/279f3881352f051aebed0f52987ff91caec69e9fca81dd8e56a269c1b3e5/imap_processing-0.19.3.tar.gz", hash = "sha256:17a6365d34693db8cd57c1b831473f495371feb759d535641de973f1c99c1286", size = 758900, upload-time = "2025-09-10T17:26:54.534Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/60/16/c300220bef1c719f43fde5c9a2cbcb5773cbea610f2fc7496316892027e7/imap_processing-0.19.3-py3-none-any.whl", hash = "sha256:0ad7a19ab3a2ad9c4eb081aed7c4344400ed1aef608aefc55072db898cb09648", size = 871029, upload-time = "2025-09-10T17:26:52.876Z" },
+]
 
 [[package]]
 name = "importlib-resources"
@@ -940,7 +957,7 @@ dependencies = [
 requires-dist = [
     { name = "argparse", specifier = ">=1.4.0" },
     { name = "imap-l3-processing", url = "https://github.com/IMAP-Science-Operations-Center/imap_L3_processing/releases/download/v0.0.1/imap_l3_processing-2025.9.11-py3-none-any.whl" },
-    { name = "imap-processing", git = "https://github.com/pleasant-menlo/imap_processing.git" },
+    { name = "imap-processing", specifier = ">=0.19.0" },
     { name = "jsonschema", specifier = ">=4.25.0" },
     { name = "pyyaml", specifier = ">=6.0.2" },
 ]
