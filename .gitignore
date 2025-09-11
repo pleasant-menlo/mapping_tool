@@ -3,3 +3,10 @@
 data
 
 *.cdf
+!test/cdf_files/*.cdf
+
+
+
+
+
+
