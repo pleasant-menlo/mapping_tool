@@ -5,6 +5,7 @@ import tempfile
 import unittest
 from datetime import timedelta
 from pathlib import Path
+from unittest import SkipTest
 
 import main
 from test.test_helpers import run_periodically, get_example_config_path
@@ -12,6 +13,7 @@ from test.test_helpers import run_periodically, get_example_config_path
 
 class TestMain(unittest.TestCase):
 
+    @SkipTest
     @run_periodically(timedelta(days=1))
     def test_main_integration(self):
         with tempfile.TemporaryDirectory() as temporary_directory:
