@@ -85,7 +85,7 @@ The map to be created is defined by the configuration file passed to `main.py`. 
 * `pixelation_scheme` - The pixelation scheme to be used for map generation. Valid options are "square" or "healpix".
 
 
-* `pixelation_scheme` - The pixel parameter to be used for map generation. This defines the degree resolution for square maps, and the nside for HEALPix maps. Valid options are 2, 4, and 6 for square maps, and 16, 32, 64, 128, 256, and 512 for HEALPix maps.
+* `pixel_parameter` - The pixel parameter to be used for map generation. This defines the degree resolution for square maps, and the nside for HEALPix maps. Valid options are 2, 4, and 6 for square maps, and 16, 32, 64, 128, 256, and 512 for HEALPix maps.
 
 
 * `map_data_type` - The primary map data type. Valid parameters are `ENA Intensity` or `Spectral Index`.
