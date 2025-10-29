@@ -1,5 +1,5 @@
 version = 1
-revision = 2
+revision = 3
 requires-python = ">=3.10"
 resolution-markers = [
     "python_full_version >= '3.12'",
@@ -604,127 +604,48 @@ wheels = [
 
 [[package]]
 name = "imap-data-access"
-version = "0.35.0"
+version = "0.37.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "requests" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/d4/fe/85d8da45bbff1b39b0aa2b1e36baee9d3cdda5e53d12a68caa8deb91fb48/imap_data_access-0.35.0.tar.gz", hash = "sha256:a483b127ba7650b43990c9bdaeebdc3e06e6f6dda0ebb8a6a91d0f015c02fe28", size = 48499, upload-time = "2025-09-09T22:07:05.02Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/95/1b/39b1cfa538ca15195e7077fc1c953daf99a36aad17b398f4067f503b191c/imap_data_access-0.37.0.tar.gz", hash = "sha256:7887ad43c4404c6465035af73621237aef7a8d88d506439dd4618aef1db8cf87", size = 49971, upload-time = "2025-10-15T19:25:38.795Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/f7/37/44c40fff59a2e762478b9464def57d7db4e0625dee89b682eb964a6350a8/imap_data_access-0.35.0-py3-none-any.whl", hash = "sha256:df4b7061a808f5859da0a49a39fc0ae5d40979e178bc06ec346e3c260015c0f0", size = 35119, upload-time = "2025-09-09T22:07:03.28Z" },
+    { url = "https://files.pythonhosted.org/packages/c1/00/0348ebb2217f2c9c0b0c3cf7e80d150f6e63d7636c80189c46442c500d82/imap_data_access-0.37.0-py3-none-any.whl", hash = "sha256:9801aba311311815866336636fdad9e37b530498f4c3f21abce283d860a7c643", size = 35793, upload-time = "2025-10-15T19:25:37.521Z" },
 ]
 
 [[package]]
 name = "imap-l3-processing"
-version = "2025.9.11"
-source = { url = "https://github.com/IMAP-Science-Operations-Center/imap_L3_processing/releases/download/v0.0.1/imap_l3_processing-2025.9.11-py3-none-any.whl" }
+version = "2025.10.29"
+source = { git = "https://github.com/IMAP-Science-Operations-Center/imap_L3_processing#30a1427f1a7769ba2b910c1f1e505e84d26cf1cd" }
 dependencies = [
     { name = "astropy", version = "6.1.7", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.11'" },
     { name = "astropy", version = "7.0.1", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.11'" },
     { name = "astropy-healpix" },
-    { name = "astropy-iers-data" },
-    { name = "bitarray" },
     { name = "bitstring" },
-    { name = "cdflib" },
-    { name = "certifi" },
-    { name = "cftime" },
-    { name = "charset-normalizer" },
-    { name = "cycler" },
-    { name = "fonttools" },
-    { name = "idna" },
     { name = "imap-data-access" },
     { name = "imap-processing" },
-    { name = "importlib-resources" },
-    { name = "joblib" },
-    { name = "kiwisolver" },
     { name = "lmfit" },
-    { name = "lxml" },
-    { name = "naif-leapseconds" },
     { name = "netcdf4" },
     { name = "numdifftools" },
     { name = "numpy", version = "2.2.6", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.11'" },
     { name = "numpy", version = "2.3.2", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.11'" },
-    { name = "packaging" },
     { name = "pandas" },
-    { name = "pillow" },
-    { name = "pyerfa" },
-    { name = "pyparsing" },
-    { name = "python-dateutil" },
-    { name = "pytz" },
-    { name = "pyyaml" },
     { name = "requests" },
     { name = "sammi-cdf" },
     { name = "scikit-learn" },
     { name = "scipy", version = "1.15.3", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.11'" },
     { name = "scipy", version = "1.16.1", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.11'" },
-    { name = "six" },
-    { name = "space-packet-parser" },
     { name = "spacepy" },
     { name = "spiceypy" },
-    { name = "threadpoolctl" },
-    { name = "tzdata" },
     { name = "uncertainties" },
-    { name = "urllib3" },
     { name = "xarray" },
-    { name = "zipp" },
-]
-wheels = [
-    { url = "https://github.com/IMAP-Science-Operations-Center/imap_L3_processing/releases/download/v0.0.1/imap_l3_processing-2025.9.11-py3-none-any.whl", hash = "sha256:1685e7884499cae0c39e866b8ef0eb290d2c135546769f31cf595a7f13462e98" },
-]
-
-[package.metadata]
-requires-dist = [
-    { name = "astropy", specifier = ">=6.0.0" },
-    { name = "astropy-healpix", specifier = "==1.1.2" },
-    { name = "astropy-iers-data", specifier = "==0.2025.3.24.0.35.32" },
-    { name = "bitarray", specifier = "==3.0.0" },
-    { name = "bitstring", specifier = "==4.3.0" },
-    { name = "cdflib", specifier = ">=1.3.4" },
-    { name = "certifi", specifier = "==2025.1.31" },
-    { name = "cftime", specifier = "==1.6.4.post1" },
-    { name = "charset-normalizer", specifier = "==3.4.1" },
-    { name = "cycler", specifier = "==0.12.1" },
-    { name = "fonttools", specifier = "==4.53.1" },
-    { name = "idna", specifier = "==3.10" },
-    { name = "imap-data-access", specifier = ">=0.32.0" },
-    { name = "imap-processing", specifier = ">=0.19.0" },
-    { name = "importlib-resources", specifier = "==6.4.0" },
-    { name = "joblib", specifier = "==1.4.2" },
-    { name = "kiwisolver", specifier = "==1.4.5" },
-    { name = "lmfit", specifier = "==1.3.3" },
-    { name = "lxml", specifier = "==5.3.2" },
-    { name = "naif-leapseconds", specifier = "==2023.5.31" },
-    { name = "netcdf4", specifier = ">=1.6" },
-    { name = "numdifftools", specifier = "==0.9.41" },
-    { name = "numpy", specifier = ">=2.0.1" },
-    { name = "packaging", specifier = "==24.1" },
-    { name = "pandas", specifier = "==2.2.3" },
-    { name = "pillow", specifier = "==10.4.0" },
-    { name = "pyerfa", specifier = "==2.0.1.5" },
-    { name = "pyparsing", specifier = "==3.1.2" },
-    { name = "python-dateutil", specifier = "==2.9.0.post0" },
-    { name = "pytz", specifier = "==2025.2" },
-    { name = "pyyaml", specifier = "==6.0.2" },
-    { name = "requests", specifier = "==2.32.3" },
-    { name = "sammi-cdf", specifier = "==1.0.0" },
-    { name = "scikit-learn", specifier = "==1.6.1" },
-    { name = "scipy", specifier = ">=1.13.1" },
-    { name = "six", specifier = "==1.16.0" },
-    { name = "space-packet-parser", specifier = "==5.0.1" },
-    { name = "spacepy", specifier = "==0.7.0" },
-    { name = "spiceypy", specifier = "==6.0.0" },
-    { name = "threadpoolctl", specifier = "==3.6.0" },
-    { name = "tzdata", specifier = "==2025.2" },
-    { name = "uncertainties", specifier = "==3.2.2" },
-    { name = "urllib3", specifier = "==2.4.0" },
-    { name = "xarray", specifier = "==2025.3.1" },
-    { name = "zipp", specifier = "==3.19.2" },
 ]
 
 [[package]]
 name = "imap-processing"
-version = "0.19.3"
-source = { registry = "https://pypi.org/simple" }
+version = "1.0.2.post4.dev0+474ef5c"
+source = { git = "https://github.com/IMAP-Science-Operations-Center/imap_processing#474ef5c6bf508c8eb6deae5ac078e716e1b85d6b" }
 dependencies = [
     { name = "astropy-healpix" },
     { name = "cdflib" },
@@ -737,19 +658,6 @@ dependencies = [
     { name = "space-packet-parser" },
     { name = "spiceypy" },
     { name = "xarray" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/75/d3/279f3881352f051aebed0f52987ff91caec69e9fca81dd8e56a269c1b3e5/imap_processing-0.19.3.tar.gz", hash = "sha256:17a6365d34693db8cd57c1b831473f495371feb759d535641de973f1c99c1286", size = 758900, upload-time = "2025-09-10T17:26:54.534Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/60/16/c300220bef1c719f43fde5c9a2cbcb5773cbea610f2fc7496316892027e7/imap_processing-0.19.3-py3-none-any.whl", hash = "sha256:0ad7a19ab3a2ad9c4eb081aed7c4344400ed1aef608aefc55072db898cb09648", size = 871029, upload-time = "2025-09-10T17:26:52.876Z" },
-]
-
-[[package]]
-name = "importlib-resources"
-version = "6.4.0"
-source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/c8/9d/6ee73859d6be81c6ea7ebac89655e92740296419bd37e5c8abdb5b62fd55/importlib_resources-6.4.0.tar.gz", hash = "sha256:cdb2b453b8046ca4e3798eb1d84f3cce1446a0e8e7b5ef4efb600f19fc398145", size = 42040, upload-time = "2024-03-21T13:42:34.888Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/75/06/4df55e1b7b112d183f65db9503bff189e97179b256e1ea450a3c365241e0/importlib_resources-6.4.0-py3-none-any.whl", hash = "sha256:50d10f043df931902d4194ea07ec57960f66a80449ff867bfe782b4c486ba78c", size = 38168, upload-time = "2024-03-21T13:42:33.243Z" },
 ]
 
 [[package]]
@@ -943,7 +851,7 @@ wheels = [
 
 [[package]]
 name = "mapping-tool"
-version = "0.1.0"
+version = "0.2.0"
 source = { editable = "." }
 dependencies = [
     { name = "argparse" },
@@ -956,8 +864,8 @@ dependencies = [
 [package.metadata]
 requires-dist = [
     { name = "argparse", specifier = ">=1.4.0" },
-    { name = "imap-l3-processing", url = "https://github.com/IMAP-Science-Operations-Center/imap_L3_processing/releases/download/v0.0.1/imap_l3_processing-2025.9.11-py3-none-any.whl" },
-    { name = "imap-processing", specifier = ">=0.19.0" },
+    { name = "imap-l3-processing", git = "https://github.com/IMAP-Science-Operations-Center/imap_L3_processing" },
+    { name = "imap-processing", git = "https://github.com/IMAP-Science-Operations-Center/imap_processing" },
     { name = "jsonschema", specifier = ">=4.25.0" },
     { name = "pyyaml", specifier = ">=6.0.2" },
 ]
@@ -1038,15 +946,6 @@ wheels = [
 ]
 
 [[package]]
-name = "naif-leapseconds"
-version = "2023.5.31"
-source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/e0/35/834fa24470453cdb9fe80fcc8b329e18fc47bb4df6d0ce37866f63a0913b/naif_leapseconds-2023.5.31.tar.gz", hash = "sha256:1316c1d2568a9c4852a39377e7ef82e87d43f9c5de7489c6d6a37ec2ab2d23ad", size = 6479, upload-time = "2023-05-31T21:08:20.142Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/15/93/271bc1f6de543b2d1ef21c3317e62a641dd979e3bddc4d8a513e107bc427/naif_leapseconds-2023.5.31-py3-none-any.whl", hash = "sha256:ff02c1d1a5b8b4c97ecb554b0c1b192cd8af39820b7fb219aeb3815a565e2283", size = 7264, upload-time = "2023-05-31T21:08:18.743Z" },
-]
-
-[[package]]
 name = "netcdf4"
 version = "1.7.2"
 source = { registry = "https://pypi.org/simple" }
@@ -1078,6 +977,16 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/71/96/d5d8859a6dac29f8ebc815ff8e75770bd513db9f08d7a711e21ae562a948/netCDF4-1.7.2-cp313-cp313-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:30d20e56b9ba2c48884eb89c91b63e6c0612b4927881707e34402719153ef17f", size = 9378149, upload-time = "2024-10-22T19:01:04.924Z" },
     { url = "https://files.pythonhosted.org/packages/d1/80/b9c19f1bb4ac6c5fa6f94a4f278bc68a778473d1814a86a375d7cffa193a/netCDF4-1.7.2-cp313-cp313-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:8d6bfd38ba0bde04d56f06c1554714a2ea9dab75811c89450dc3ec57a9d36b80", size = 9254471, upload-time = "2024-10-22T19:01:07.041Z" },
     { url = "https://files.pythonhosted.org/packages/66/b5/e04550fd53de57001dbd5a87242da7ff784c80790adc48897977b6ccf891/netCDF4-1.7.2-cp313-cp313-win_amd64.whl", hash = "sha256:5c5fbee6134ee1246c397e1508e5297d825aa19221fdf3fa8dc9727ad824d7a5", size = 6990521, upload-time = "2024-10-23T15:02:27.549Z" },
+    { url = "https://files.pythonhosted.org/packages/d6/dd/c713bfe9aa122fe2d1e3c9320fc436b5ad922c93df24d707d9fffb66b0e2/netcdf4-1.7.2-cp310-cp310-macosx_13_0_x86_64.whl", hash = "sha256:16c3ba053930ed990e58827de6ab03184e407549004fb77438b98e5777e8cf3b", size = 2803405, upload-time = "2025-10-13T18:32:13.58Z" },
+    { url = "https://files.pythonhosted.org/packages/75/b7/6b66ad69d034dc81ee2a1617ebd892cf25ff415dc7aa003323884c4a77f0/netcdf4-1.7.2-cp310-cp310-macosx_14_0_arm64.whl", hash = "sha256:142c9ed2db8a87a15ae0530c8a99f4f045435b0f495df733e9f111995e389d4f", size = 2417569, upload-time = "2025-10-13T18:32:15.698Z" },
+    { url = "https://files.pythonhosted.org/packages/50/e4/7238549f0625042f8d94ec2f58977bb186a8e2acf4d65b2ad1de2a58d672/netcdf4-1.7.2-cp310-cp310-manylinux_2_27_aarch64.manylinux_2_28_aarch64.whl", hash = "sha256:76cb3bbbbe4cd5fca612578eb105c16217380f7f93af2b549e8f38296bc906bb", size = 9682157, upload-time = "2025-10-13T18:32:17.138Z" },
+    { url = "https://files.pythonhosted.org/packages/49/3c/1129ea3943f6f5736be08c2d79ca5965d0a55adbfc38f313a59938a7a62a/netcdf4-1.7.2-cp310-cp310-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl", hash = "sha256:835ae7bcef666c967241baeeee9bef9376ddb7527297b24735597131f6f628e2", size = 9520752, upload-time = "2025-10-13T18:32:19.493Z" },
+    { url = "https://files.pythonhosted.org/packages/0b/eb/144709b60d89eb8995236f49a4e446be87f15b0d63f05dbda55e1315dba3/netcdf4-1.7.2-cp310-cp310-win_amd64.whl", hash = "sha256:73bd7eda3cefb04c4076e76911f652f5ed56bf434e0a3958e367932953437557", size = 7215191, upload-time = "2025-10-13T18:32:21.112Z" },
+    { url = "https://files.pythonhosted.org/packages/84/0a/182bb4fe5639699ba39d558b553b8e6f04fbfea6cf78404c0f21ef149bf7/netcdf4-1.7.2-cp311-abi3-macosx_13_0_x86_64.whl", hash = "sha256:7e81c3c47f2772eab0b93fba8bb05b17b58dce17720e1bed25e9d76551deecd0", size = 2751391, upload-time = "2025-10-13T18:32:22.749Z" },
+    { url = "https://files.pythonhosted.org/packages/2d/1f/54ac27c791360f7452ca27ed1cb2917946bbe1ea4337c590a5abcef6332d/netcdf4-1.7.2-cp311-abi3-macosx_14_0_arm64.whl", hash = "sha256:cb2791dba37fc98fd1ac4e236c97822909f54efbcdf7f1415c9777810e0a28f4", size = 2387513, upload-time = "2025-10-13T18:32:27.499Z" },
+    { url = "https://files.pythonhosted.org/packages/5c/5e/9bf3008a9e45c08f4c9fedce4d6f722ef5d970f56a9c5eb375a200dd2b66/netcdf4-1.7.2-cp311-abi3-manylinux_2_27_aarch64.manylinux_2_28_aarch64.whl", hash = "sha256:bf11480f6b8a5b246818ffff6b4d90481e51f8b9555b41af0c372eb0aaf8b65f", size = 9621674, upload-time = "2025-10-13T18:32:29.193Z" },
+    { url = "https://files.pythonhosted.org/packages/a1/75/46871e85f2bbfb1efe229623d25d7c9daa17e2e968d5235572b2c8bb53e8/netcdf4-1.7.2-cp311-abi3-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl", hash = "sha256:1ccc05328a8ff31921b539821791aeb20b054879f3fdf6d1d505bf6422824fec", size = 9453759, upload-time = "2025-10-13T18:32:31.136Z" },
+    { url = "https://files.pythonhosted.org/packages/cd/10/c52f12297965938d9b9be666ea1f9d8340c2aea31d6909d90aa650847248/netcdf4-1.7.2-cp311-abi3-win_amd64.whl", hash = "sha256:999bfc4acebf400ed724d5e7329e2e768accc7ee1fa1d82d505da782f730301b", size = 7148514, upload-time = "2025-10-13T18:32:33.121Z" },
 ]
 
 [[package]]
@@ -1914,13 +1823,4 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/7c/c4/6931c37cd418658d596e78794bdd1bcb67efec0aac3cdb720e37e03c1ea1/xarray-2025.3.1.tar.gz", hash = "sha256:0252c96a73528b29d1ed7f0ab28d928d2ec00ad809e47369803b184dece1e447", size = 3300778, upload-time = "2025-03-31T02:57:21.387Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/91/fd/973deafd9f87085136a58573600646b408ae7af47859f35151f0d83d5090/xarray-2025.3.1-py3-none-any.whl", hash = "sha256:3404e313930c226db70a945377441ea3c957225d8ba2d429e764c099bb91a546", size = 1279327, upload-time = "2025-03-31T02:57:19.449Z" },
-]
-
-[[package]]
-name = "zipp"
-version = "3.19.2"
-source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/d3/20/b48f58857d98dcb78f9e30ed2cfe533025e2e9827bbd36ea0a64cc00cbc1/zipp-3.19.2.tar.gz", hash = "sha256:bf1dcf6450f873a13e952a29504887c89e6de7506209e5b1bcc3460135d4de19", size = 22922, upload-time = "2024-06-04T17:21:09.042Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/20/38/f5c473fe9b90c8debdd29ea68d5add0289f1936d6f923b6b9cc0b931194c/zipp-3.19.2-py3-none-any.whl", hash = "sha256:f091755f667055f2d02b32c53771a7a6c8b47e1fdbc4b72a8b9072b3eef8015c", size = 9039, upload-time = "2024-06-04T17:21:07.146Z" },
 ]

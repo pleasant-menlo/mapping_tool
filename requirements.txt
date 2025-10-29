@@ -1,5 +1,0 @@
-argparse==1.4.0
-imap_processing@https://github.com/pleasant-menlo/imap_processing/releases/download/0.18.1/imap_processing-0.18.1-py3-none-any.whl
-jsonschema==4.25.0
-pyYAML>=6.0.2
-imap-l3-processing@git+https://github.com/IMAP-Science-Operations-Center/imap_L3_processing.git
