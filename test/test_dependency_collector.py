@@ -263,15 +263,17 @@ class TestDependencyCollector(unittest.TestCase):
         ]
 
         imap_data_access.config["DATA_ACCESS_URL"] = "expected-url"
+        imap_data_access.config["ACCESS_TOKEN"] = "expected-access-token"
 
         spice_kernels = DependencyCollector.collect_spice_kernels(desired_spice_start, desired_spice_end)
 
+        expected_auth_header = {"Authorization": r"Bearer expected-access-token"}
         mock_requests.get.assert_has_calls([
-            call("expected-url/spice-query?type=leapseconds&start_time=0"),
-            call("expected-url/spice-query?type=spacecraft_clock&start_time=0"),
-            call("expected-url/spice-query?type=pointing_attitude&start_time=0"),
-            call("expected-url/spice-query?type=imap_frames&start_time=0"),
-            call("expected-url/spice-query?type=science_frames&start_time=0")
+            call("expected-url/spice-query?type=leapseconds&start_time=0", headers=expected_auth_header),
+            call("expected-url/spice-query?type=spacecraft_clock&start_time=0", headers=expected_auth_header),
+            call("expected-url/spice-query?type=pointing_attitude&start_time=0", headers=expected_auth_header),
+            call("expected-url/spice-query?type=imap_frames&start_time=0", headers=expected_auth_header),
+            call("expected-url/spice-query?type=science_frames&start_time=0", headers=expected_auth_header)
         ])
         self.assertEqual(["naif0012.tls",
                           "imap_sclk_0000.tsc",
@@ -279,3 +281,19 @@ class TestDependencyCollector(unittest.TestCase):
                           "imap_dps_2025_031_2025_120_01.ah.bc",
                           "imap_001.tf",
                           "imap_science_0001.tf"], spice_kernels)
+
+    @patch('mapping_tool.dependency_collector.requests')
+    def test_raises_error_if_http_request_fails(self, mock_requests):
+        desired_spice_start = datetime(2025, 1, 1, tzinfo=timezone.utc)
+        desired_spice_end = datetime(2025, 3, 1, tzinfo=timezone.utc)
+
+        expected_exception = Exception("unauthenticated")
+        mock_requests.get.return_value.raise_for_status.side_effect = expected_exception
+
+        imap_data_access.config["DATA_ACCESS_URL"] = "expected-url"
+        imap_data_access.config["ACCESS_TOKEN"] = "bad-token"
+
+        with self.assertRaises(Exception) as cm:
+            spice_kernels = DependencyCollector.collect_spice_kernels(desired_spice_start, desired_spice_end)
+
+        self.assertEqual(expected_exception, cm.exception)

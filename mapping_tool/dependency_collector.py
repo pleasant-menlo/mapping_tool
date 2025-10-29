@@ -54,9 +54,14 @@ class DependencyCollector:
     @classmethod
     def collect_spice_kernels(cls, start_date: datetime, end_date: datetime) -> list[str]:
         file_names = []
+        auth_headers = {"Authorization": f"Bearer {imap_data_access.config['ACCESS_TOKEN']}"}
         for kernel_type in ["leapseconds", "spacecraft_clock", "pointing_attitude", "imap_frames", "science_frames"]:
-            file_json = requests.get(
-                imap_data_access.config["DATA_ACCESS_URL"] + f"/spice-query?type={kernel_type}&start_time=0").json()
+            response = requests.get(
+                imap_data_access.config["DATA_ACCESS_URL"] + f"/spice-query?type={kernel_type}&start_time=0",
+                headers=auth_headers
+            )
+            response.raise_for_status()
+            file_json = response.json()
             for spice_file in file_json:
                 spice_start_date = datetime.strptime(spice_file["min_date_datetime"], "%Y-%m-%d, %H:%M:%S")
                 spice_start_date = spice_start_date.replace(tzinfo=timezone.utc)
