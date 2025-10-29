@@ -4,6 +4,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from unittest.mock import patch, call, Mock
 
+import imap_data_access
 import requests
 from imap_processing.ena_maps.utils.naming import MapDescriptor, MappableInstrumentShortName
 
@@ -261,14 +262,16 @@ class TestDependencyCollector(unittest.TestCase):
             mock_science_frame_response
         ]
 
+        imap_data_access.config["DATA_ACCESS_URL"] = "expected-url"
+
         spice_kernels = DependencyCollector.collect_spice_kernels(desired_spice_start, desired_spice_end)
 
         mock_requests.get.assert_has_calls([
-            call("https://api.dev.imap-mission.com/spice-query?type=leapseconds&start_time=0"),
-            call("https://api.dev.imap-mission.com/spice-query?type=spacecraft_clock&start_time=0"),
-            call("https://api.dev.imap-mission.com/spice-query?type=pointing_attitude&start_time=0"),
-            call("https://api.dev.imap-mission.com/spice-query?type=imap_frames&start_time=0"),
-            call("https://api.dev.imap-mission.com/spice-query?type=science_frames&start_time=0")
+            call("expected-url/spice-query?type=leapseconds&start_time=0"),
+            call("expected-url/spice-query?type=spacecraft_clock&start_time=0"),
+            call("expected-url/spice-query?type=pointing_attitude&start_time=0"),
+            call("expected-url/spice-query?type=imap_frames&start_time=0"),
+            call("expected-url/spice-query?type=science_frames&start_time=0")
         ])
         self.assertEqual(["naif0012.tls",
                           "imap_sclk_0000.tsc",

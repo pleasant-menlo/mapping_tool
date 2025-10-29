@@ -1,3 +1,4 @@
+import os
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -7,8 +8,6 @@ from imap_processing.ena_maps.utils.naming import MapDescriptor, MappableInstrum
 
 
 class DependencyCollector:
-    IMAP_API = "https://api.dev.imap-mission.com/"
-
     @staticmethod
     def get_pointing_sets(descriptor: MapDescriptor, start_date: datetime, end_date: datetime) -> list[str]:
         map_instrument_pset_descriptors = []
@@ -56,7 +55,8 @@ class DependencyCollector:
     def collect_spice_kernels(cls, start_date: datetime, end_date: datetime) -> list[str]:
         file_names = []
         for kernel_type in ["leapseconds", "spacecraft_clock", "pointing_attitude", "imap_frames", "science_frames"]:
-            file_json = requests.get(cls.IMAP_API + f"spice-query?type={kernel_type}&start_time=0").json()
+            file_json = requests.get(
+                imap_data_access.config["DATA_ACCESS_URL"] + f"/spice-query?type={kernel_type}&start_time=0").json()
             for spice_file in file_json:
                 spice_start_date = datetime.strptime(spice_file["min_date_datetime"], "%Y-%m-%d, %H:%M:%S")
                 spice_start_date = spice_start_date.replace(tzinfo=timezone.utc)
