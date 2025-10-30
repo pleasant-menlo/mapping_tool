@@ -70,3 +70,36 @@ class DependencyCollector:
                 if spice_start_date <= end_date and start_date < spice_end_date:
                     file_names.append(Path(spice_file["file_name"]).name)
         return file_names
+
+    @classmethod
+    def _filter_ancillary_dependencies(cls, descriptor: MapDescriptor, files: list[dict[str, str]]) -> list[
+        dict[str, str]]:
+        if descriptor.instrument == MappableInstrumentShortName.HI:
+            return [f for f in files if f"{descriptor.sensor}sensor" in f['file_path']]
+        return files
+
+    @classmethod
+    def get_ancillary_dependencies(cls, descriptor: MapDescriptor, end_date: datetime) -> list[
+        str]:
+        ancillaries = imap_data_access.query(table="ancillary", instrument=descriptor.instrument.name.lower())
+        ancillaries = cls._filter_ancillary_dependencies(descriptor, ancillaries)
+
+        def filter_files_by_highest_version(files: list):
+            dates_to_files = {}
+            valid_files = [f for f in files if datetime.strptime(f["start_date"], "%Y%m%d") < end_date]
+
+            for file in valid_files:
+                file_descriptor = file["descriptor"]
+                if file_descriptor not in dates_to_files:
+                    dates_to_files[file_descriptor] = file
+                else:
+                    if dates_to_files[file_descriptor]["start_date"] == file["start_date"]:
+                        if dates_to_files[file_descriptor]["version"] < file["version"]:
+                            dates_to_files[file_descriptor] = file
+
+                    if dates_to_files[file_descriptor]["start_date"] < file["start_date"]:
+                        dates_to_files[file_descriptor] = file
+
+            return dates_to_files.values()
+
+        return [file['file_path'] for file in filter_files_by_highest_version(ancillaries)]
