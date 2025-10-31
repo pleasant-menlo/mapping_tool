@@ -8,7 +8,7 @@ from unittest.mock import patch, Mock, call
 
 from imap_processing.ena_maps.utils.naming import MappableInstrumentShortName, MapDescriptor
 from imap_l3_processing.models import InputMetadata
-from imap_data_access import ProcessingInputCollection, ScienceInput, SPICEInput
+from imap_data_access import ProcessingInputCollection, ScienceInput, SPICEInput, AncillaryInput
 from imap_processing.spice.geometry import SpiceFrame
 
 from mapping_tool.configuration import DataLevel
@@ -270,15 +270,20 @@ class TestGenerateMap(unittest.TestCase):
 
     @patch("mapping_tool.generate_map.spiceypy")
     @patch("mapping_tool.generate_map.DependencyCollector.collect_spice_kernels")
+    @patch("mapping_tool.generate_map.DependencyCollector.get_ancillary_dependencies")
     @patch("mapping_tool.generate_map.DependencyCollector.get_pointing_sets")
     @patch("mapping_tool.generate_map.Hi")
     @patch("mapping_tool.generate_map.Lo")
     @patch("mapping_tool.generate_map.Ultra")
-    def test_generate_l2_map(self, mock_ultra, mock_lo, mock_hi, mock_get_pointing_sets, mock_collect_spice_kernels,
+    def test_generate_l2_map(self, mock_ultra, mock_lo, mock_hi, mock_get_pointing_sets,
+                             mock_get_ancillary_dependencies, mock_collect_spice_kernels,
                              mock_spiceypy):
         mock_collect_spice_kernels.return_value = ["imap_science_0001.tf", "imap_sclk_0000.tsc"]
         mock_get_pointing_sets.return_value = ["imap_hi_l1c_pset-1_20250101_v000.cdf",
                                                "imap_hi_l1c_pset-2_20250101_v000.cdf"]
+        mock_get_ancillary_dependencies.return_value = ["imap_hi_45sensor-cal-prod_20240101_v002.csv",
+                                                        "imap_hi_45sensor-esa-energies_20240101_v002.csv"]
+
         hi_descriptor = create_map_descriptor(instrument=MappableInstrumentShortName.HI, survival_corrected="nsp",
                                               kernel_path=Path("path1"))
         lo_descriptor = create_map_descriptor(instrument=MappableInstrumentShortName.LO, survival_corrected="nsp",
@@ -297,6 +302,7 @@ class TestGenerateMap(unittest.TestCase):
         for descriptor, mock_processor_class, num_furnsh_calls in cases:
             with self.subTest(descriptor.to_string()):
                 mock_collect_spice_kernels.reset_mock()
+                mock_get_ancillary_dependencies.reset_mock()
                 mock_get_pointing_sets.reset_mock()
                 expected_map = Mock()
                 mock_processor = mock_processor_class.return_value
@@ -305,15 +311,21 @@ class TestGenerateMap(unittest.TestCase):
                 actual_map = generate_l2_map(descriptor, start_date, end_date)
 
                 mock_collect_spice_kernels.assert_called_once_with(start_date=start_date, end_date=end_date)
+                mock_get_ancillary_dependencies.assert_called_once_with(descriptor, end_date)
                 mock_get_pointing_sets.assert_called_once_with(descriptor, start_date, end_date)
 
-                self.mock_download.assert_has_calls([call("imap_hi_l1c_pset-1_20250101_v000.cdf"),
-                                               call("imap_hi_l1c_pset-2_20250101_v000.cdf")])
+                self.mock_download.assert_has_calls([
+                    call("imap_hi_l1c_pset-1_20250101_v000.cdf"),
+                    call("imap_hi_l1c_pset-2_20250101_v000.cdf"),
+                    call("imap_hi_45sensor-cal-prod_20240101_v002.csv"),
+                    call("imap_hi_45sensor-esa-energies_20240101_v002.csv")])
 
                 expected_dependency_str = ProcessingInputCollection(
                     ScienceInput("imap_hi_l1c_pset-1_20250101_v000.cdf"),
                     ScienceInput("imap_hi_l1c_pset-2_20250101_v000.cdf"),
-                    SPICEInput("imap_science_0001.tf"), SPICEInput("imap_sclk_0000.tsc")
+                    SPICEInput("imap_science_0001.tf"), SPICEInput("imap_sclk_0000.tsc"),
+                    AncillaryInput("imap_hi_45sensor-cal-prod_20240101_v002.csv"),
+                    AncillaryInput("imap_hi_45sensor-esa-energies_20240101_v002.csv"),
                 ).serialize()
 
                 mock_processor_class.assert_called_once_with(
@@ -344,14 +356,17 @@ class TestGenerateMap(unittest.TestCase):
         ])
         self.assertEqual(2, mock_spiceypy.furnsh.call_count)
 
+    @patch("mapping_tool.generate_map.DependencyCollector.get_ancillary_dependencies")
     @patch("mapping_tool.generate_map.DependencyCollector.collect_spice_kernels")
     @patch("mapping_tool.generate_map.DependencyCollector.get_pointing_sets")
     @patch("mapping_tool.generate_map.Hi")
     def test_generate_l2_map_patches_l2_processing_get_map_coord_frame(self, mock_hi_processor_class,
                                                                        mock_get_pointing_sets,
-                                                                       mock_collect_spice_kernels):
+                                                                       mock_collect_spice_kernels,
+                                                                       mock_get_ancillary_dependencies):
         mock_hi_processor = mock_hi_processor_class.return_value
         mock_collect_spice_kernels.return_value = ["imap_science_0001.tf", "imap_sclk_0000.tsc"]
+        mock_get_ancillary_dependencies.return_value = []
         mock_get_pointing_sets.return_value = ["imap_hi_l1c_pset-1_20250101_v000.cdf",
                                                "imap_hi_l1c_pset-2_20250101_v000.cdf"]
 
@@ -373,14 +388,17 @@ class TestGenerateMap(unittest.TestCase):
         self.assertEqual(SpiceFrame.IMAP_HAE,
                          MapDescriptor.from_string(normal_pipeline_descriptor).map_spice_coord_frame)
 
+    @patch("mapping_tool.generate_map.DependencyCollector.get_ancillary_dependencies")
     @patch("mapping_tool.generate_map.DependencyCollector.get_pointing_sets")
     @patch("mapping_tool.generate_map.DependencyCollector.collect_spice_kernels")
     @patch("mapping_tool.generate_map.Hi")
     def test_generate_l2_map_raises_error_when_less_or_more_than_one_file_is_returned(self, mock_hi,
                                                                                       mock_collect_spice_kernels,
-                                                                                      mock_get_pointing_sets):
+                                                                                      mock_get_pointing_sets,
+                                                                                      mock_get_ancillary_dependencies):
         mock_collect_spice_kernels.return_value = []
         mock_get_pointing_sets.return_value = ["imap_hi_l1c_pset_20250101_v000.cdf"]
+        mock_get_ancillary_dependencies.return_value = []
 
         error_cases = [
             ("L2 processing did not return any files!", []),
@@ -396,14 +414,17 @@ class TestGenerateMap(unittest.TestCase):
 
                 self.assertIn(err_string, str(e.exception))
 
+    @patch("mapping_tool.generate_map.DependencyCollector.get_ancillary_dependencies")
     @patch("mapping_tool.generate_map.DependencyCollector.get_pointing_sets")
     @patch("mapping_tool.generate_map.DependencyCollector.collect_spice_kernels")
     @patch("mapping_tool.generate_map.Hi")
     def test_generate_l2_map_gracefully_handles_processing_exceptions(self, mock_hi,
                                                                       mock_collect_spice_kernels,
-                                                                      mock_get_pointing_sets):
+                                                                      mock_get_pointing_sets,
+                                                                      mock_get_ancillary_dependencies):
         mock_collect_spice_kernels.return_value = []
         mock_get_pointing_sets.return_value = ["imap_hi_l1c_pset_20250101_v000.cdf"]
+        mock_get_ancillary_dependencies.return_value = []
         mock_hi.return_value.do_processing.side_effect = ValueError("L2 processing failed")
 
         hi_descriptor = create_map_descriptor(instrument=MappableInstrumentShortName.HI)

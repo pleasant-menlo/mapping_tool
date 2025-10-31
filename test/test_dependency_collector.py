@@ -216,7 +216,7 @@ class TestDependencyCollector(unittest.TestCase):
                     ]
                 ]
 
-                end_date = datetime(2026, 2, 1)
+                end_date = datetime(2026, 2, 1, tzinfo=timezone.utc)
                 descriptor = MapDescriptor(
                     frame_descriptor="sf",
                     resolution_str="6",
@@ -250,7 +250,7 @@ class TestDependencyCollector(unittest.TestCase):
             ]
         ]
 
-        end_date = datetime(2026, 2, 1)
+        end_date = datetime(2026, 2, 1, tzinfo=timezone.utc)
         descriptor = MapDescriptor(
             frame_descriptor="sf",
             resolution_str="6",
@@ -282,7 +282,7 @@ class TestDependencyCollector(unittest.TestCase):
             ]
         ]
 
-        end_date = datetime(2026, 2, 1)
+        end_date = datetime(2026, 2, 1, tzinfo=timezone.utc)
         descriptor = MapDescriptor(
             frame_descriptor="sf",
             resolution_str="6",

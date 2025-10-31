@@ -86,7 +86,11 @@ class DependencyCollector:
 
         def filter_files_by_highest_version(files: list):
             dates_to_files = {}
-            valid_files = [f for f in files if datetime.strptime(f["start_date"], "%Y%m%d") < end_date]
+            valid_files = []
+            for f in files:
+                utc_start_time = datetime.strptime(f["start_date"], "%Y%m%d").replace(tzinfo=timezone.utc)
+                if utc_start_time < end_date:
+                    valid_files.append(f)
 
             for file in valid_files:
                 file_descriptor = file["descriptor"]
@@ -102,4 +106,4 @@ class DependencyCollector:
 
             return dates_to_files.values()
 
-        return [file['file_path'] for file in filter_files_by_highest_version(ancillaries)]
+        return [Path(file['file_path']).name for file in filter_files_by_highest_version(ancillaries)]

@@ -14,7 +14,7 @@ from imap_l3_processing.hi.hi_processor import HiProcessor
 from imap_l3_processing.ultra.l3.ultra_processor import UltraProcessor
 from imap_l3_processing.lo.lo_processor import LoProcessor
 from imap_processing.cli import Hi, Lo, Ultra
-from imap_data_access import ProcessingInputCollection, ScienceInput, SPICEInput, download
+from imap_data_access import ProcessingInputCollection, ScienceInput, SPICEInput, AncillaryInput, download
 
 from mapping_tool.dependency_collector import DependencyCollector
 import spiceypy
@@ -22,6 +22,7 @@ import spiceypy
 from mapping_tool.mapping_tool_descriptor import MappingToolDescriptor
 
 logger = logging.getLogger(__name__)
+
 
 def get_dependencies_for_l3_map(map_descriptor: MappingToolDescriptor) -> list[MappingToolDescriptor]:
     match map_descriptor.instrument:
@@ -33,6 +34,7 @@ def get_dependencies_for_l3_map(map_descriptor: MappingToolDescriptor) -> list[M
             return get_dependencies_for_lo_l3_map(map_descriptor)
         case _:
             raise ValueError("Don't know correct dependencies for this specific instrument", map_descriptor.instrument)
+
 
 def get_dependencies_for_hi_l3_map(map_descriptor: MappingToolDescriptor) -> list[MappingToolDescriptor]:
     match map_descriptor:
@@ -60,13 +62,14 @@ def get_dependencies_for_hi_l3_map(map_descriptor: MappingToolDescriptor) -> lis
         case _:
             raise ValueError("Don't know correct dependencies for", map_descriptor)
 
+
 def get_dependencies_for_ultra_l3_map(map_descriptor: MappingToolDescriptor) -> list[MappingToolDescriptor]:
     match map_descriptor:
         case MapDescriptor(principal_data="spx"):
             return [replace(map_descriptor, principal_data="ena")]
         case MapDescriptor(sensor="combined"):
             return [replace(map_descriptor, sensor="45"), replace(map_descriptor, sensor="90")]
-        case MapDescriptor(sensor="90"|"45", survival_corrected="sp"):
+        case MapDescriptor(sensor="90" | "45", survival_corrected="sp"):
             return [replace(map_descriptor, survival_corrected="nsp")]
         case _:
             raise ValueError("Don't know correct dependencies for", map_descriptor)
@@ -169,11 +172,16 @@ def generate_l2_map(descriptor: MappingToolDescriptor, start_date: datetime, end
         print(f"\rDownloading psets {i}/{len(psets)}... ", end="")
         sys.stdout.flush()
         download(pset)
-    print("")
+
+    ancillary_dependencies = DependencyCollector.get_ancillary_dependencies(descriptor, end_date)
+    for dependency in ancillary_dependencies:
+        download(dependency)
 
     processing_input_collection = ProcessingInputCollection(
         *[ScienceInput(pset) for pset in psets],
-        *[SPICEInput(kernel) for kernel in spice_kernel_names])
+        *[SPICEInput(kernel) for kernel in spice_kernel_names],
+        *[AncillaryInput(dependency) for dependency in ancillary_dependencies]
+    )
 
     processor_classes = {
         MappableInstrumentShortName.HI: Hi,
