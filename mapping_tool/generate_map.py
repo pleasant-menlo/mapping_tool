@@ -127,13 +127,17 @@ def generate_l3_map(descriptor: MappingToolDescriptor, start: datetime, end: dat
     )
 
     spice_kernel_paths = DependencyCollector.collect_spice_kernels(start_date=start, end_date=end)
+    sp_inputs = DependencyCollector.get_survival_probability_dependencies(descriptor, start, end, input_maps)
+    ancillary_inputs = DependencyCollector.get_ancillary_dependencies(descriptor)
     for kernel in spice_kernel_paths:
         kernel_path = imap_data_access.download(kernel)
         spiceypy.furnsh(str(kernel_path))
     if descriptor.kernel_path is not None:
         spiceypy.furnsh(str(descriptor.kernel_path))
 
-    processing_input_collection = ProcessingInputCollection(*[ScienceInput(dep.name) for dep in input_maps])
+    processing_input_collection = ProcessingInputCollection(*[ScienceInput(dep.name) for dep in input_maps],
+                                                            *sp_inputs,
+                                                            *ancillary_inputs)
 
     processor = processor_class(
         processing_input_collection,
@@ -171,9 +175,12 @@ def generate_l2_map(descriptor: MappingToolDescriptor, start_date: datetime, end
         download(pset)
     print("")
 
+    ancillary_inputs = DependencyCollector.get_ancillary_dependencies(descriptor)
+
     processing_input_collection = ProcessingInputCollection(
         *[ScienceInput(pset) for pset in psets],
-        *[SPICEInput(kernel) for kernel in spice_kernel_names])
+        *[SPICEInput(kernel) for kernel in spice_kernel_names],
+        *ancillary_inputs)
 
     processor_classes = {
         MappableInstrumentShortName.HI: Hi,

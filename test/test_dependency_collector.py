@@ -1,13 +1,14 @@
-import json
 import unittest
 from datetime import datetime, timezone
 from pathlib import Path
 from unittest.mock import patch, call, Mock
 
-import requests
 from imap_processing.ena_maps.utils.naming import MapDescriptor, MappableInstrumentShortName
+from imap_data_access.processing_input import AncillaryInput, ScienceInput
 
 from mapping_tool.dependency_collector import DependencyCollector
+from test import test_helpers
+from test.test_builders import create_map_descriptor
 
 
 class TestDependencyCollector(unittest.TestCase):
@@ -247,18 +248,38 @@ class TestDependencyCollector(unittest.TestCase):
             }
         ]
 
+        mock_planetary_ephemeris_json = [
+            {
+                "file_name": "spk/de440.bsp",
+                "min_date_datetime": "2024-12-01, 00:00:00",
+                "max_date_datetime": "2025-05-01, 00:00:00"
+            }
+        ]
+
+        mock_ephemeris_reconstructed_json = [
+            {
+                "file_name": "spk/imap_recon_od004_20250924_20251002_v01.bsp",
+                "min_date_datetime": "2024-12-01, 00:00:00",
+                "max_date_datetime": "2025-05-01, 00:00:00"
+            }
+        ]
+
         mock_naif_response = Mock(json=Mock(return_value=mock_naif_json))
         mock_sclk_response = Mock(json=Mock(return_value=mock_sclk_json))
         mock_dps_response = Mock(json=Mock(return_value=mock_dps_json))
         mock_imap_frame_response = Mock(json=Mock(return_value=mock_imap_frame_json))
         mock_science_frame_response = Mock(json=Mock(return_value=mock_science_frame_json))
+        mock_planetary_ephemeris_response = Mock(json=Mock(return_value=mock_planetary_ephemeris_json))
+        mock_ephemeris_reconstructed_response = Mock(json=Mock(return_value=mock_ephemeris_reconstructed_json))
 
         mock_requests.get.side_effect = [
             mock_naif_response,
             mock_sclk_response,
             mock_dps_response,
             mock_imap_frame_response,
-            mock_science_frame_response
+            mock_science_frame_response,
+            mock_planetary_ephemeris_response,
+            mock_ephemeris_reconstructed_response
         ]
 
         spice_kernels = DependencyCollector.collect_spice_kernels(desired_spice_start, desired_spice_end)
@@ -275,4 +296,86 @@ class TestDependencyCollector(unittest.TestCase):
                           "imap_dps_2024_335_2025_031_01.ah.bc",
                           "imap_dps_2025_031_2025_120_01.ah.bc",
                           "imap_001.tf",
-                          "imap_science_0001.tf"], spice_kernels)
+                          "imap_science_0001.tf",
+                          "de440.bsp",
+                          "imap_recon_od004_20250924_20251002_v01.bsp"], spice_kernels)
+
+    @patch('mapping_tool.dependency_collector.imap_data_access.query')
+    def test_get_ancillary_dependencies(self, mock_query):
+        cases = [
+            (MappableInstrumentShortName.HI, "90", "ena", ["90sensor-cal-prod", "90sensor-esa-energies", "90sensor-esa-eta-fit-factors"]),
+            (MappableInstrumentShortName.HI, "45", "ena", ["45sensor-cal-prod", "45sensor-esa-energies", "45sensor-esa-eta-fit-factors"]),
+            (MappableInstrumentShortName.LO, "", "ena", ["esa-eta-fit-factors"]),
+            (MappableInstrumentShortName.ULTRA, "combined", "spx", ["ulc-spx-energy-ranges"]),
+            (MappableInstrumentShortName.ULTRA, "combined", "ena", ["l2-energy-bin-group-sizes"]),
+        ]
+
+        for instrument, sensor, principal_data, expected_descriptors in cases:
+            with self.subTest(f"{instrument}, {sensor}"):
+                mock_query.reset_mock()
+                descriptor = MapDescriptor(
+                    frame_descriptor="sf",
+                    resolution_str="2deg",
+                    duration=2,
+                    instrument=instrument,
+                    sensor=sensor,
+                    principal_data=principal_data,
+                    species='h',
+                    survival_corrected="nsp",
+                    spin_phase="ram",
+                    coordinate_system="hae"
+                )
+
+                returned_ancillary_files = [{"file_path": f"imap_{instrument.name.lower()}_{descriptor}_20250102_v001.dat"} for descriptor in expected_descriptors]
+                mock_query.side_effect = [[ancillary_file] for ancillary_file in returned_ancillary_files]
+
+                ancillary_dependencies = DependencyCollector.get_ancillary_dependencies(descriptor)
+
+                query_calls = [call(
+                    instrument=instrument.name.lower(),
+                    descriptor=descriptor,
+                    table="ancillary",
+                    version="latest"
+                ) for descriptor in expected_descriptors]
+
+                mock_query.assert_has_calls(query_calls)
+
+                test_helpers.assert_imap_processing_inputs_match(ancillary_dependencies, [AncillaryInput(f["file_path"]) for f in returned_ancillary_files])
+
+    @patch('mapping_tool.dependency_collector.imap_data_access.query')
+    def test_get_sp_dependencies(self, mock_query):
+
+        start_date = datetime(2025, 1, 1)
+        end_date = datetime(2025, 2, 1)
+        input_maps = [Path(test_helpers.get_test_cdf_file_path() / "l2_ena-few-parents_20250115.cdf")]
+
+        mock_query.return_value = [{"file_path": "imap_glows_l3e_hi-90-pset_20250101_v000.cdf"}]
+
+        descriptor = create_map_descriptor(
+            instrument=MappableInstrumentShortName.HI,
+            sensor="90",
+        )
+
+        sp_deps = DependencyCollector.get_survival_probability_dependencies(descriptor, start_date, end_date, input_maps)
+
+        mock_query.assert_called_once_with(
+            instrument="glows",
+            descriptor="survival-probability-hi-90",
+            start_date="20250101",
+            end_date="20250201",
+        )
+
+        expected_inputs = [
+            ScienceInput("imap_glows_l3e_hi-90-pset_20250101_v000.cdf"),
+            ScienceInput("imap_hi_l1c_90sensor-pset_20250615_v001.cdf"),
+            ScienceInput("imap_hi_l1c_90sensor-pset_20250616_v001.cdf")
+        ]
+
+        test_helpers.assert_imap_processing_inputs_match(expected_inputs, sp_deps, any_order=True)
+
+    def test_get_sp_deps_returns_empty_list_if_descriptor_is_nsp(self):
+        nsp_map_descriptor = create_map_descriptor(survival_corrected="nsp")
+
+        sp_deps = DependencyCollector.get_survival_probability_dependencies(nsp_map_descriptor,
+                                                                            Mock(), Mock(),[])
+        self.assertEqual([], sp_deps)

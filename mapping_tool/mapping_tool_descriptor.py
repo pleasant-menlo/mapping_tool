@@ -2,7 +2,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Optional
 
-from imap_processing.ena_maps.utils.naming import MapDescriptor
+from imap_processing.ena_maps.utils.naming import MapDescriptor, MappableInstrumentShortName
 from imap_processing.spice.geometry import SpiceFrame
 
 
@@ -38,3 +38,16 @@ class MappingToolDescriptor(MapDescriptor):
                 "mapper"
             ]
         )
+
+    def get_descriptor_for_query(self, query_type=None, sensor=None):
+        if query_type == "glows":
+            if self.instrument == MappableInstrumentShortName.HI:
+                if self.sensor == "45":
+                    return "survival-probability-hi-45"
+                elif self.sensor == "90":
+                    return "survival-probability-hi-90"
+            else:
+                return f"survival-probability-{self.instrument.name.lower()}"
+        elif query_type == "l1c":
+            pass
+
