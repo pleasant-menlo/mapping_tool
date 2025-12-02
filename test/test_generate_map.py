@@ -220,7 +220,7 @@ class TestGenerateMap(unittest.TestCase):
 
                 mock_processor.return_value.process.assert_called_once_with(descriptor.spice_frame)
                 mock_collect_spice_kernels.assert_called_once_with(start_date=start_date, end_date=end_date)
-                mock_get_ancillary_deps.assert_called_once_with(descriptor)
+                mock_get_ancillary_deps.assert_called_once_with(descriptor, end_date)
                 mock_get_sp_deps.assert_called_once_with(descriptor, start_date, end_date, input_maps)
 
                 mock_download.assert_has_calls([

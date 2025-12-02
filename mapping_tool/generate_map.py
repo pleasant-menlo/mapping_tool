@@ -131,7 +131,7 @@ def generate_l3_map(descriptor: MappingToolDescriptor, start: datetime, end: dat
 
     spice_kernel_paths = DependencyCollector.collect_spice_kernels(start_date=start, end_date=end)
     sp_inputs = DependencyCollector.get_survival_probability_dependencies(descriptor, start, end, input_maps)
-    ancillary_inputs = DependencyCollector.get_ancillary_dependencies(descriptor)
+    ancillary_inputs = DependencyCollector.get_ancillary_dependencies(descriptor, end)
     for kernel in spice_kernel_paths:
         kernel_path = imap_data_access.download(kernel)
         spiceypy.furnsh(str(kernel_path))
