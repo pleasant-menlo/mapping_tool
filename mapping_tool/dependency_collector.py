@@ -1,3 +1,4 @@
+import os
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -11,8 +12,6 @@ from mapping_tool.mapping_tool_descriptor import MappingToolDescriptor
 
 
 class DependencyCollector:
-    IMAP_API = "https://api.dev.imap-mission.com/"
-
     @staticmethod
     def get_pointing_sets(descriptor: MapDescriptor, start_date: datetime, end_date: datetime) -> list[str]:
         map_instrument_pset_descriptors = []
@@ -55,21 +54,6 @@ class DependencyCollector:
                                                                                 descriptor=pset_descriptor)))
 
         return [Path(pset['file_path']).name for pset in files]
-
-    @classmethod
-    def get_ancillary_dependencies(cls, descriptor: MapDescriptor) -> list[AncillaryInput]:
-        ancillary_descriptors_to_fetch =  cls._get_ancillary_descriptor(descriptor)
-        instrument = descriptor.instrument.name.lower()
-
-        ancillary_files = []
-        for descriptor in ancillary_descriptors_to_fetch:
-            ancillary_files.extend(imap_data_access.query(
-                instrument=instrument,
-                descriptor=descriptor,
-                table="ancillary",
-                version='latest'
-            ))
-        return [AncillaryInput(Path(f["file_path"]).name) for f in ancillary_files]
 
     @staticmethod
     def get_survival_probability_dependencies(descriptor: MappingToolDescriptor, start_date: datetime, end_date: datetime, input_maps: list[Path]) -> list[ScienceInput]:
@@ -123,8 +107,14 @@ class DependencyCollector:
     @classmethod
     def collect_spice_kernels(cls, start_date: datetime, end_date: datetime) -> list[str]:
         file_names = []
+        auth_headers = {"Authorization": f"Bearer {imap_data_access.config['ACCESS_TOKEN']}"}
         for kernel_type in ["leapseconds", "spacecraft_clock", "pointing_attitude", "imap_frames", "science_frames", "planetary_ephemeris", "ephemeris_reconstructed"]:
-            file_json = requests.get(cls.IMAP_API + f"spice-query?type={kernel_type}&start_time=0").json()
+            response = requests.get(
+                imap_data_access.config["DATA_ACCESS_URL"] + f"/spice-query?type={kernel_type}&start_time=0",
+                headers=auth_headers
+            )
+            response.raise_for_status()
+            file_json = response.json()
             for spice_file in file_json:
                 spice_start_date = datetime.strptime(spice_file["min_date_datetime"], "%Y-%m-%d, %H:%M:%S")
                 spice_start_date = spice_start_date.replace(tzinfo=timezone.utc)
@@ -133,3 +123,39 @@ class DependencyCollector:
                 if spice_start_date <= end_date and start_date < spice_end_date:
                     file_names.append(Path(spice_file["file_name"]).name)
         return file_names
+
+    @classmethod
+    def _filter_ancillary_dependencies(cls, descriptor: MapDescriptor, files: list[dict[str, str]]) -> list[
+        dict[str, str]]:
+        if descriptor.instrument == MappableInstrumentShortName.HI:
+            return [f for f in files if f"{descriptor.sensor}sensor" in f['file_path']]
+        return files
+
+    @classmethod
+    def get_ancillary_dependencies(cls, descriptor: MapDescriptor, end_date: datetime) -> list[AncillaryInput]:
+        ancillaries = imap_data_access.query(table="ancillary", instrument=descriptor.instrument.name.lower())
+        ancillaries = cls._filter_ancillary_dependencies(descriptor, ancillaries)
+
+        def filter_files_by_highest_version(files: list):
+            dates_to_files = {}
+            valid_files = []
+            for f in files:
+                utc_start_time = datetime.strptime(f["start_date"], "%Y%m%d").replace(tzinfo=timezone.utc)
+                if utc_start_time < end_date:
+                    valid_files.append(f)
+
+            for file in valid_files:
+                file_descriptor = file["descriptor"]
+                if file_descriptor not in dates_to_files:
+                    dates_to_files[file_descriptor] = file
+                else:
+                    if dates_to_files[file_descriptor]["start_date"] == file["start_date"]:
+                        if dates_to_files[file_descriptor]["version"] < file["version"]:
+                            dates_to_files[file_descriptor] = file
+
+                    if dates_to_files[file_descriptor]["start_date"] < file["start_date"]:
+                        dates_to_files[file_descriptor] = file
+
+            return dates_to_files.values()
+
+        return [AncillaryInput(Path(file['file_path']).name) for file in filter_files_by_highest_version(ancillaries)]
