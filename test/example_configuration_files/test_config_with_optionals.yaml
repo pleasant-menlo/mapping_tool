@@ -17,3 +17,4 @@ lo_species: h
 output_directory: path/to/output
 quantity_suffix: custom
 kernel_path: path/to/kernel
+energy_bin_group_sizes: path/to/energy

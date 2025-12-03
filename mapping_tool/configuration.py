@@ -82,7 +82,8 @@ class Configuration:
     map_data_type: str
     canonical_map_period: Optional[CanonicalMapPeriod] = None
     time_ranges: Optional[list[TimeRange]] = None
-    kernel_path: Path = None
+    kernel_path: Optional[Path] = None
+    energy_bin_group_sizes: Optional[Path] = None
     lo_species: Optional[str] = None
     output_directory: Optional[Path] = Path('.')
     quantity_suffix: str = ""
@@ -127,6 +128,8 @@ class Configuration:
             config["output_directory"] = Path(config["output_directory"])
         if config.get("kernel_path") is not None:
             config["kernel_path"] = Path(config["kernel_path"])
+        if config.get("energy_bin_group_sizes") is not None:
+            config["energy_bin_group_sizes"] = Path(config["energy_bin_group_sizes"])
         return cls(raw_yaml, **config)
 
     @classmethod
