@@ -35,10 +35,10 @@ class TestDependencyCollector(unittest.TestCase):
         for frame_descriptor, instrument, sensor, expected_descriptor in cases:
             with self.subTest(f"{frame_descriptor} {instrument} {sensor}"):
                 mock_query.reset_mock()
-                descriptor = MapDescriptor(
+                descriptor = create_map_descriptor(
                     frame_descriptor=frame_descriptor,
                     resolution_str="2deg",
-                    duration=2,
+                    duration="2",
                     instrument=instrument,
                     sensor=sensor,
                     principal_data="ena",
@@ -48,7 +48,8 @@ class TestDependencyCollector(unittest.TestCase):
                     coordinate_system="hae"
                 )
 
-                pointing_sets = DependencyCollector.get_pointing_sets(descriptor, start_date, end_date)
+                dependency_collector = DependencyCollector(descriptor, start_date, end_date)
+                pointing_sets = dependency_collector.get_pointing_sets()
 
                 mock_query.assert_called_once_with(
                     instrument=instrument.name.lower(),
@@ -69,10 +70,10 @@ class TestDependencyCollector(unittest.TestCase):
              {"file_path": "u90-pset2", "start_date": "u90-pset2", "version": "v000"}]
         ]
 
-        descriptor = MapDescriptor(
+        descriptor = create_map_descriptor(
             frame_descriptor="sf",
             resolution_str="nside2",
-            duration=2,
+            duration="2",
             instrument=MappableInstrumentShortName.ULTRA,
             sensor="combined",
             principal_data="ena",
@@ -81,9 +82,8 @@ class TestDependencyCollector(unittest.TestCase):
             spin_phase="ram",
             coordinate_system="hae"
         )
-
-        pointing_sets = DependencyCollector.get_pointing_sets(descriptor, start_date=datetime(2025, 1, 1),
-                                                              end_date=datetime(2025, 2, 1))
+        dependency_collector = DependencyCollector(descriptor, datetime(2025, 1, 1), datetime(2025, 2, 1))
+        pointing_sets = dependency_collector.get_pointing_sets()
 
         mock_query.assert_has_calls([
             call(instrument="ultra", data_level="l1c", descriptor="45sensor-spacecraftpset", start_date="20250101",
@@ -108,10 +108,10 @@ class TestDependencyCollector(unittest.TestCase):
              {"file_path": "h90-pset2", "start_date": "h90-pset2", "version": "v000"}]
         ]
 
-        descriptor = MapDescriptor(
+        descriptor = create_map_descriptor(
             frame_descriptor="sf",
             resolution_str="nside2",
-            duration=2,
+            duration="2",
             instrument=MappableInstrumentShortName.HI,
             sensor="combined",
             principal_data="ena",
@@ -121,8 +121,8 @@ class TestDependencyCollector(unittest.TestCase):
             coordinate_system="hae"
         )
 
-        pointing_sets = DependencyCollector.get_pointing_sets(descriptor, start_date=datetime(2025, 1, 1),
-                                                              end_date=datetime(2025, 2, 1))
+        dependency_collector = DependencyCollector(descriptor, datetime(2025, 1, 1), datetime(2025, 2, 1))
+        pointing_sets = dependency_collector.get_pointing_sets()
 
         mock_query.assert_has_calls([
             call(instrument="hi", data_level="l1c", descriptor="45sensor-pset", start_date="20250101",
@@ -144,10 +144,10 @@ class TestDependencyCollector(unittest.TestCase):
              {"file_path": "l90-pset2", "start_date": "l90-pset2", "version": "v000"}],
         ]
 
-        descriptor = MapDescriptor(
+        descriptor = create_map_descriptor(
             frame_descriptor="sf",
             resolution_str="nside2",
-            duration=2,
+            duration="2",
             instrument=MappableInstrumentShortName.LO,
             sensor="90",
             principal_data="ena",
@@ -156,9 +156,8 @@ class TestDependencyCollector(unittest.TestCase):
             spin_phase="ram",
             coordinate_system="hae"
         )
-
-        pointing_sets = DependencyCollector.get_pointing_sets(descriptor, start_date=datetime(2025, 1, 1),
-                                                              end_date=datetime(2025, 2, 1))
+        dependency_collector = DependencyCollector(descriptor, datetime(2025, 1, 1), datetime(2025, 2, 1))
+        pointing_sets = dependency_collector.get_pointing_sets()
 
         mock_query.assert_has_calls([
             call(instrument="lo", data_level="l1c", descriptor="pset", start_date="20250101",
@@ -174,10 +173,10 @@ class TestDependencyCollector(unittest.TestCase):
              {"file_path": "imap_hi_l1c_45sensor-pset_20260101_v002.cdf", "version": "v002", "start_date": "20260101"},
              {"file_path": "imap_hi_l1c_45sensor-pset_20260102_v001.cdf", "version": "v001", "start_date": "20260102"}]
         ]
-        descriptor = MapDescriptor(
+        descriptor = create_map_descriptor(
             frame_descriptor="sf",
             resolution_str="nside2",
-            duration=2,
+            duration="2",
             instrument=MappableInstrumentShortName.LO,
             sensor="90",
             principal_data="ena",
@@ -189,7 +188,8 @@ class TestDependencyCollector(unittest.TestCase):
         start_date = datetime(2026, 1, 1)
         end_date = datetime(2026, 2, 1)
 
-        psets = DependencyCollector.get_pointing_sets(descriptor, start_date, end_date)
+        dependency_collector = DependencyCollector(descriptor, start_date, end_date)
+        psets = dependency_collector.get_pointing_sets()
 
         expected_psets = ["imap_hi_l1c_45sensor-pset_20260101_v002.cdf", "imap_hi_l1c_45sensor-pset_20260102_v001.cdf"]
         self.assertEqual(expected_psets, psets)
@@ -218,10 +218,10 @@ class TestDependencyCollector(unittest.TestCase):
                 ]
 
                 end_date = datetime(2026, 2, 1, tzinfo=timezone.utc)
-                descriptor = MapDescriptor(
+                descriptor = create_map_descriptor(
                     frame_descriptor="sf",
                     resolution_str="6",
-                    duration=2,
+                    duration="2",
                     instrument=MappableInstrumentShortName.HI,
                     sensor=sensor,
                     principal_data="ena",
@@ -231,7 +231,8 @@ class TestDependencyCollector(unittest.TestCase):
                     coordinate_system="hae"
                 )
 
-                ancillary_dependencies = DependencyCollector.get_ancillary_dependencies(descriptor, end_date)
+                dependency_collector = DependencyCollector(descriptor, Mock(), end_date)
+                ancillary_dependencies = dependency_collector.get_ancillary_dependencies()
 
                 mock_query.assert_called_with(table="ancillary", instrument="hi")
                 expected_ancillary_dependencies = [AncillaryInput(f"imap_hi_{sensor}sensor-cal-prod_20240101_v002.csv"),
@@ -252,10 +253,10 @@ class TestDependencyCollector(unittest.TestCase):
         ]
 
         end_date = datetime(2026, 2, 1, tzinfo=timezone.utc)
-        descriptor = MapDescriptor(
+        descriptor = create_map_descriptor(
             frame_descriptor="sf",
             resolution_str="6",
-            duration=2,
+            duration="2",
             instrument=MappableInstrumentShortName.HI,
             sensor="45",
             principal_data="ena",
@@ -265,7 +266,8 @@ class TestDependencyCollector(unittest.TestCase):
             coordinate_system="hae"
         )
 
-        ancillary_dependencies = DependencyCollector.get_ancillary_dependencies(descriptor, end_date)
+        dependency_collector = DependencyCollector(descriptor, start_date=Mock(), end_date=end_date)
+        ancillary_dependencies = dependency_collector.get_ancillary_dependencies()
 
         mock_query.assert_called_with(table="ancillary", instrument="hi")
         expected_ancillary_dependencies = [AncillaryInput("imap_hi_45sensor-cal-prod_20250101_v002.csv")]
@@ -283,10 +285,10 @@ class TestDependencyCollector(unittest.TestCase):
         ]
 
         end_date = datetime(2026, 2, 1, tzinfo=timezone.utc)
-        descriptor = MapDescriptor(
+        descriptor = create_map_descriptor(
             frame_descriptor="sf",
             resolution_str="6",
-            duration=2,
+            duration="2",
             instrument=MappableInstrumentShortName.ULTRA,
             sensor="45",
             principal_data="ena",
@@ -296,7 +298,8 @@ class TestDependencyCollector(unittest.TestCase):
             coordinate_system="hae"
         )
 
-        ancillary_dependencies = DependencyCollector.get_ancillary_dependencies(descriptor, end_date)
+        dependency_collector = DependencyCollector(descriptor, Mock(), end_date)
+        ancillary_dependencies = dependency_collector.get_ancillary_dependencies()
 
         mock_query.assert_called_with(table="ancillary", instrument="ultra")
         expected_ancillary_dependencies = [AncillaryInput("imap_ultra_ancillary-1_20260101_v001.csv"),
@@ -393,10 +396,17 @@ class TestDependencyCollector(unittest.TestCase):
             mock_ephemeris_reconstructed_response
         ]
 
+        previous_imap_data_access_url = imap_data_access.config["DATA_ACCESS_URL"]
+        previous_imap_data_access_token = imap_data_access.config["ACCESS_TOKEN"]
+
         imap_data_access.config["DATA_ACCESS_URL"] = "expected-url"
         imap_data_access.config["ACCESS_TOKEN"] = "expected-access-token"
 
-        spice_kernels = DependencyCollector.collect_spice_kernels(desired_spice_start, desired_spice_end)
+        dependency_collector = DependencyCollector(create_map_descriptor(), desired_spice_start, desired_spice_end)
+        spice_kernels = dependency_collector.collect_spice_kernels()
+
+        imap_data_access.config["DATA_ACCESS_URL"] = previous_imap_data_access_url
+        imap_data_access.config["ACCESS_TOKEN"] = previous_imap_data_access_token
 
         expected_auth_header = {"Authorization": r"Bearer expected-access-token"}
         mock_requests.get.assert_has_calls([
@@ -404,7 +414,9 @@ class TestDependencyCollector(unittest.TestCase):
             call("expected-url/spice-query?type=spacecraft_clock&start_time=0", headers=expected_auth_header),
             call("expected-url/spice-query?type=pointing_attitude&start_time=0", headers=expected_auth_header),
             call("expected-url/spice-query?type=imap_frames&start_time=0", headers=expected_auth_header),
-            call("expected-url/spice-query?type=science_frames&start_time=0", headers=expected_auth_header)
+            call("expected-url/spice-query?type=science_frames&start_time=0", headers=expected_auth_header),
+            call("expected-url/spice-query?type=planetary_ephemeris&start_time=0", headers=expected_auth_header),
+            call("expected-url/spice-query?type=ephemeris_reconstructed&start_time=0", headers=expected_auth_header),
         ])
         self.assertEqual(["naif0012.tls",
                           "imap_sclk_0000.tsc",
@@ -429,7 +441,8 @@ class TestDependencyCollector(unittest.TestCase):
             sensor="90",
         )
 
-        sp_deps = DependencyCollector.get_survival_probability_dependencies(descriptor, start_date, end_date, input_maps)
+        dependency_collector = DependencyCollector(descriptor, start_date=start_date, end_date=end_date)
+        sp_deps = dependency_collector.get_survival_probability_dependencies(input_maps)
 
         mock_query.assert_called_once_with(
             instrument="glows",
@@ -449,8 +462,8 @@ class TestDependencyCollector(unittest.TestCase):
     def test_get_sp_deps_returns_empty_list_if_descriptor_is_nsp(self):
         nsp_map_descriptor = create_map_descriptor(survival_corrected="nsp")
 
-        sp_deps = DependencyCollector.get_survival_probability_dependencies(nsp_map_descriptor,
-                                                                            Mock(), Mock(),[])
+        dependency_collector = DependencyCollector(nsp_map_descriptor, Mock(), Mock())
+        sp_deps = dependency_collector.get_survival_probability_dependencies([])
         self.assertEqual([], sp_deps)
 
     @patch('mapping_tool.dependency_collector.requests')
@@ -464,8 +477,9 @@ class TestDependencyCollector(unittest.TestCase):
         imap_data_access.config["DATA_ACCESS_URL"] = "expected-url"
         imap_data_access.config["ACCESS_TOKEN"] = "bad-token"
 
+        dependency_collector = DependencyCollector(Mock(), desired_spice_start, desired_spice_end)
         with self.assertRaises(Exception) as cm:
-            spice_kernels = DependencyCollector.collect_spice_kernels(desired_spice_start, desired_spice_end)
+            spice_kernels = dependency_collector.collect_spice_kernels()
 
         self.assertEqual(expected_exception, cm.exception)
 
