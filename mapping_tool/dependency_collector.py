@@ -1,3 +1,4 @@
+import os
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Optional
@@ -6,20 +7,21 @@ from spacepy.pycdf import CDF
 
 import imap_data_access
 import requests
-from imap_processing.ena_maps.utils.naming import MappableInstrumentShortName
+from imap_processing.ena_maps.utils.naming import MappableInstrumentShortName, MapDescriptor
 from imap_data_access.processing_input import AncillaryInput, ScienceInput
+from imap_data_access.file_validation import AncillaryFilePath
 
 from mapping_tool.mapping_tool_descriptor import MappingToolDescriptor
 
 
 class DependencyCollector:
-    def __init__(self, descriptor: MappingToolDescriptor, start_date: datetime, end_date: datetime, ultra_energy_ranges_path: Optional[Path] = None):
+    def __init__(self, descriptor: MappingToolDescriptor, start_date: datetime, end_date: datetime, ultra_energy_ranges: Optional[str] = None):
         self.descriptor = descriptor
         self.start_date = start_date
         self.end_date = end_date
-        self.ultra_energy_ranges_path = ultra_energy_ranges_path
+        self.ultra_energy_ranges = ultra_energy_ranges
 
-    def get_pointing_sets(self,) -> list[str]:
+    def get_pointing_sets(self) -> list[str]:
         map_instrument_pset_descriptors = []
 
         if self.descriptor.instrument == MappableInstrumentShortName.HI:
@@ -110,14 +112,25 @@ class DependencyCollector:
 
     def _filter_ancillary_dependencies(self, files: list[dict[str, str]]) -> list[
         dict[str, str]]:
-        if self.descriptor.instrument == MappableInstrumentShortName.HI:
-            return [f for f in files if f"{self.descriptor.sensor}sensor" in f['file_path']]
-        return files
+        match self.descriptor:
+            case MapDescriptor(instrument=MappableInstrumentShortName.HI, sensor="90", survival_corrected="nsp"):
+                relevant_descriptors = ["90sensor-cal-prod", "90sensor-esa-energies", "90sensor-esa-eta-fit-factors"]
+            case MapDescriptor(instrument=MappableInstrumentShortName.HI, sensor="45", survival_corrected="nsp"):
+                relevant_descriptors = ["45sensor-cal-prod", "45sensor-esa-energies", "45sensor-esa-eta-fit-factors"]
+            case MapDescriptor(instrument=MappableInstrumentShortName.LO, survival_corrected="nsp"):
+                relevant_descriptors = ["esa-eta-fit-factors"]
+            case MapDescriptor(instrument=MappableInstrumentShortName.ULTRA, principal_data="spx"):
+                relevant_descriptors = ["ulc-spx-energy-ranges"]
+            case MapDescriptor(instrument=MappableInstrumentShortName.ULTRA, principal_data="ena"):
+                relevant_descriptors = ["l2-energy-bin-group-sizes"]
+            case _:
+                relevant_descriptors = []
+
+        return [f for f in files if f['descriptor'] in relevant_descriptors]
 
     def get_ancillary_dependencies(self) -> list[AncillaryInput]:
         ancillaries = imap_data_access.query(table="ancillary", instrument=self.descriptor.instrument.name.lower())
         ancillaries = self._filter_ancillary_dependencies(ancillaries)
-
         def filter_files_by_highest_version(files: list):
             dates_to_files = {}
             valid_files = []
@@ -139,5 +152,17 @@ class DependencyCollector:
                         dates_to_files[file_descriptor] = file
 
             return dates_to_files.values()
+        latest_ancillary_inputs = [AncillaryInput(Path(file['file_path']).name) for file in filter_files_by_highest_version(ancillaries)]
 
-        return [AncillaryInput(Path(file['file_path']).name) for file in filter_files_by_highest_version(ancillaries)]
+        if self.descriptor.instrument == MappableInstrumentShortName.ULTRA:
+            if self.ultra_energy_ranges:
+                ancillary_file_name = AncillaryFilePath("imap_ultra_l2-energy-bin-group-sizes_20250924_v000.csv")
+                new_energy_ranges_path = ancillary_file_name.construct_path()
+                os.makedirs(new_energy_ranges_path.parent, exist_ok=True)
+
+                new_energy_ranges_path.write_text(self.ultra_energy_ranges.replace(" ", ""))
+
+                latest_ancillary_inputs = [ancillary for ancillary in latest_ancillary_inputs if "l2-energy-bin-group-sizes" != ancillary.descriptor]
+                latest_ancillary_inputs.append(AncillaryInput(new_energy_ranges_path.name))
+
+        return latest_ancillary_inputs

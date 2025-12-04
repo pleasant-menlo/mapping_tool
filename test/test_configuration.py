@@ -40,7 +40,7 @@ class TestConfiguration(TestCase):
                     output_directory=Path('.'),
                     quantity_suffix="",
                     kernel_path=Path("path/to/another_kernel"),
-                    energy_bin_group_sizes=None,
+                    ultra_energy_bin_group_edges=None,
                     raw_config=yaml.dump(yaml.safe_load(example_config_path.read_text()))
                 )
 
@@ -71,7 +71,6 @@ class TestConfiguration(TestCase):
                     output_directory=Path('.'),
                     quantity_suffix="",
                     kernel_path=Path("path/to/another_kernel"),
-                    energy_bin_group_sizes=Path("path/to/a/file"),
                     raw_config=yaml.dump(yaml.safe_load(example_config_path.read_text()))
                 )
 
@@ -104,7 +103,7 @@ class TestConfiguration(TestCase):
                     output_directory=Path('path/to/output'),
                     quantity_suffix="custom",
                     kernel_path=Path("path/to/kernel"),
-                    energy_bin_group_sizes=Path("path/to/energy")
+                    ultra_energy_bin_group_edges="0,4,8,12,16,20,24,28,32,36,40,44,46"
                 )
 
                 self.assertEqual(expected_config, config)

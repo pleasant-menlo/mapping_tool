@@ -1,3 +1,4 @@
+import tempfile
 import unittest
 from datetime import datetime, timezone
 from pathlib import Path
@@ -226,7 +227,7 @@ class TestDependencyCollector(unittest.TestCase):
                     sensor=sensor,
                     principal_data="ena",
                     species='h',
-                    survival_corrected="sp",
+                    survival_corrected="nsp",
                     spin_phase="ram",
                     coordinate_system="hae"
                 )
@@ -261,7 +262,7 @@ class TestDependencyCollector(unittest.TestCase):
             sensor="45",
             principal_data="ena",
             species='h',
-            survival_corrected="sp",
+            survival_corrected="nsp",
             spin_phase="ram",
             coordinate_system="hae"
         )
@@ -274,13 +275,67 @@ class TestDependencyCollector(unittest.TestCase):
         test_helpers.assert_imap_processing_inputs_match(expected_ancillary_dependencies, ancillary_dependencies)
 
     @patch('mapping_tool.dependency_collector.imap_data_access.query')
-    def test_get_ancillary_dependencies_does_not_filter_by_sensor_if_not_hi(self, mock_query):
+    def test_get_ancillary_dependencies_correctly_filters_ancillary_inputs(self, mock_query):
+        cases = [
+            (create_map_descriptor(instrument=MappableInstrumentShortName.HI, sensor="90", survival_corrected="nsp"), ["90sensor-cal-prod", "90sensor-esa-energies", "90sensor-esa-eta-fit-factors"]),
+            (create_map_descriptor(instrument=MappableInstrumentShortName.HI, sensor="45", survival_corrected="nsp"), ["45sensor-cal-prod", "45sensor-esa-energies", "45sensor-esa-eta-fit-factors"]),
+            (create_map_descriptor(instrument=MappableInstrumentShortName.LO, survival_corrected="nsp"), ["esa-eta-fit-factors"]),
+            (create_map_descriptor(instrument=MappableInstrumentShortName.ULTRA, principal_data="spx", sensor="combined"), ["ulc-spx-energy-ranges"]),
+            (create_map_descriptor(instrument=MappableInstrumentShortName.ULTRA, principal_data="spx", sensor="45"), ["ulc-spx-energy-ranges"]),
+            (create_map_descriptor(instrument=MappableInstrumentShortName.ULTRA, principal_data="ena"), ["l2-energy-bin-group-sizes"]),
+            (create_map_descriptor(instrument=MappableInstrumentShortName.LO, survival_corrected="sp"), [])
+        ]
+
+        mock_query.return_value = [
+            create_imap_query_response_item(instrument="ultra", descriptor="l2-energy-bin-group-sizes",
+                                            version="v001",
+                                            start_date="20250101"),
+            create_imap_query_response_item(instrument="ultra", descriptor="ulc-spx-energy-ranges",
+                                            version="v001",
+                                            start_date="20250101"),
+            create_imap_query_response_item(instrument="hi", descriptor="90sensor-cal-prod",
+                                            version="v001",
+                                            start_date="20250101"),
+            create_imap_query_response_item(instrument="hi", descriptor="90sensor-esa-energies",
+                                            version="v001",
+                                            start_date="20250101"),
+            create_imap_query_response_item(instrument="hi", descriptor="90sensor-esa-eta-fit-factors",
+                                            version="v001",
+                                            start_date="20250101"),
+            create_imap_query_response_item(instrument="hi", descriptor="45sensor-cal-prod",
+                                            version="v001",
+                                            start_date="20250101"),
+            create_imap_query_response_item(instrument="hi", descriptor="45sensor-esa-energies",
+                                            version="v001",
+                                            start_date="20250101"),
+            create_imap_query_response_item(instrument="hi", descriptor="45sensor-esa-eta-fit-factors",
+                                            version="v001",
+                                            start_date="20250101"),
+            create_imap_query_response_item(instrument="lo", descriptor="esa-eta-fit-factors",
+                                            version="v001",
+                                            start_date="20250101"),
+            create_imap_query_response_item(instrument="ultra", descriptor="90sensor-sc-pointing-phi")
+        ]
+
+        for descriptor, expected_ancillary_descriptors in cases:
+            mock_query.reset_mock()
+            with self.subTest(descriptor=descriptor.to_string()):
+                end_date = datetime(2026, 2, 1, tzinfo=timezone.utc)
+
+                dependency_collector = DependencyCollector(descriptor, Mock(), end_date)
+                ancillary_dependencies = dependency_collector.get_ancillary_dependencies()
+
+                mock_query.assert_called_with(table="ancillary", instrument=descriptor.instrument.name.lower())
+                self.assertEqual(set(expected_ancillary_descriptors), {d.descriptor for d in ancillary_dependencies})
+
+    @patch('mapping_tool.dependency_collector.imap_data_access.query')
+    def test_get_ancillary_dependencies_writes_energy_bin_edges_to_imap_dir(self, mock_query):
         mock_query.side_effect = [
             [
-                create_imap_query_response_item(instrument="ultra", descriptor="ancillary-1", version="v001",
-                                                start_date="20260101"),
+                create_imap_query_response_item(instrument="ultra", descriptor="l2-energy-bin-group-sizes",
+                                                start_date="19990101"),
                 create_imap_query_response_item(instrument="ultra", descriptor="ancillary-2", version="v001",
-                                                start_date="20250101"),
+                                                start_date="20260101")
             ]
         ]
 
@@ -298,14 +353,25 @@ class TestDependencyCollector(unittest.TestCase):
             coordinate_system="hae"
         )
 
-        dependency_collector = DependencyCollector(descriptor, Mock(), end_date)
-        ancillary_dependencies = dependency_collector.get_ancillary_dependencies()
+        original_imap_data_dir = imap_data_access.config["DATA_DIR"]
+        try:
+            with tempfile.TemporaryDirectory() as tmpdir:
+                test_deletes_stuff_here = Path(tmpdir)
+                imap_data_access.config["DATA_DIR"] = test_deletes_stuff_here
+                ancillary_ultra_dir = test_deletes_stuff_here / "imap/ancillary/ultra"
+                ultra_dep = ancillary_ultra_dir / "imap_ultra_l2-energy-bin-group-sizes_20250924_v000.csv"
 
-        mock_query.assert_called_with(table="ancillary", instrument="ultra")
-        expected_ancillary_dependencies = [AncillaryInput("imap_ultra_ancillary-1_20260101_v001.csv"),
-                                           AncillaryInput("imap_ultra_ancillary-2_20250101_v001.csv")]
+                dependency_collector = DependencyCollector(descriptor, Mock(), end_date, "0, 10, 20, 40")
+                ancillary_dependencies = dependency_collector.get_ancillary_dependencies()
 
-        test_helpers.assert_imap_processing_inputs_match(expected_ancillary_dependencies, ancillary_dependencies)
+                self.assertTrue(ultra_dep.is_file())
+                self.assertEqual("0,10,20,40", ultra_dep.read_text())
+                mock_query.assert_called_once_with(table="ancillary", instrument="ultra")
+                expected_ancillary_dependencies = [AncillaryInput("imap_ultra_l2-energy-bin-group-sizes_20250924_v000.csv")]
+                test_helpers.assert_imap_processing_inputs_match(expected_ancillary_dependencies,
+                                                                 ancillary_dependencies)
+        finally:
+            imap_data_access.config["DATA_DIR"] = original_imap_data_dir
 
     @patch('mapping_tool.dependency_collector.requests')
     def test_furnish_spice(self, mock_requests):

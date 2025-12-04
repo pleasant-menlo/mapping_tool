@@ -157,6 +157,11 @@
         "kernel_path": {
             "type": "string",
             "description": "The location of a custom spice kernel to use during map creation."
+        },
+        "ultra_energy_bin_group_edges": {
+            "type": "string",
+            "description": "Edges of Ultra energies for mapping fine bins to coarse bins.",
+            "pattern": "[0-9]+(,( )*[0-9]+)+"
         }
     },
     "required": [

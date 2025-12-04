@@ -62,6 +62,7 @@ class TestCli(unittest.TestCase):
         mock_configuration.get_map_date_ranges.return_value = map_date_ranges
         mock_configuration.output_directory = Path("path/to/output")
         mock_configuration.quantity_suffix = "TEST"
+        mock_configuration.ultra_energy_bin_group_edges = sentinel.ultra_energy_bin_group_edges
 
         mock_cdf_file_1 = MagicMock()
         mock_cdf_file_2 = MagicMock()
@@ -102,8 +103,8 @@ class TestCli(unittest.TestCase):
         ])
 
         mock_dependency_collector.assert_has_calls([
-            call(hi_descriptor, map_date_ranges[0][0], map_date_ranges[0][1]),
-            call(hi_descriptor, map_date_ranges[1][0], map_date_ranges[1][1]),
+            call(hi_descriptor, map_date_ranges[0][0], map_date_ranges[0][1], sentinel.ultra_energy_bin_group_edges),
+            call(hi_descriptor, map_date_ranges[1][0], map_date_ranges[1][1], sentinel.ultra_energy_bin_group_edges),
         ])
 
         mock_generate_map.assert_has_calls([

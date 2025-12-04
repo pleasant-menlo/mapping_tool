@@ -58,3 +58,7 @@ quantity_suffix: suffix
 
 ## Optional path to a SPICE kernel file to be included in map generation. Used in conjunction with the "spice_frame_name" to allow for custom frame definitions.
 #kernel_path: ./spice_kernel.tf
+
+## Optional configuration for Ultra coarse energy bins
+# TODO: explain once final format decided
+ultra_energy_bin_group_edges: 0,4,8,12,16,20,24,28,32,36,40,44,46

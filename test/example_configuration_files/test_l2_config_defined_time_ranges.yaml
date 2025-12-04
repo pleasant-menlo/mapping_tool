@@ -13,4 +13,3 @@ pixelation_scheme: square
 pixel_parameter: 2
 map_data_type: ENA Intensity
 kernel_path: path/to/another_kernel
-energy_bin_group_sizes: path/to/a/file
