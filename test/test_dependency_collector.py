@@ -444,6 +444,14 @@ class TestDependencyCollector(unittest.TestCase):
             }
         ]
 
+        mock_planetary_constants_json = [
+            {
+                "file_name": "pck/pck00010.tpc",
+                "min_date_datetime": "2024-12-01, 00:00:00",
+                "max_date_datetime": "2025-05-01, 00:00:00"
+            }
+        ]
+
         mock_naif_response = Mock(json=Mock(return_value=mock_naif_json))
         mock_sclk_response = Mock(json=Mock(return_value=mock_sclk_json))
         mock_dps_response = Mock(json=Mock(return_value=mock_dps_json))
@@ -451,6 +459,7 @@ class TestDependencyCollector(unittest.TestCase):
         mock_science_frame_response = Mock(json=Mock(return_value=mock_science_frame_json))
         mock_planetary_ephemeris_response = Mock(json=Mock(return_value=mock_planetary_ephemeris_json))
         mock_ephemeris_reconstructed_response = Mock(json=Mock(return_value=mock_ephemeris_reconstructed_json))
+        mock_planetary_constants_response = Mock(json=Mock(return_value=mock_planetary_constants_json))
 
         mock_requests.get.side_effect = [
             mock_naif_response,
@@ -459,7 +468,8 @@ class TestDependencyCollector(unittest.TestCase):
             mock_imap_frame_response,
             mock_science_frame_response,
             mock_planetary_ephemeris_response,
-            mock_ephemeris_reconstructed_response
+            mock_ephemeris_reconstructed_response,
+            mock_planetary_constants_response
         ]
 
         previous_imap_data_access_url = imap_data_access.config["DATA_ACCESS_URL"]
@@ -483,6 +493,7 @@ class TestDependencyCollector(unittest.TestCase):
             call("expected-url/spice-query?type=science_frames&start_time=0", headers=expected_auth_header),
             call("expected-url/spice-query?type=planetary_ephemeris&start_time=0", headers=expected_auth_header),
             call("expected-url/spice-query?type=ephemeris_reconstructed&start_time=0", headers=expected_auth_header),
+            call("expected-url/spice-query?type=planetary_constants&start_time=0", headers=expected_auth_header),
         ])
         self.assertEqual(["naif0012.tls",
                           "imap_sclk_0000.tsc",
@@ -491,7 +502,8 @@ class TestDependencyCollector(unittest.TestCase):
                           "imap_001.tf",
                           "imap_science_0001.tf",
                           "de440.bsp",
-                          "imap_recon_od004_20250924_20251002_v01.bsp"], spice_kernels)
+                          "imap_recon_od004_20250924_20251002_v01.bsp",
+                          "pck00010.tpc"], spice_kernels)
 
     @patch('mapping_tool.dependency_collector.imap_data_access.query')
     def test_get_sp_dependencies(self, mock_query):
