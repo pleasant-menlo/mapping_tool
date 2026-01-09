@@ -5,6 +5,9 @@ from datetime import datetime
 
 import numpy as np
 
+import imap_processing
+import imap_l3_processing
+
 from mapping_tool.dependency_collector import DependencyCollector
 from mapping_tool.generate_map import generate_map, get_data_level_for_descriptor
 from mapping_tool.mapping_tool_descriptor import MappingToolDescriptor
@@ -37,7 +40,7 @@ def cleanup_l2_l3_dependencies(descriptor: MappingToolDescriptor):
 
 
 def do_mapping_tool(config: Configuration):
-    print(f"Start of mapping tool: {imap_data_access.config}")
+    print(f"Running the mapping tool with imap_processing version: {imap_processing.__version__}")
 
     map_date_ranges = config.get_map_date_ranges()
     descriptor = config.get_map_descriptor()
@@ -57,7 +60,8 @@ def do_mapping_tool(config: Configuration):
 
             print(f"Generating map {i}/{len(map_date_ranges)}...")
             logger.info(f"Generating map: {map_details}")
-            dependency_collector = DependencyCollector(descriptor, start_date, end_date, config.ultra_energy_bin_group_edges)
+            dependency_collector = DependencyCollector(descriptor, start_date, end_date,
+                                                       config.ultra_energy_bin_group_edges)
             generated_map_path = generate_map(dependency_collector)
             output_map_paths.append(generated_map_path)
 
