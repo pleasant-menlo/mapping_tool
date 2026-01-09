@@ -1,7 +1,6 @@
 import sys
 from dataclasses import replace
 import logging
-from datetime import datetime
 from pathlib import Path
 from unittest.mock import patch
 
@@ -11,7 +10,7 @@ from mapping_tool.configuration import DataLevel
 from imap_processing.ena_maps.utils.naming import MapDescriptor, MappableInstrumentShortName
 from imap_l3_processing.models import InputMetadata
 from imap_l3_processing.hi.hi_processor import HiProcessor
-from imap_l3_processing.ultra.l3.ultra_processor import UltraProcessor
+from imap_l3_processing.ultra.ultra_processor import UltraProcessor
 from imap_l3_processing.lo.lo_processor import LoProcessor
 from imap_processing.cli import Hi, Lo, Ultra
 from imap_data_access import ProcessingInputCollection, ScienceInput, SPICEInput
