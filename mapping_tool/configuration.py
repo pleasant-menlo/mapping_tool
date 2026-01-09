@@ -83,7 +83,8 @@ class Configuration:
     map_data_type: str
     canonical_map_period: Optional[CanonicalMapPeriod] = None
     time_ranges: Optional[list[TimeRange]] = None
-    kernel_path: Path = None
+    kernel_path: Optional[Path] = None
+    ultra_energy_bin_group_edges: Optional[str] = None
     lo_species: Optional[str] = None
     output_directory: Optional[Path] = None
     quantity_suffix: str = ""

@@ -80,12 +80,29 @@ The map to be created is defined by the configuration file passed to `main.py`. 
 
 
 * `spice_frame_name` - The SPICE frame to be used for the map projection. Some frames (e.g. "hae") are defined by the mission and can be used without supplying a custom spice kernel.
-
+  * Shorthand names:
+    - hae
+    - hre
+    - hnu
+    - gcs
+  * Full names for IMAP frames, such as:
+    - J2000
+    - ECLIPJ2000
+    - ITRF93
+    - IMAP_EARTHFIXED
+    - IMAP_ECLIPDATE
+    - IMAP_HCI
+    - IMAP_HAE
+    - IMAP_HEE
+    - IMAP_HRE
+    - IMAP_HNU
+    - IMAP_GCS
+    - See this [IMAP science frames kernel](https://api.imap-mission.com/download/imap/spice/fk/imap_science_110.tf) for a full list and more information about each frame.
 
 * `pixelation_scheme` - The pixelation scheme to be used for map generation. Valid options are "square" or "healpix".
 
 
-* `pixelation_scheme` - The pixel parameter to be used for map generation. This defines the degree resolution for square maps, and the nside for HEALPix maps. Valid options are 2, 4, and 6 for square maps, and 16, 32, 64, 128, 256, and 512 for HEALPix maps.
+* `pixel_parameter` - The pixel parameter to be used for map generation. This defines the degree resolution for square maps, and the nside for HEALPix maps. Valid options are 2, 4, and 6 for square maps, and 16, 32, 64, 128, 256, and 512 for HEALPix maps.
 
 
 * `map_data_type` - The primary map data type. Valid parameters are `ENA Intensity` or `Spectral Index`.
@@ -98,6 +115,9 @@ The map to be created is defined by the configuration file passed to `main.py`. 
 
 
 * `kernel_path` - Optional path to a SPICE kernel file to be included in map generation. Used in conjunction with the "spice_frame_name" to allow for custom frame definitions.
+
+* `ultra_energy_bin_group_edges` - List of indices to define mapping of Ultra fine energy bins to coarse energy bins.
+  * For example, 0,4,8 means fine energy bins 0-3 become the first coarse bin and 4-7 become the second coarse bin.
 
 
 ### Troubleshooting

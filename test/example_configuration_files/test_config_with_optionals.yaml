@@ -17,3 +17,4 @@ lo_species: h
 output_directory: path/to/output
 quantity_suffix: custom
 kernel_path: path/to/kernel
+ultra_energy_bin_group_edges: 0,4,8,12,16,20,24,28,32,36,40,44,46

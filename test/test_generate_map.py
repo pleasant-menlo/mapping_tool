@@ -1,17 +1,17 @@
-import dataclasses
 import logging
 import os
 import unittest
 from datetime import datetime, timezone
 from pathlib import Path
-from unittest.mock import patch, Mock, call
+from unittest.mock import patch, Mock, call, MagicMock
 
 from imap_processing.ena_maps.utils.naming import MappableInstrumentShortName, MapDescriptor
 from imap_l3_processing.models import InputMetadata
-from imap_data_access import ProcessingInputCollection, ScienceInput, SPICEInput
+from imap_data_access import ProcessingInputCollection, ScienceInput, SPICEInput, AncillaryInput
 from imap_processing.spice.geometry import SpiceFrame
 
 from mapping_tool.configuration import DataLevel
+from mapping_tool.dependency_collector import DependencyCollector
 from mapping_tool.generate_map import get_dependencies_for_l3_map, get_data_level_for_descriptor, generate_l3_map, \
     generate_l2_map, generate_map
 from test.test_builders import create_map_descriptor
@@ -19,7 +19,7 @@ from test.test_builders import create_map_descriptor
 
 class TestGenerateMap(unittest.TestCase):
     def setUp(self):
-        download_patch = patch("mapping_tool.generate_map.download")
+        download_patch = patch("mapping_tool.generate_map.imap_data_access.download")
         self.mock_download = download_patch.start()
         self.addCleanup(download_patch.stop)
 
@@ -103,11 +103,32 @@ class TestGenerateMap(unittest.TestCase):
                 actual_data_level = get_data_level_for_descriptor(descriptor)
                 self.assertEqual(expected_data_level, actual_data_level)
 
+    @patch('mapping_tool.generate_map.DependencyCollector')
     @patch('mapping_tool.generate_map.generate_l3_map')
     @patch('mapping_tool.generate_map.generate_l2_map')
-    def test_generate_map(self, mock_generate_l2, mock_generate_l3):
+    def test_generate_map(self, mock_generate_l2, mock_generate_l3, mock_dependency_collector_class):
         map_descriptor = create_map_descriptor(instrument=MappableInstrumentShortName.HI, principal_data="spx",
                                                spin_phase="full")
+        start_date = datetime(2020, 1, 1)
+        end_date = datetime(2020, 7, 1)
+
+        l2_ram_descriptor = create_map_descriptor(instrument=MappableInstrumentShortName.HI, survival_corrected='nsp',
+                                                  spin_phase="ram")
+        l2_antiram_map_descriptor = create_map_descriptor(instrument=MappableInstrumentShortName.HI,
+                                                          survival_corrected='nsp',
+                                                          spin_phase="anti")
+        l3_ena_map_descriptor = create_map_descriptor(instrument=MappableInstrumentShortName.HI, spin_phase="full")
+
+        l2_ram_dependency_collector = Mock(descriptor=l2_ram_descriptor, start_date=start_date, end_date=end_date)
+        l2_antiram_dependency_collector = Mock(descriptor=l2_antiram_map_descriptor, start_date=start_date,
+                                               end_date=end_date)
+        l3_ena_dependency_collector = Mock(descriptor=l3_ena_map_descriptor, start_date=start_date, end_date=end_date)
+
+        mock_dependency_collector_class.side_effect = [
+            l3_ena_dependency_collector,
+            l2_ram_dependency_collector,
+            l2_antiram_dependency_collector,
+        ]
 
         l2_ram_map = Path("ram")
         l2_antiram_map = Path("anti")
@@ -116,23 +137,25 @@ class TestGenerateMap(unittest.TestCase):
         mock_generate_l2.side_effect = [l2_ram_map, l2_antiram_map]
         mock_generate_l3.side_effect = [l3_full_map, l3_spx_map]
 
-        start_date = datetime(2020, 1, 1)
-        end_date = datetime(2020, 7, 1)
+        spx_dependency_collector = DependencyCollector(map_descriptor, start_date=start_date, end_date=end_date)
+        output_map = generate_map(spx_dependency_collector)
 
-        output_map = generate_map(map_descriptor, start_date, end_date)
-
-        mock_generate_l2.assert_has_calls([
+        mock_dependency_collector_class.assert_has_calls([
+            call(create_map_descriptor(instrument=MappableInstrumentShortName.HI, spin_phase="full"), start_date,
+                 end_date),
             call(create_map_descriptor(instrument=MappableInstrumentShortName.HI, survival_corrected='nsp',
                                        spin_phase="ram"), start_date, end_date),
             call(create_map_descriptor(instrument=MappableInstrumentShortName.HI, survival_corrected='nsp',
                                        spin_phase="anti"), start_date, end_date),
         ])
 
+        mock_generate_l2.assert_has_calls([
+            call(l2_ram_dependency_collector), call(l2_antiram_dependency_collector)
+        ])
+
         mock_generate_l3.assert_has_calls([
-            call(create_map_descriptor(instrument=MappableInstrumentShortName.HI, spin_phase="full"), start_date,
-                 end_date, [l2_ram_map, l2_antiram_map]),
-            call(create_map_descriptor(instrument=MappableInstrumentShortName.HI, principal_data='spx',
-                                       spin_phase="full"), start_date, end_date, [l3_full_map]),
+            call(l3_ena_dependency_collector, [l2_ram_map, l2_antiram_map]),
+            call(spx_dependency_collector, [l3_full_map])
         ])
 
         self.assertEqual(l3_spx_map, output_map)
@@ -143,20 +166,20 @@ class TestGenerateMap(unittest.TestCase):
         start_date = datetime(2020, 1, 1)
         end_date = datetime(2020, 7, 1)
 
+        dependency_collector = DependencyCollector(map_descriptor, start_date=start_date, end_date=end_date)
+
         with self.assertRaises(ValueError) as context:
-            generate_map(map_descriptor, start_date, end_date)
+            generate_map(dependency_collector)
 
         self.assertIn(f"Cannot produce map for instrument: {map_descriptor.instrument_descriptor}",
                       str(context.exception))
 
     @patch('mapping_tool.generate_map.spiceypy.furnsh')
     @patch('mapping_tool.generate_map.imap_data_access.download')
-    @patch("mapping_tool.generate_map.DependencyCollector.collect_spice_kernels")
     @patch("mapping_tool.generate_map.HiProcessor")
     @patch("mapping_tool.generate_map.LoProcessor")
     @patch("mapping_tool.generate_map.UltraProcessor")
-    def test_generate_l3_map(self, mock_ultra, mock_lo, mock_hi, mock_collect_spice_kernels, mock_download,
-                             mock_furnsh):
+    def test_generate_l3_map(self, mock_ultra, mock_lo, mock_hi, mock_download, mock_furnsh):
         hi_descriptor = create_map_descriptor(instrument=MappableInstrumentShortName.HI,
                                               kernel_path=Path('custom/kernel/path'))
         lo_descriptor = create_map_descriptor(instrument=MappableInstrumentShortName.LO,
@@ -174,23 +197,35 @@ class TestGenerateMap(unittest.TestCase):
         end_date = datetime(2020, 1, 2)
 
         for descriptor, mock_processor in cases:
+            mock_download.reset_mock()
+            mock_furnsh.reset_mock()
             with self.subTest(descriptor.to_string()):
-                mock_collect_spice_kernels.reset_mock()
-                mock_download.reset_mock()
-                mock_furnsh.reset_mock()
+                mock_dependency_collector = Mock(descriptor=descriptor, start_date=start_date, end_date=end_date)
 
-                mock_collect_spice_kernels.return_value = [Path('spice_1'), Path('spice_2')]
+                mock_dependency_collector.collect_spice_kernels.return_value = [Path('spice_1'), Path('spice_2')]
+                mock_dependency_collector.get_survival_probability_dependencies.return_value = [
+                    ScienceInput('imap_glows_l3e_science_20250101_v000.cdf'),
+                    ScienceInput('imap_hi_l1c_pset_20250101_v000.cdf')
+                ]
+                mock_dependency_collector.get_ancillary_dependencies.return_value = [
+                    AncillaryInput('imap_hi_ancillary_20250101_v000.dat')
+                ]
                 mock_download.return_value = Path('path/to/spice_file')
 
                 expected_path = Path('returned_path')
                 mock_processor.return_value.process.return_value = [expected_path]
-                actual_path = generate_l3_map(descriptor, start_date, end_date,
-                                              [Path("imap_hi_l2_h90-ena-h-sf-nsp-ram-hae-4deg-6mo_20250101_v000.cdf"),
-                                               Path("imap_hi_l2_h90-ena-h-sf-nsp-ram-hae-4deg-6mo_20250102_v001.cdf")])
+
+                input_maps = [Path("imap_hi_l2_h90-ena-h-sf-nsp-ram-hae-4deg-6mo_20250101_v000.cdf"),
+                              Path("imap_hi_l2_h90-ena-h-sf-nsp-ram-hae-4deg-6mo_20250102_v001.cdf")]
+
+                actual_path = generate_l3_map(mock_dependency_collector, input_maps)
                 self.assertEqual(expected_path, actual_path)
-                expected_science_inputs = [
+                expected_inputs = [
                     "imap_hi_l2_h90-ena-h-sf-nsp-ram-hae-4deg-6mo_20250101_v000.cdf",
-                    "imap_hi_l2_h90-ena-h-sf-nsp-ram-hae-4deg-6mo_20250102_v001.cdf"
+                    "imap_hi_l2_h90-ena-h-sf-nsp-ram-hae-4deg-6mo_20250102_v001.cdf",
+                    "imap_glows_l3e_science_20250101_v000.cdf",
+                    "imap_hi_l1c_pset_20250101_v000.cdf",
+                    "imap_hi_ancillary_20250101_v000.dat",
                 ]
 
                 expected_input_metadata = InputMetadata(
@@ -205,11 +240,13 @@ class TestGenerateMap(unittest.TestCase):
                 actual_processing_input_collection, actual_input_metadata = mock_processor.call_args.args
                 actual_input_filename_lists = [processing_input.filename_list[0] for processing_input in
                                                actual_processing_input_collection.processing_input]
-                self.assertEqual(expected_science_inputs, actual_input_filename_lists)
+                self.assertEqual(expected_inputs, actual_input_filename_lists)
                 self.assertEqual(expected_input_metadata, actual_input_metadata)
 
                 mock_processor.return_value.process.assert_called_once_with(descriptor.spice_frame)
-                mock_collect_spice_kernels.assert_called_once_with(start_date=start_date, end_date=end_date)
+                mock_dependency_collector.collect_spice_kernels.assert_called_once()
+                mock_dependency_collector.get_survival_probability_dependencies.assert_called_once_with(input_maps)
+                mock_dependency_collector.get_ancillary_dependencies.assert_called_once()
 
                 mock_download.assert_has_calls([
                     call(Path('spice_1')),
@@ -224,14 +261,17 @@ class TestGenerateMap(unittest.TestCase):
 
                 mock_processor.return_value.process.assert_called_once()
 
-    @patch("mapping_tool.generate_map.DependencyCollector.collect_spice_kernels")
     @patch("mapping_tool.generate_map.spiceypy.furnsh")
-    @patch("mapping_tool.generate_map.imap_data_access.download")
     @patch("mapping_tool.generate_map.HiProcessor")
-    def test_generate_l3_map_raises_error_when_less_or_more_than_one_file_is_returned(self, mock_hi, mock_download,
-                                                                                      mock_furnsh,
-                                                                                      mock_collect_spice_kernels):
-        mock_collect_spice_kernels.return_value = []
+    def test_generate_l3_map_raises_error_when_less_or_more_than_one_file_is_returned(self, mock_hi, _):
+        mock_dependency_collector = Mock(
+            descriptor=create_map_descriptor(),
+            start_date=datetime(2020, 1, 1, tzinfo=timezone.utc),
+            end_date=datetime(2020, 1, 2, tzinfo=timezone.utc)
+        )
+        mock_dependency_collector.collect_spice_kernels.return_value = []
+        mock_dependency_collector.get_survival_probability_dependencies.return_value = []
+        mock_dependency_collector.get_ancillary_dependencies.return_value = []
 
         error_cases = [
             ("L3 processing did not return any files!", []),
@@ -245,40 +285,48 @@ class TestGenerateMap(unittest.TestCase):
                 with self.assertRaises(ValueError) as e:
                     logger = logging.getLogger('generate_l2_map')
                     with self.assertLogs(logger, logging.ERROR) as log_context:
-                        generate_l3_map(create_map_descriptor(), datetime(2020, 1, 1, tzinfo=timezone.utc),
-                                        datetime(2020, 1, 2, tzinfo=timezone.utc), [])
+                        generate_l3_map(mock_dependency_collector, [])
 
                 self.assertIn(err_string, str(e.exception))
 
-    @patch("mapping_tool.generate_map.DependencyCollector.collect_spice_kernels")
     @patch("mapping_tool.generate_map.spiceypy.furnsh")
-    @patch("mapping_tool.generate_map.imap_data_access.download")
     @patch("mapping_tool.generate_map.HiProcessor.process")
-    def test_generate_l3_map_gracefully_handles_processing_exceptions(self, mock_process, mock_download,
-                                                                      mock_furnsh, mock_collect_spice_kernels):
-        mock_collect_spice_kernels.return_value = []
+    def test_generate_l3_map_gracefully_handles_processing_exceptions(self, mock_process, _):
+        mock_dependency_collector = Mock(
+            descriptor=create_map_descriptor(),
+            start_date=datetime(2020, 1, 1, tzinfo=timezone.utc),
+            end_date=datetime(2020, 1, 2, tzinfo=timezone.utc)
+        )
+        mock_dependency_collector.collect_spice_kernels.return_value = []
+        mock_dependency_collector.get_survival_probability_dependencies.return_value = []
+        mock_dependency_collector.get_ancillary_dependencies.return_value = []
         mock_process.side_effect = ValueError("L3 processing failed")
 
         hi_descriptor = create_map_descriptor(instrument=MappableInstrumentShortName.HI)
         with self.assertRaises(ValueError) as e:
             logger = logging.getLogger('generate_l2_map')
             with self.assertLogs(logger, logging.ERROR) as log_context:
-                generate_l3_map(hi_descriptor, datetime(2020, 1, 1, tzinfo=timezone.utc),
-                                datetime(2020, 1, 2, tzinfo=timezone.utc), [])
+                generate_l3_map(mock_dependency_collector, [])
         self.assertIn(f"Processing for {hi_descriptor.to_string()} failed",
                       str(e.exception.__notes__))
 
     @patch("mapping_tool.generate_map.spiceypy")
-    @patch("mapping_tool.generate_map.DependencyCollector.collect_spice_kernels")
-    @patch("mapping_tool.generate_map.DependencyCollector.get_pointing_sets")
     @patch("mapping_tool.generate_map.Hi")
     @patch("mapping_tool.generate_map.Lo")
     @patch("mapping_tool.generate_map.Ultra")
-    def test_generate_l2_map(self, mock_ultra, mock_lo, mock_hi, mock_get_pointing_sets, mock_collect_spice_kernels,
-                             mock_spiceypy):
-        mock_collect_spice_kernels.return_value = ["imap_science_0001.tf", "imap_sclk_0000.tsc"]
-        mock_get_pointing_sets.return_value = ["imap_hi_l1c_pset-1_20250101_v000.cdf",
-                                               "imap_hi_l1c_pset-2_20250101_v000.cdf"]
+    def test_generate_l2_map(self, mock_ultra, mock_lo, mock_hi, mock_spiceypy):
+        mock_dependency_collector = Mock()
+
+        mock_dependency_collector.get_ancillary_dependencies.return_value = [
+            AncillaryInput("imap_hi_45sensor-cal-prod_20240101_v002.csv"),
+            AncillaryInput("imap_hi_45sensor-esa-energies_20240101_v002.csv")
+        ]
+        mock_dependency_collector.collect_spice_kernels.return_value = ["imap_science_0001.tf", "imap_sclk_0000.tsc"]
+        mock_dependency_collector.get_pointing_sets.return_value = [
+            "imap_hi_l1c_pset-1_20250101_v000.cdf",
+            "imap_hi_l1c_pset-2_20250101_v000.cdf"
+        ]
+
         hi_descriptor = create_map_descriptor(instrument=MappableInstrumentShortName.HI, survival_corrected="nsp",
                                               kernel_path=Path("path1"))
         lo_descriptor = create_map_descriptor(instrument=MappableInstrumentShortName.LO, survival_corrected="nsp",
@@ -296,24 +344,32 @@ class TestGenerateMap(unittest.TestCase):
 
         for descriptor, mock_processor_class, num_furnsh_calls in cases:
             with self.subTest(descriptor.to_string()):
-                mock_collect_spice_kernels.reset_mock()
-                mock_get_pointing_sets.reset_mock()
+                mock_dependency_collector.reset_mock()
+                mock_dependency_collector.descriptor = descriptor
+                mock_dependency_collector.start_date = start_date
+                mock_dependency_collector.end_date = end_date
+
                 expected_map = Mock()
                 mock_processor = mock_processor_class.return_value
                 mock_processor.post_processing.return_value = [expected_map]
 
-                actual_map = generate_l2_map(descriptor, start_date, end_date)
+                actual_map = generate_l2_map(mock_dependency_collector)
 
-                mock_collect_spice_kernels.assert_called_once_with(start_date=start_date, end_date=end_date)
-                mock_get_pointing_sets.assert_called_once_with(descriptor, start_date, end_date)
+                mock_dependency_collector.get_ancillary_dependencies.assert_called_once()
+                mock_dependency_collector.collect_spice_kernels.assert_called_once()
+                mock_dependency_collector.get_pointing_sets.assert_called_once()
 
-                self.mock_download.assert_has_calls([call("imap_hi_l1c_pset-1_20250101_v000.cdf"),
-                                               call("imap_hi_l1c_pset-2_20250101_v000.cdf")])
+                self.mock_download.assert_has_calls([
+                    call("imap_hi_l1c_pset-1_20250101_v000.cdf"),
+                    call("imap_hi_l1c_pset-2_20250101_v000.cdf"),
+                ])
 
                 expected_dependency_str = ProcessingInputCollection(
                     ScienceInput("imap_hi_l1c_pset-1_20250101_v000.cdf"),
                     ScienceInput("imap_hi_l1c_pset-2_20250101_v000.cdf"),
-                    SPICEInput("imap_science_0001.tf"), SPICEInput("imap_sclk_0000.tsc")
+                    SPICEInput("imap_science_0001.tf"), SPICEInput("imap_sclk_0000.tsc"),
+                    AncillaryInput("imap_hi_45sensor-cal-prod_20240101_v002.csv"),
+                    AncillaryInput("imap_hi_45sensor-esa-energies_20240101_v002.csv"),
                 ).serialize()
 
                 mock_processor_class.assert_called_once_with(
@@ -344,20 +400,19 @@ class TestGenerateMap(unittest.TestCase):
         ])
         self.assertEqual(2, mock_spiceypy.furnsh.call_count)
 
-    @patch("mapping_tool.generate_map.DependencyCollector.collect_spice_kernels")
-    @patch("mapping_tool.generate_map.DependencyCollector.get_pointing_sets")
     @patch("mapping_tool.generate_map.Hi")
-    def test_generate_l2_map_patches_l2_processing_get_map_coord_frame(self, mock_hi_processor_class,
-                                                                       mock_get_pointing_sets,
-                                                                       mock_collect_spice_kernels):
-        mock_hi_processor = mock_hi_processor_class.return_value
-        mock_collect_spice_kernels.return_value = ["imap_science_0001.tf", "imap_sclk_0000.tsc"]
-        mock_get_pointing_sets.return_value = ["imap_hi_l1c_pset-1_20250101_v000.cdf",
-                                               "imap_hi_l1c_pset-2_20250101_v000.cdf"]
-
+    def test_generate_l2_map_patches_l2_processing_get_map_coord_frame(self, mock_hi_processor_class):
+        descriptor = create_map_descriptor(instrument=MappableInstrumentShortName.HI, spice_frame=SpiceFrame.IMAP_RTN)
         start_date = datetime(2020, 1, 1)
         end_date = datetime(2020, 1, 2)
-        descriptor = create_map_descriptor(instrument=MappableInstrumentShortName.HI, spice_frame=SpiceFrame.IMAP_RTN)
+
+        mock_dependency_collector = Mock(descriptor=descriptor, start_date=start_date, end_date=end_date)
+
+        mock_hi_processor = mock_hi_processor_class.return_value
+        mock_dependency_collector.collect_spice_kernels.return_value = ["imap_science_0001.tf", "imap_sclk_0000.tsc"]
+        mock_dependency_collector.get_ancillary_dependencies.return_value = []
+        mock_dependency_collector.get_pointing_sets.return_value = ["imap_hi_l1c_pset-1_20250101_v000.cdf",
+                                                                    "imap_hi_l1c_pset-2_20250101_v000.cdf"]
 
         def mock_do_processing(deps):
             self.assertEqual(deps, mock_hi_processor.pre_processing.return_value)
@@ -367,20 +422,19 @@ class TestGenerateMap(unittest.TestCase):
         mock_hi_processor.post_processing.return_value = [Path("some_path")]
         mock_hi_processor.do_processing.side_effect = mock_do_processing
 
-        _ = generate_l2_map(descriptor, start_date, end_date)
+        _ = generate_l2_map(mock_dependency_collector)
 
         normal_pipeline_descriptor = "h90-ena-h-sf-nsp-ram-hae-2deg-6mo"
         self.assertEqual(SpiceFrame.IMAP_HAE,
                          MapDescriptor.from_string(normal_pipeline_descriptor).map_spice_coord_frame)
 
-    @patch("mapping_tool.generate_map.DependencyCollector.get_pointing_sets")
-    @patch("mapping_tool.generate_map.DependencyCollector.collect_spice_kernels")
     @patch("mapping_tool.generate_map.Hi")
-    def test_generate_l2_map_raises_error_when_less_or_more_than_one_file_is_returned(self, mock_hi,
-                                                                                      mock_collect_spice_kernels,
-                                                                                      mock_get_pointing_sets):
-        mock_collect_spice_kernels.return_value = []
-        mock_get_pointing_sets.return_value = ["imap_hi_l1c_pset_20250101_v000.cdf"]
+    def test_generate_l2_map_raises_error_when_less_or_more_than_one_file_is_returned(self, mock_hi):
+        mock_dependency_collector = MagicMock(spec=DependencyCollector, descriptor=create_map_descriptor(),
+                                              start_date=datetime(2020, 1, 1, tzinfo=timezone.utc),
+                                              end_date=datetime(2020, 1, 2, tzinfo=timezone.utc))
+
+        mock_dependency_collector.get_pointing_sets.return_value = ["imap_hi_l1c_pset_20250101_v000.cdf"]
 
         error_cases = [
             ("L2 processing did not return any files!", []),
@@ -391,40 +445,43 @@ class TestGenerateMap(unittest.TestCase):
             with self.subTest(err_string):
                 mock_hi.return_value.post_processing.return_value = returned_paths
                 with self.assertRaises(ValueError) as e:
-                    generate_l2_map(create_map_descriptor(), datetime(2020, 1, 1, tzinfo=timezone.utc),
-                                    datetime(2020, 1, 2, tzinfo=timezone.utc))
+                    generate_l2_map(mock_dependency_collector)
 
                 self.assertIn(err_string, str(e.exception))
 
+    @patch("mapping_tool.generate_map.DependencyCollector.get_ancillary_dependencies")
     @patch("mapping_tool.generate_map.DependencyCollector.get_pointing_sets")
     @patch("mapping_tool.generate_map.DependencyCollector.collect_spice_kernels")
+    @patch("mapping_tool.generate_map.DependencyCollector.get_ancillary_dependencies")
     @patch("mapping_tool.generate_map.Hi")
-    def test_generate_l2_map_gracefully_handles_processing_exceptions(self, mock_hi,
+    def test_generate_l2_map_gracefully_handles_processing_exceptions(self, mock_hi, mock_ancillary_dependencies,
                                                                       mock_collect_spice_kernels,
-                                                                      mock_get_pointing_sets):
+                                                                      mock_get_pointing_sets,
+                                                                      mock_get_ancillary_dependencies):
         mock_collect_spice_kernels.return_value = []
+        mock_ancillary_dependencies.return_value = []
         mock_get_pointing_sets.return_value = ["imap_hi_l1c_pset_20250101_v000.cdf"]
+        mock_get_ancillary_dependencies.return_value = []
         mock_hi.return_value.do_processing.side_effect = ValueError("L2 processing failed")
 
         hi_descriptor = create_map_descriptor(instrument=MappableInstrumentShortName.HI)
+        dependency_collector = DependencyCollector(hi_descriptor,
+                                                   datetime(2020, 1, 1, tzinfo=timezone.utc),
+                                                   datetime(2020, 1, 2, tzinfo=timezone.utc))
         with self.assertRaises(ValueError) as e:
-            generate_l2_map(hi_descriptor, datetime(2020, 1, 1, tzinfo=timezone.utc),
-                            datetime(2020, 1, 2, tzinfo=timezone.utc))
+            generate_l2_map(dependency_collector)
         self.assertIn(f"Processing for {hi_descriptor.to_string()} failed", e.exception.__notes__)
 
-    @patch("mapping_tool.generate_map.DependencyCollector.get_pointing_sets")
-    @patch("mapping_tool.generate_map.DependencyCollector.collect_spice_kernels")
     @patch("mapping_tool.generate_map.Hi")
-    def test_generate_l2_map_raises_exception_if_called_with_no_psets(self, mock_hi,
-                                                                      mock_collect_spice_kernels,
-                                                                      mock_get_pointing_sets):
-        mock_collect_spice_kernels.return_value = []
-        mock_get_pointing_sets.return_value = []
-
+    def test_generate_l2_map_raises_exception_if_called_with_no_psets(self, mock_hi):
         start_date = datetime(2020, 1, 1, tzinfo=timezone.utc)
         end_date = datetime(2020, 1, 2, tzinfo=timezone.utc)
         hi_descriptor = create_map_descriptor(instrument=MappableInstrumentShortName.HI)
         map_details = f'{hi_descriptor.to_string()} {start_date.strftime("%Y-%m-%d")} to {end_date.strftime("%Y-%m-%d")}'
+
+        mock_dependency_collector = Mock(descriptor=hi_descriptor, start_date=start_date, end_date=end_date)
+        mock_dependency_collector.get_pointing_sets.return_value = []
+
         with self.assertRaises(ValueError) as exception_context:
-            generate_l2_map(hi_descriptor, start_date, end_date)
+            generate_l2_map(mock_dependency_collector)
         self.assertIn(f"No pointing sets found for {map_details}", str(exception_context.exception))

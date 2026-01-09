@@ -3,7 +3,7 @@ import tempfile
 import unittest
 from datetime import datetime, timezone
 from pathlib import Path
-from unittest.mock import patch, call, Mock, MagicMock
+from unittest.mock import patch, call, Mock, MagicMock, sentinel
 import imap_data_access
 import numpy as np
 
@@ -24,10 +24,11 @@ class TestCli(unittest.TestCase):
     @patch('mapping_tool.cli.CDF')
     @patch('mapping_tool.cli.shutil.copy')
     @patch('mapping_tool.cli.generate_map')
+    @patch('mapping_tool.cli.DependencyCollector')
     @patch('mapping_tool.cli.cleanup_l2_l3_dependencies')
     @patch('mapping_tool.cli.sort_cdfs_by_epoch')
-    def test_do_mapping_tool(self, mock_sort_cdfs_by_epoch, mock_cleanup, mock_generate_map, mock_copy_file, mock_cdf,
-                             mock_print):
+    def test_do_mapping_tool(self, mock_sort_cdfs_by_epoch, mock_cleanup, mock_dependency_collector,
+                             mock_generate_map, mock_copy_file, mock_cdf, mock_print):
         test_cases = [
             (None, Path('.')),
             (Path("some/output/path"), Path("some/output/path"))
@@ -55,6 +56,12 @@ class TestCli(unittest.TestCase):
                 generated_cdf_path_1 = Path('path/to/cdf/imap_hi_l3_h90-ena-h-sf-sp-ram-hae-2deg-6mo_20250101_v000.cdf')
                 generated_cdf_path_2 = Path('path/to/cdf/imap_hi_l3_h90-ena-h-sf-sp-ram-hae-2deg-6mo_20260101_v000.cdf')
                 mock_sort_cdfs_by_epoch.return_value = [generated_cdf_path_1, generated_cdf_path_2]
+
+                mock_dependency_collector.side_effect = [
+                    sentinel.dependency_collector_1,
+                    sentinel.dependency_collector_2,
+                ]
+
                 mock_generate_map.side_effect = [
                     generated_cdf_path_1,
                     generated_cdf_path_2,
@@ -68,6 +75,7 @@ class TestCli(unittest.TestCase):
                 mock_configuration.get_map_date_ranges.return_value = map_date_ranges
                 mock_configuration.output_directory = configured_output_path
                 mock_configuration.quantity_suffix = "TEST"
+                mock_configuration.ultra_energy_bin_group_edges = sentinel.ultra_energy_bin_group_edges
 
                 mock_cdf_file_1 = MagicMock()
                 mock_cdf_file_2 = MagicMock()
@@ -108,9 +116,14 @@ class TestCli(unittest.TestCase):
                     call('Generating map: h90-enaTEST-h-sf-sp-ram-hae-2deg-6mo-mapper 2026-01-01 to 2027-01-01'),
                 ])
 
+                mock_dependency_collector.assert_has_calls([
+                    call(hi_descriptor, map_date_ranges[0][0], map_date_ranges[0][1], sentinel.ultra_energy_bin_group_edges),
+                    call(hi_descriptor, map_date_ranges[1][0], map_date_ranges[1][1], sentinel.ultra_energy_bin_group_edges),
+                ])
+
                 mock_generate_map.assert_has_calls([
-                    call(hi_descriptor, map_date_ranges[0][0], map_date_ranges[0][1]),
-                    call(hi_descriptor, map_date_ranges[1][0], map_date_ranges[1][1]),
+                    call(sentinel.dependency_collector_1),
+                    call(sentinel.dependency_collector_2),
                 ])
 
                 self.assertEqual('h90-enaTEST-h-sf-sp-ram-hae-2deg-6mo-mapper', mock_cdf_file_1.attrs["Logical_source"])

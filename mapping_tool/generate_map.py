@@ -1,7 +1,6 @@
 import sys
 from dataclasses import replace
 import logging
-from datetime import datetime
 from pathlib import Path
 from unittest.mock import patch
 
@@ -11,10 +10,10 @@ from mapping_tool.configuration import DataLevel
 from imap_processing.ena_maps.utils.naming import MapDescriptor, MappableInstrumentShortName
 from imap_l3_processing.models import InputMetadata
 from imap_l3_processing.hi.hi_processor import HiProcessor
-from imap_l3_processing.ultra.l3.ultra_processor import UltraProcessor
+from imap_l3_processing.ultra.ultra_processor import UltraProcessor
 from imap_l3_processing.lo.lo_processor import LoProcessor
 from imap_processing.cli import Hi, Lo, Ultra
-from imap_data_access import ProcessingInputCollection, ScienceInput, SPICEInput, download
+from imap_data_access import ProcessingInputCollection, ScienceInput, SPICEInput
 
 from mapping_tool.dependency_collector import DependencyCollector
 import spiceypy
@@ -22,6 +21,7 @@ import spiceypy
 from mapping_tool.mapping_tool_descriptor import MappingToolDescriptor
 
 logger = logging.getLogger(__name__)
+
 
 def get_dependencies_for_l3_map(map_descriptor: MappingToolDescriptor) -> list[MappingToolDescriptor]:
     match map_descriptor.instrument:
@@ -33,6 +33,7 @@ def get_dependencies_for_l3_map(map_descriptor: MappingToolDescriptor) -> list[M
             return get_dependencies_for_lo_l3_map(map_descriptor)
         case _:
             raise ValueError("Don't know correct dependencies for this specific instrument", map_descriptor.instrument)
+
 
 def get_dependencies_for_hi_l3_map(map_descriptor: MappingToolDescriptor) -> list[MappingToolDescriptor]:
     match map_descriptor:
@@ -60,13 +61,14 @@ def get_dependencies_for_hi_l3_map(map_descriptor: MappingToolDescriptor) -> lis
         case _:
             raise ValueError("Don't know correct dependencies for", map_descriptor)
 
+
 def get_dependencies_for_ultra_l3_map(map_descriptor: MappingToolDescriptor) -> list[MappingToolDescriptor]:
     match map_descriptor:
         case MapDescriptor(principal_data="spx"):
             return [replace(map_descriptor, principal_data="ena")]
         case MapDescriptor(sensor="combined"):
             return [replace(map_descriptor, sensor="45"), replace(map_descriptor, sensor="90")]
-        case MapDescriptor(sensor="90"|"45", survival_corrected="sp"):
+        case MapDescriptor(sensor="90" | "45", survival_corrected="sp"):
             return [replace(map_descriptor, survival_corrected="nsp")]
         case _:
             raise ValueError("Don't know correct dependencies for", map_descriptor)
@@ -91,49 +93,58 @@ def get_data_level_for_descriptor(descriptor: MappingToolDescriptor):
         return DataLevel.L2
 
 
-def generate_map(descriptor: MappingToolDescriptor, start: datetime, end: datetime) -> Path:
+def generate_map(dependency_collector: DependencyCollector) -> Path:
+    descriptor = dependency_collector.descriptor
+    start = dependency_collector.start_date
+    end = dependency_collector.end_date
+
     logger.info("preparing to generate map %s", descriptor.to_mapping_tool_string())
     data_level = get_data_level_for_descriptor(descriptor)
     if data_level == DataLevel.L2:
         logger.info("generating l2 map %s", descriptor.to_mapping_tool_string())
-        return generate_l2_map(descriptor, start, end)
+        return generate_l2_map(dependency_collector)
     elif data_level == DataLevel.L3:
         map_deps = []
         deps = get_dependencies_for_l3_map(descriptor)
         logger.info("identified dependencies %s", deps)
         for dependency in deps:
             print(f"Generating intermediate map {dependency.to_mapping_tool_string()}")
-            map_deps.append(generate_map(dependency, start, end))
+            dependency_collector_for_intermediate_map = DependencyCollector(dependency, start, end)
+            map_deps.append(generate_map(dependency_collector_for_intermediate_map))
         logger.info("generating l3 map %s", descriptor.to_mapping_tool_string())
-        return generate_l3_map(descriptor, start, end, map_deps)
+        return generate_l3_map(dependency_collector, map_deps)
     else:
         raise ValueError(f"Cannot produce map for instrument: {descriptor.instrument_descriptor}")
 
 
-def generate_l3_map(descriptor: MappingToolDescriptor, start: datetime, end: datetime, input_maps: list[Path]) -> Path:
+def generate_l3_map(dependency_collector: DependencyCollector, input_maps: list[Path]) -> Path:
     processor_class = {
         MappableInstrumentShortName.HI: HiProcessor,
         MappableInstrumentShortName.LO: LoProcessor,
         MappableInstrumentShortName.ULTRA: UltraProcessor,
-    }.get(descriptor.instrument)
+    }.get(dependency_collector.descriptor.instrument)
 
     input_metadata = InputMetadata(
-        instrument=descriptor.instrument.name.lower(),
+        instrument=dependency_collector.descriptor.instrument.name.lower(),
         data_level='l3',
-        start_date=start,
-        end_date=end,
+        start_date=dependency_collector.start_date,
+        end_date=dependency_collector.end_date,
         version='v000',
-        descriptor=descriptor.to_string(),
+        descriptor=dependency_collector.descriptor.to_string(),
     )
 
-    spice_kernel_paths = DependencyCollector.collect_spice_kernels(start_date=start, end_date=end)
+    spice_kernel_paths = dependency_collector.collect_spice_kernels()
+    sp_inputs = dependency_collector.get_survival_probability_dependencies(input_maps)
+    ancillary_inputs = dependency_collector.get_ancillary_dependencies()
     for kernel in spice_kernel_paths:
         kernel_path = imap_data_access.download(kernel)
         spiceypy.furnsh(str(kernel_path))
-    if descriptor.kernel_path is not None:
-        spiceypy.furnsh(str(descriptor.kernel_path))
+    if dependency_collector.descriptor.kernel_path is not None:
+        spiceypy.furnsh(str(dependency_collector.descriptor.kernel_path))
 
-    processing_input_collection = ProcessingInputCollection(*[ScienceInput(dep.name) for dep in input_maps])
+    processing_input_collection = ProcessingInputCollection(*[ScienceInput(dep.name) for dep in input_maps],
+                                                            *sp_inputs,
+                                                            *ancillary_inputs)
 
     processor = processor_class(
         processing_input_collection,
@@ -141,9 +152,9 @@ def generate_l3_map(descriptor: MappingToolDescriptor, start: datetime, end: dat
     )
 
     try:
-        processed_files = processor.process(descriptor.spice_frame)
+        processed_files = processor.process(dependency_collector.descriptor.spice_frame)
     except Exception as e:
-        note = f"Processing for {descriptor.to_string()} failed"
+        note = f"Processing for {dependency_collector.descriptor.to_string()} failed"
         if hasattr(e, "add_note"):
             e.add_note(note)
         else:
@@ -158,22 +169,27 @@ def generate_l3_map(descriptor: MappingToolDescriptor, start: datetime, end: dat
     return processed_files[0]
 
 
-def generate_l2_map(descriptor: MappingToolDescriptor, start_date: datetime, end_date: datetime) -> Path:
-    spice_kernel_names = DependencyCollector.collect_spice_kernels(start_date=start_date, end_date=end_date)
+def generate_l2_map(dependency_collector: DependencyCollector) -> Path:
+    descriptor = dependency_collector.descriptor
+    start_date = dependency_collector.start_date
+    end_date = dependency_collector.end_date
+    spice_kernel_names = dependency_collector.collect_spice_kernels()
 
     map_details = f'{descriptor.to_string()} {start_date.strftime("%Y-%m-%d")} to {end_date.strftime("%Y-%m-%d")}'
-    psets = DependencyCollector.get_pointing_sets(descriptor, start_date, end_date)
+    psets = dependency_collector.get_pointing_sets()
     if len(psets) == 0:
         raise ValueError(f"No pointing sets found for {map_details}")
     for i, pset in enumerate(psets, start=1):
         print(f"\rDownloading psets {i}/{len(psets)}... ", end="")
         sys.stdout.flush()
-        download(pset)
-    print("")
+        imap_data_access.download(pset)
+
+    ancillary_inputs = dependency_collector.get_ancillary_dependencies()
 
     processing_input_collection = ProcessingInputCollection(
         *[ScienceInput(pset) for pset in psets],
-        *[SPICEInput(kernel) for kernel in spice_kernel_names])
+        *[SPICEInput(kernel) for kernel in spice_kernel_names],
+        *ancillary_inputs)
 
     processor_classes = {
         MappableInstrumentShortName.HI: Hi,

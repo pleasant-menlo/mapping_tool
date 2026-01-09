@@ -40,6 +40,7 @@ class TestConfiguration(TestCase):
                     output_directory=None,
                     quantity_suffix="",
                     kernel_path=Path("path/to/another_kernel"),
+                    ultra_energy_bin_group_edges=None,
                     raw_config=yaml.dump(yaml.safe_load(example_config_path.read_text()))
                 )
 
@@ -101,7 +102,8 @@ class TestConfiguration(TestCase):
                     lo_species="h",
                     output_directory=Path('path/to/output'),
                     quantity_suffix="custom",
-                    kernel_path=Path("path/to/kernel")
+                    kernel_path=Path("path/to/kernel"),
+                    ultra_energy_bin_group_edges="0,4,8,12,16,20,24,28,32,36,40,44,46"
                 )
 
                 self.assertEqual(expected_config, config)
@@ -128,7 +130,7 @@ class TestConfiguration(TestCase):
                     "pixelation_scheme": "square",
                     "pixel_parameter": 2,
                     "map_data_type": "ENA Intensity",
-                    "kernel_path": Path("path/to/another_kernel")
+                    "kernel_path": Path("path/to/another_kernel"),
                 }
 
                 mock_validate.assert_called_with(expected_config, config_schema.schema)

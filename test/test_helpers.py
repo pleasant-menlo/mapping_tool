@@ -1,9 +1,13 @@
+import dataclasses
 import json
+from copy import deepcopy
 from dataclasses import dataclass
-from datetime import datetime, timedelta, tzinfo
+from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Optional
-from unittest import skip, skipIf, SkipTest
+from unittest import SkipTest
+
+from imap_data_access.processing_input import ProcessingInput
 
 import pytz
 
@@ -19,6 +23,21 @@ def get_test_cdf_file_path():
 def utcdatetime():
     return datetime(2025, 8, 20, tzinfo=pytz.utc)
 
+def assert_imap_processing_inputs_match(expected: list[ProcessingInput], actual: list[ProcessingInput], any_order = False):
+    assert len(expected) == len(actual)
+
+    expected_to_compare = deepcopy(expected)
+    actual_to_compare = deepcopy(actual)
+
+    if any_order:
+        expected_to_compare = sorted(expected_to_compare, key=lambda i: ("").join(i.filename_list))
+        actual_to_compare = sorted(actual_to_compare, key=lambda i: ("").join(i.filename_list))
+
+    for expected, actual in zip(expected_to_compare, actual_to_compare):
+        for field in dataclasses.fields(expected):
+            if field.name == "imap_file_paths":
+                continue
+            assert getattr(actual, field.name) == getattr(expected, field.name), f"{getattr(actual, field.name)} != {getattr(expected, field.name)}"
 
 @dataclass
 class PeriodicallyRunTest:

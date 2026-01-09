@@ -5,6 +5,7 @@ from datetime import datetime
 
 import numpy as np
 
+from mapping_tool.dependency_collector import DependencyCollector
 from mapping_tool.generate_map import generate_map, get_data_level_for_descriptor
 from mapping_tool.mapping_tool_descriptor import MappingToolDescriptor
 
@@ -36,6 +37,8 @@ def cleanup_l2_l3_dependencies(descriptor: MappingToolDescriptor):
 
 
 def do_mapping_tool(config: Configuration):
+    print(f"Start of mapping tool: {imap_data_access.config}")
+
     map_date_ranges = config.get_map_date_ranges()
     descriptor = config.get_map_descriptor()
 
@@ -54,7 +57,8 @@ def do_mapping_tool(config: Configuration):
 
             print(f"Generating map {i}/{len(map_date_ranges)}...")
             logger.info(f"Generating map: {map_details}")
-            generated_map_path = generate_map(descriptor, start_date, end_date)
+            dependency_collector = DependencyCollector(descriptor, start_date, end_date, config.ultra_energy_bin_group_edges)
+            generated_map_path = generate_map(dependency_collector)
             output_map_paths.append(generated_map_path)
 
         sorted_paths = sort_cdfs_by_epoch(output_map_paths)
