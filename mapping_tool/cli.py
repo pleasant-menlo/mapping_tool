@@ -7,6 +7,7 @@ import numpy as np
 
 from mapping_tool.generate_map import generate_map, get_data_level_for_descriptor
 from mapping_tool.mapping_tool_descriptor import MappingToolDescriptor
+
 logger = logging.getLogger(__name__)
 
 from pathlib import Path
@@ -41,7 +42,8 @@ def do_mapping_tool(config: Configuration):
     try:
         first_start_date = map_date_ranges[0][0]
         output_filename = get_output_filename(descriptor, first_start_date)
-        final_output_path = config.output_directory / output_filename
+        output_directory = config.output_directory or Path('.')
+        final_output_path = output_directory / output_filename
         if final_output_path.exists():
             print(f"Skipping generation of map: {output_filename}, because it already exists!")
             return
@@ -60,9 +62,11 @@ def do_mapping_tool(config: Configuration):
         print(f"Created file {final_output_path}")
         return final_output_path
     except Exception:
-        logger.error(f"Failed to generate map: {descriptor.to_mapping_tool_string()} with error\n{traceback.format_exc()}")
+        logger.error(
+            f"Failed to generate map: {descriptor.to_mapping_tool_string()} with error\n{traceback.format_exc()}")
     finally:
         cleanup_l2_l3_dependencies(descriptor)
+
 
 def sort_cdfs_by_epoch(cdf_files: list[Path]) -> list[Path]:
     sorted_epochs_and_paths = []
@@ -71,6 +75,7 @@ def sort_cdfs_by_epoch(cdf_files: list[Path]) -> list[Path]:
             sorted_epochs_and_paths.append((cdf["epoch"][0], path))
     sorted_epochs_and_paths.sort(key=lambda date: date[0])
     return [path for date, path in sorted_epochs_and_paths]
+
 
 def save_output_cdf(output_path: Path, map_cdf_paths: list[Path], config: Configuration):
     descriptor = config.get_map_descriptor()
@@ -83,7 +88,8 @@ def save_output_cdf(output_path: Path, map_cdf_paths: list[Path], config: Config
 
         _, data_type_description = str(cdf.attrs["Data_type"]).split(">")
         data_level = get_data_level_for_descriptor(descriptor)
-        cdf.attrs['Data_type'] = f"{data_level.value.upper()}_{descriptor.to_mapping_tool_string()}>{data_type_description}"
+        cdf.attrs[
+            'Data_type'] = f"{data_level.value.upper()}_{descriptor.to_mapping_tool_string()}>{data_type_description}"
 
         for additional_map_path in map_cdf_paths[1:]:
             with CDF(str(additional_map_path)) as additional_map:

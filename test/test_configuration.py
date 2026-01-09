@@ -37,7 +37,7 @@ class TestConfiguration(TestCase):
                     pixel_parameter=2,
                     map_data_type="ENA Intensity",
                     lo_species=None,
-                    output_directory=Path('.'),
+                    output_directory=None,
                     quantity_suffix="",
                     kernel_path=Path("path/to/another_kernel"),
                     raw_config=yaml.dump(yaml.safe_load(example_config_path.read_text()))
@@ -67,7 +67,7 @@ class TestConfiguration(TestCase):
                     pixel_parameter=2,
                     map_data_type="ENA Intensity",
                     lo_species=None,
-                    output_directory=Path('.'),
+                    output_directory=None,
                     quantity_suffix="",
                     kernel_path=Path("path/to/another_kernel"),
                     raw_config=yaml.dump(yaml.safe_load(example_config_path.read_text()))
@@ -138,9 +138,12 @@ class TestConfiguration(TestCase):
         validation_error_cases = [
             ("invalid instrument", {"instrument": "90", **create_canonical_map_period_dict()}),
             ("invalid spin phase", {"spin_phase": "none", **create_canonical_map_period_dict()}),
-            ("invalid reference frame", {"reference_frame_type": "spacecraft kinematic", **create_canonical_map_period_dict()}),
-            ("invalid survival probability corrected", {"survival_corrected": "YES", **create_canonical_map_period_dict()}),
-            ("invalid cannot have both canonical and time_ranges included", {"time_ranges": {"start": "2025-01-03T03:03:03.3", "stop": "2025-01-04T03:03:03.3"}}),
+            ("invalid reference frame",
+             {"reference_frame_type": "spacecraft kinematic", **create_canonical_map_period_dict()}),
+            ("invalid survival probability corrected",
+             {"survival_corrected": "YES", **create_canonical_map_period_dict()}),
+            ("invalid cannot have both canonical and time_ranges included",
+             {"time_ranges": {"start": "2025-01-03T03:03:03.3", "stop": "2025-01-04T03:03:03.3"}}),
             ("invalid must include either time ranges or canonical map period", {}),
             ("invalid map_data_type", {"map_data_type": "Directions", **create_canonical_map_period_dict()}),
 
@@ -344,8 +347,6 @@ class TestConfiguration(TestCase):
                 date_range = input_config.get_map_date_ranges()
 
                 self.assertEqual(expected, date_range)
-
-
 
 
 class TestCanonicalMapPeriod(TestCase):

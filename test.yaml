@@ -1,0 +1,19 @@
+canonical_map_period:
+  year: 2025
+  quarter: 2
+  map_period: 6
+  number_of_maps: 1
+
+instrument: Ultra 45
+
+spin_phase: ram
+reference_frame_type: spacecraft
+survival_corrected: false
+spice_frame_name: hae
+pixelation_scheme: square
+pixel_parameter: 2
+map_data_type: ENA Intensity
+# lo_species: h
+# output_directory: path/to/output
+# quantity_suffix: custom
+# kernel_path: path/to/kernel

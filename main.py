@@ -1,14 +1,13 @@
 import logging
 
 from mapping_tool.cli import do_mapping_tool
+
 logger = logging.getLogger(__name__)
 
 import argparse
 from pathlib import Path
 
 from mapping_tool.configuration import Configuration
-
-
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()

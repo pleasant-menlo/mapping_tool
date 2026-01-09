@@ -69,6 +69,7 @@ def parse_yaml_no_datetime_conversion(text: str) -> dict:
 
     return yaml.load(text, Loader=NoDatesSafeLoader)
 
+
 @dataclass(frozen=True)
 class Configuration:
     raw_config: str
@@ -84,9 +85,8 @@ class Configuration:
     time_ranges: Optional[list[TimeRange]] = None
     kernel_path: Path = None
     lo_species: Optional[str] = None
-    output_directory: Optional[Path] = Path('.')
+    output_directory: Optional[Path] = None
     quantity_suffix: str = ""
-
 
     @classmethod
     def from_file(cls, config_path: Path) -> Configuration:
@@ -199,6 +199,3 @@ class Configuration:
         else:
             self.time_ranges.sort(key=lambda time_range: time_range.start)
             return [(time_range.start, time_range.end) for time_range in self.time_ranges]
-
-
-

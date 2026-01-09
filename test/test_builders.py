@@ -2,7 +2,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Dict, Optional, Literal
 
-from imap_processing.ena_maps.utils.naming import MappableInstrumentShortName, MapDescriptor
+from imap_processing.ena_maps.utils.naming import MappableInstrumentShortName
 from imap_processing.spice.geometry import SpiceFrame
 
 from mapping_tool.configuration import Configuration, CanonicalMapPeriod
@@ -56,9 +56,9 @@ def create_configuration(
         pixel_parameter: int = 4,
         map_data_type: str = "ENA Intensity",
         lo_species: str = "h",
-        output_directory: Path = Path("."),
+        output_directory: Path = None,
         kernel_path: Optional[Path] = None,
-        time_ranges = None
+        time_ranges=None
 ):
     if canonical_map_period is None and time_ranges is None:
         canonical_map_period = canonical_map_period if canonical_map_period is not None else create_canonical_map_period()
@@ -81,9 +81,10 @@ def create_configuration(
         time_ranges=time_ranges
     )
 
+
 def create_canonical_map_period_dict():
     return {
-        "canonical_map_period":{
+        "canonical_map_period": {
             "year": 2025,
             "quarter": 1,
             "map_period": 6,
