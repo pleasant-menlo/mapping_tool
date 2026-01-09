@@ -36,6 +36,8 @@ def cleanup_l2_l3_dependencies(descriptor: MappingToolDescriptor):
 
 
 def do_mapping_tool(config: Configuration):
+    print(f"Start of mapping tool: {imap_data_access.config}")
+
     map_date_ranges = config.get_map_date_ranges()
     descriptor = config.get_map_descriptor()
 

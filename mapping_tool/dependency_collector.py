@@ -94,9 +94,13 @@ class DependencyCollector:
     def collect_spice_kernels(self) -> list[str]:
         file_names = []
         auth_headers = {"Authorization": f"Bearer {imap_data_access.config['ACCESS_TOKEN']}"}
-        for kernel_type in ["leapseconds", "spacecraft_clock", "pointing_attitude", "imap_frames", "science_frames", "planetary_ephemeris", "ephemeris_reconstructed", "planetary_constants"]:
+        print("IMAP Data Access url:", imap_data_access.config['DATA_ACCESS_URL'])
+        for kernel_type in ["leapseconds", "spacecraft_clock", "pointing_attitude", "imap_frames", "science_frames",
+                            "planetary_ephemeris", "ephemeris_reconstructed", "planetary_constants"]:
+            kernel_url = imap_data_access.config["DATA_ACCESS_URL"] + f"/spice-query?type={kernel_type}&start_time=0"
+            print(f"Querying for spice kernel at {kernel_url}")
             response = requests.get(
-                imap_data_access.config["DATA_ACCESS_URL"] + f"/spice-query?type={kernel_type}&start_time=0",
+                kernel_url,
                 headers=auth_headers
             )
             response.raise_for_status()
