@@ -187,16 +187,20 @@ class TestGenerateMap(unittest.TestCase):
         ultra_descriptor = create_map_descriptor(instrument=MappableInstrumentShortName.ULTRA,
                                                  kernel_path=Path('custom/kernel/path'))
 
+        spx_descriptor = create_map_descriptor(principal_data="spx", spectral_index_energy_step_range="0207")
+
         cases = [
-            (hi_descriptor, mock_hi),
-            (lo_descriptor, mock_lo),
-            (ultra_descriptor, mock_ultra),
+            (hi_descriptor, mock_hi, hi_descriptor.to_string()),
+            (lo_descriptor, mock_lo, lo_descriptor.to_string()),
+            (ultra_descriptor, mock_ultra, ultra_descriptor.to_string()),
+            (spx_descriptor, mock_hi, "h90-spx0207CUSTOM-h-sf-sp-ram-hae-2deg-6mo"),
+            # do we want CUSTOM passed to L3 processor?
         ]
 
         start_date = datetime(2020, 1, 1)
         end_date = datetime(2020, 1, 2)
 
-        for descriptor, mock_processor in cases:
+        for descriptor, mock_processor, expected_descriptor_string in cases:
             mock_download.reset_mock()
             mock_furnsh.reset_mock()
             with self.subTest(descriptor.to_string()):
@@ -234,7 +238,7 @@ class TestGenerateMap(unittest.TestCase):
                     start_date=start_date,
                     end_date=end_date,
                     version='v000',
-                    descriptor=descriptor.to_string(),
+                    descriptor=expected_descriptor_string,
                 )
 
                 actual_processing_input_collection, actual_input_metadata = mock_processor.call_args.args
