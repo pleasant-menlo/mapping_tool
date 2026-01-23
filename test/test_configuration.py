@@ -103,7 +103,8 @@ class TestConfiguration(TestCase):
                     output_directory=Path('path/to/output'),
                     quantity_suffix="custom",
                     kernel_path=Path("path/to/kernel"),
-                    ultra_energy_bin_group_edges="0,4,8,12,16,20,24,28,32,36,40,44,46"
+                    ultra_energy_bin_group_edges="0,4,8,12,16,20,24,28,32,36,40,44,46",
+                    spectral_index_energy_step_range=(1, 4)
                 )
 
                 self.assertEqual(expected_config, config)
@@ -138,7 +139,14 @@ class TestConfiguration(TestCase):
     @patch("mapping_tool.configuration.parse_yaml_no_datetime_conversion")
     def test_from_file_fails_validation_with_invalid_config(self, mock_parse):
         validation_error_cases = [
+            ("invalid spectral_index_energy_step_range type",
+             {"spectral_index_energy_step_range": "2.2-15.5", **create_canonical_map_period_dict()}),
+            ("invalid spectral_index_energy_step_range size",
+             {"spectral_index_energy_step_range": "1-259", **create_canonical_map_period_dict()}),
+            ("invalid ultra_energy_bin_group_edges",
+             {"ultra_energy_bin_group_edges": "2.1,4,7,9,9.6", **create_canonical_map_period_dict()}),
             ("invalid instrument", {"instrument": "90", **create_canonical_map_period_dict()}),
+            ("invalid quantity_suffix", {"quantity_suffix": "123 abc 10 ???", **create_canonical_map_period_dict()}),
             ("invalid spin phase", {"spin_phase": "none", **create_canonical_map_period_dict()}),
             ("invalid reference frame",
              {"reference_frame_type": "spacecraft kinematic", **create_canonical_map_period_dict()}),
@@ -147,8 +155,7 @@ class TestConfiguration(TestCase):
             ("invalid cannot have both canonical and time_ranges included",
              {"time_ranges": {"start": "2025-01-03T03:03:03.3", "stop": "2025-01-04T03:03:03.3"}}),
             ("invalid must include either time ranges or canonical map period", {}),
-            ("invalid map_data_type", {"map_data_type": "Directions", **create_canonical_map_period_dict()}),
-
+            ("invalid map_data_type", {"map_data_type": "Directions", **create_canonical_map_period_dict()})
         ]
         for name, case in validation_error_cases:
             with self.subTest(name):
@@ -280,6 +287,19 @@ class TestConfiguration(TestCase):
                 self.assertEqual(instrument, descriptor.instrument)
                 self.assertEqual(sensor, descriptor.sensor)
                 self.assertEqual(instrument_descriptor, descriptor.instrument_descriptor)
+
+    def test_get_map_descriptors_spectral_index_energy_step_range(self):
+        cases = [
+            (None, ""),
+            ((2, 4), "0204"),
+            ((30, 50), "3050"),
+        ]
+
+        for case, expected_text in cases:
+            with self.subTest(case):
+                input_config = create_configuration(spectral_index_energy_step_range=case)
+                descriptor = input_config.get_map_descriptor()
+                self.assertEqual(expected_text, descriptor.spectral_index_energy_step_range)
 
     def test_get_map_date_ranges_when_config_has_date_ranges(self):
         start_1 = create_utc_datetime()

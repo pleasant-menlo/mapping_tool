@@ -54,11 +54,14 @@ map_data_type: ENA Intensity
 #lo_species: h
 
 ## Optional text suffix to be added to the map data type in the descriptor of the output file.
-quantity_suffix: suffix
+#quantity_suffix: suffix
 
 ## Optional path to a SPICE kernel file to be included in map generation. Used in conjunction with the "spice_frame_name" to allow for custom frame definitions.
 #kernel_path: ./spice_kernel.tf
 
-## Optional configuration for Ultra coarse energy bins
-# TODO: explain once final format decided
-ultra_energy_bin_group_edges: 0,4,8,12,16,20,24,28,32,36,40,44,46
+## Optional custom mapping of Ultra fine energy bins to coarse energy bins.
+# For example, `0,4,8` means fine energy bins 0-3 become the first coarse bin and 4-7 become the second coarse bin.
+#ultra_energy_bin_group_edges: 0,4,8,12,16,20,24,28,32,36,40,44,46
+
+## Optional choice of energy bins to use for spectral index calculation. The range includes both ends, and indices start at 1: "1-4" means the lowest 4 energy bins.
+#spectral_index_energy_step_range: 1-4

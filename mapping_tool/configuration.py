@@ -88,6 +88,7 @@ class Configuration:
     lo_species: Optional[str] = None
     output_directory: Optional[Path] = None
     quantity_suffix: str = ""
+    spectral_index_energy_step_range: Optional[tuple[int, int]] = None
 
     @classmethod
     def from_file(cls, config_path: Path) -> Configuration:
@@ -128,6 +129,9 @@ class Configuration:
             config["output_directory"] = Path(config["output_directory"])
         if config.get("kernel_path") is not None:
             config["kernel_path"] = Path(config["kernel_path"])
+        if config.get("spectral_index_energy_step_range") is not None:
+            low, high = config.get("spectral_index_energy_step_range").split("-")
+            config["spectral_index_energy_step_range"] = (int(low), int(high))
         return cls(raw_yaml, **config)
 
     @classmethod
@@ -163,6 +167,11 @@ class Configuration:
         resolution = f"{self.pixel_parameter}deg" if self.pixelation_scheme.lower() == "square" else f"nside{self.pixel_parameter}"
         duration = "0mo" if self.canonical_map_period is None else str(self.canonical_map_period.map_period) + "mo"
 
+        spectral_index_energy_step_range = ""
+        if self.spectral_index_energy_step_range is not None:
+            start_bin, end_bin = self.spectral_index_energy_step_range
+            spectral_index_energy_step_range = f"{start_bin:02}{end_bin:02}"
+
         instrument, sensor = self.parse_instrument(self.instrument)
 
         if self.kernel_path is None:
@@ -191,7 +200,8 @@ class Configuration:
             spin_phase=spin_phase[self.spin_phase.lower()],
             coordinate_system=coordinate_system,
             spice_frame=spice_frame,
-            kernel_path=self.kernel_path
+            kernel_path=self.kernel_path,
+            spectral_index_energy_step_range=spectral_index_energy_step_range
         )
 
     def get_map_date_ranges(self) -> list[tuple[datetime, datetime]]:

@@ -9,11 +9,14 @@ class TestMappingToolDescriptor(TestCase):
         descriptor_default = create_map_descriptor()
         descriptor_with_suffix = create_map_descriptor(quantity_suffix="NotDefault")
         descriptor_with_custom_range = create_map_descriptor(duration="0mo")
+        descriptor_with_spectral_index_energy_range = create_map_descriptor(principal_data="spx",
+                                                                            spectral_index_energy_step_range="0104")
 
         cases = [
             (descriptor_default, "h90-enaCUSTOM-h-sf-sp-ram-hae-2deg-6mo-mapper"),
             (descriptor_with_suffix, "h90-enaNotDefault-h-sf-sp-ram-hae-2deg-6mo-mapper"),
-            (descriptor_with_custom_range, "h90-enaCUSTOM-h-sf-sp-ram-hae-2deg-custom-mapper")
+            (descriptor_with_custom_range, "h90-enaCUSTOM-h-sf-sp-ram-hae-2deg-custom-mapper"),
+            (descriptor_with_spectral_index_energy_range, "h90-spx0104CUSTOM-h-sf-sp-ram-hae-2deg-6mo-mapper")
         ]
 
         for descriptor, expected_string in cases:

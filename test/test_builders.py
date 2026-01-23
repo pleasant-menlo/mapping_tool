@@ -22,7 +22,8 @@ def create_map_descriptor(
         coordinate_system: str = "hae",
         quantity_suffix: str = "CUSTOM",
         spice_frame: SpiceFrame = SpiceFrame.ECLIPJ2000,
-        kernel_path: Optional[Path] = None
+        kernel_path: Optional[Path] = None,
+        spectral_index_energy_step_range: str = ""
 ):
     return MappingToolDescriptor(
         frame_descriptor=frame_descriptor,
@@ -37,7 +38,8 @@ def create_map_descriptor(
         coordinate_system=coordinate_system,
         quantity_suffix=quantity_suffix,
         spice_frame=spice_frame,
-        kernel_path=kernel_path
+        kernel_path=kernel_path,
+        spectral_index_energy_step_range=spectral_index_energy_step_range
     )
 
 
@@ -58,7 +60,8 @@ def create_configuration(
         lo_species: str = "h",
         output_directory: Path = None,
         kernel_path: Optional[Path] = None,
-        time_ranges=None
+        time_ranges=None,
+        spectral_index_energy_step_range=None,
 ):
     if canonical_map_period is None and time_ranges is None:
         canonical_map_period = canonical_map_period if canonical_map_period is not None else create_canonical_map_period()
@@ -78,7 +81,8 @@ def create_configuration(
         lo_species=lo_species,
         output_directory=output_directory,
         kernel_path=kernel_path,
-        time_ranges=time_ranges
+        time_ranges=time_ranges,
+        spectral_index_energy_step_range=spectral_index_energy_step_range
     )
 
 

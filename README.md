@@ -116,7 +116,11 @@ corresponding values are:
   spice_frame_name" to allow for custom frame definitions.
 
 * `ultra_energy_bin_group_edges` - List of indices to define mapping of Ultra fine energy bins to coarse energy bins.
-    * For example, 0,4,8 means fine energy bins 0-3 become the first coarse bin and 4-7 become the second coarse bin.
+    * For example, `0,4,8` means fine energy bins 0-3 become the first coarse bin and 4-7 become the second coarse bin.
+
+* `spectral_index_energy_step_range` - Optional choice of energy bin indices to use for spectral index calculation. The
+  range includes both ends, and indices start at 1.
+    * For example, `1-4` means the lowest 4 energy bins.
 
 ### Troubleshooting
 

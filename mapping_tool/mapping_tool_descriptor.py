@@ -14,6 +14,7 @@ class CustomSpiceFrame:
 @dataclass
 class MappingToolDescriptor(MapDescriptor):
     quantity_suffix: str = ""
+    spectral_index_energy_step_range: str = ""
     spice_frame: SpiceFrame | CustomSpiceFrame = SpiceFrame.ECLIPJ2000
     kernel_path: Optional[Path] = None
 
@@ -27,7 +28,7 @@ class MappingToolDescriptor(MapDescriptor):
         return "-".join(
             [
                 self.instrument_descriptor,
-                self.principal_data + self.quantity_suffix,
+                self.principal_data + self.spectral_index_energy_step_range + self.quantity_suffix,
                 self.species,
                 self.frame_descriptor,
                 self.survival_corrected,
@@ -50,4 +51,3 @@ class MappingToolDescriptor(MapDescriptor):
                 return f"survival-probability-{self.instrument.name.lower()[:2]}"
         elif query_type == "l1c":
             pass
-
