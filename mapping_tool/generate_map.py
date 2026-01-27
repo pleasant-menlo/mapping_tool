@@ -154,7 +154,7 @@ def generate_l3_map(dependency_collector: DependencyCollector, input_maps: list[
     try:
         processed_files = processor.process(dependency_collector.descriptor.spice_frame)
     except Exception as e:
-        note = f"Processing for {dependency_collector.descriptor.to_string()} failed"
+        note = f"Processing for {dependency_collector.descriptor.to_l3_input_string()} failed"
         if hasattr(e, "add_note"):
             e.add_note(note)
         else:

@@ -317,7 +317,7 @@ class TestGenerateMap(unittest.TestCase):
             logger = logging.getLogger('generate_l2_map')
             with self.assertLogs(logger, logging.ERROR) as log_context:
                 generate_l3_map(mock_dependency_collector, [])
-        self.assertIn(f"Processing for {hi_descriptor.to_string()} failed",
+        self.assertIn(f"Processing for {hi_descriptor.to_l3_input_string()} failed",
                       str(e.exception.__notes__))
 
     @patch("mapping_tool.generate_map.spiceypy")
