@@ -130,7 +130,7 @@ def generate_l3_map(dependency_collector: DependencyCollector, input_maps: list[
         start_date=dependency_collector.start_date,
         end_date=dependency_collector.end_date,
         version='v000',
-        descriptor=dependency_collector.descriptor.to_string(),
+        descriptor=dependency_collector.descriptor.to_l3_input_string(),
     )
 
     spice_kernel_paths = dependency_collector.collect_spice_kernels()

@@ -40,6 +40,21 @@ class MappingToolDescriptor(MapDescriptor):
             ]
         )
 
+    def to_l3_input_string(self):
+        return "-".join(
+            [
+                self.instrument_descriptor,
+                self.principal_data + self.spectral_index_energy_step_range + self.quantity_suffix,
+                self.species,
+                self.frame_descriptor,
+                self.survival_corrected,
+                self.spin_phase,
+                self.coordinate_system,
+                self.resolution_str,
+                str(self.duration)
+            ]
+        )
+
     def get_descriptor_for_query(self, query_type=None, sensor=None):
         if query_type == "glows":
             if self.instrument == MappableInstrumentShortName.HI:

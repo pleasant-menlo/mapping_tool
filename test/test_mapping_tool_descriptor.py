@@ -24,6 +24,25 @@ class TestMappingToolDescriptor(TestCase):
                 actual_string = descriptor.to_mapping_tool_string()
                 self.assertEqual(expected_string, actual_string)
 
+    def test_to_l3_input_string(self):
+        descriptor_default = create_map_descriptor()
+        descriptor_with_suffix = create_map_descriptor(quantity_suffix="NotDefault")
+        descriptor_with_custom_range = create_map_descriptor(duration="0mo")
+        descriptor_with_spectral_index_energy_range = create_map_descriptor(principal_data="spx",
+                                                                            spectral_index_energy_step_range="0104")
+
+        cases = [
+            (descriptor_default, "h90-enaCUSTOM-h-sf-sp-ram-hae-2deg-6mo"),
+            (descriptor_with_suffix, "h90-enaNotDefault-h-sf-sp-ram-hae-2deg-6mo"),
+            (descriptor_with_custom_range, "h90-enaCUSTOM-h-sf-sp-ram-hae-2deg-0mo"),
+            (descriptor_with_spectral_index_energy_range, "h90-spx0104CUSTOM-h-sf-sp-ram-hae-2deg-6mo")
+        ]
+
+        for descriptor, expected_string in cases:
+            with self.subTest(descriptor):
+                actual_string = descriptor.to_l3_input_string()
+                self.assertEqual(expected_string, actual_string)
+
     def test_mapping_tool_descriptor_to_string(self):
         mapping_tool_descriptor = create_map_descriptor(quantity_suffix="suffix")
 
