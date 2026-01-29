@@ -1,6 +1,11 @@
+[build-system]
+requires = ["hatchling", "uv-dynamic-versioning"]
+build-backend = "hatchling.build"
+
 [project]
 name = "mapping-tool"
-version = "0.2.2"
+#version = "0.2.2"
+dynamic = ["version"]
 description = "Command line tool for generating skymaps for IMAP"
 readme = "README.md"
 requires-python = ">=3.10"
@@ -12,6 +17,12 @@ dependencies = [
     "pyyaml>=6.0.2",
 ]
 
+[tool.hatch.version]
+source = "uv-dynamic-versioning"
+
+[tool.uv-dynamic-versioning]
+fallback-version = "0.2.2"
+
 [tool.uv.sources]
 imap-l3-processing = { git = "https://github.com/IMAP-Science-Operations-Center/imap_L3_processing" }
 imap-processing = { git = "https://github.com/IMAP-Science-Operations-Center/imap_processing" }
@@ -19,8 +30,3 @@ imap-processing = { git = "https://github.com/IMAP-Science-Operations-Center/ima
 [tool.setuptools]
 py-modules = ["mapping_tool"]
 
-[tool.hatch]
-
-[build-system]
-requires = ["hatchling"]
-build-backend = "hatchling.build"
