@@ -4,7 +4,6 @@ build-backend = "hatchling.build"
 
 [project]
 name = "mapping-tool"
-#version = "0.2.2"
 dynamic = ["version"]
 description = "Command line tool for generating skymaps for IMAP"
 readme = "README.md"
@@ -15,13 +14,15 @@ dependencies = [
     "imap-processing>=1.0.0",
     "jsonschema>=4.25.0",
     "pyyaml>=6.0.2",
+    "hatchling",
+    "uv-dynamic-versioning"
 ]
 
 [tool.hatch.version]
 source = "uv-dynamic-versioning"
 
 [tool.uv-dynamic-versioning]
-fallback-version = "0.2.2"
+fallback-version = "unknown"
 
 [tool.uv.sources]
 imap-l3-processing = { git = "https://github.com/IMAP-Science-Operations-Center/imap_L3_processing" }
