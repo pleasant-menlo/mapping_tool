@@ -155,7 +155,8 @@ class Configuration:
 
         principal_data = {
             "ENA Intensity": "ena",
-            "Spectral Index": "spx"
+            "Spectral Index": "spx",
+            "Spectral Index NBS": "spxnbs"
         }
 
         spin_phase = {

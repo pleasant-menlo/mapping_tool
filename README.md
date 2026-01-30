@@ -102,8 +102,8 @@ corresponding values are:
   for HEALPix maps.
 
 
-* `map_data_type` - The primary map data type. Valid parameters are `ENA Intensity` or `Spectral Index`.
-
+* `map_data_type` - The primary map data type. Valid parameters are `ENA Intensity`, `Spectral Index`, or
+  `Spectral Index NBS`.
 
 * `lo_species` - The species used to create the map. Optional property, which only applies to IMAP-Lo maps. Valid
   parameters are `h` or `o`.

@@ -46,7 +46,7 @@ pixelation_scheme: square
 pixel_parameter: 2
 
 ## The primary map data type
-# Valid parameters are "ENA Intensity" or "Spectral Index"
+# Valid parameters are "ENA Intensity", "Spectral Index", or "Spectral Index NBS"
 map_data_type: ENA Intensity
 
 ## The species used to create the map. Optional property, which only applies to IMAP-Lo maps.

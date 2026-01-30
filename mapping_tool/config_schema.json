@@ -131,9 +131,10 @@
       "type": "string",
       "enum": [
         "ENA Intensity",
-        "Spectral Index"
+        "Spectral Index",
+        "Spectral Index NBS"
       ],
-      "description": "The primary data product (ENA Intensity or Spectral Index)"
+      "description": "The primary data product (ENA Intensity, Spectral Index, or Spectral Index NBS)."
     },
     "lo_species": {
       "type": "string",
