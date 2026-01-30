@@ -22,7 +22,7 @@ dependencies = [
 source = "uv-dynamic-versioning"
 
 [tool.uv-dynamic-versioning]
-fallback-version = "unknown"
+fallback-version = "0.0.0"
 
 [tool.uv.sources]
 imap-l3-processing = { git = "https://github.com/IMAP-Science-Operations-Center/imap_L3_processing" }

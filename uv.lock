@@ -715,12 +715,13 @@ wheels = [
 
 [[package]]
 name = "imap-l3-processing"
-version = "2025.12.2"
-source = { git = "https://github.com/IMAP-Science-Operations-Center/imap_L3_processing#fe0ca205c077949f8de5410e077e3a7a1d3529f8" }
+version = "1.0.0.post2.dev0+17d6360e"
+source = { git = "https://github.com/IMAP-Science-Operations-Center/imap_L3_processing#17d6360ec69cc857648fc8c52240cb75cd0d2029" }
 dependencies = [
     { name = "astropy" },
     { name = "astropy-healpix" },
     { name = "bitstring" },
+    { name = "hatchling" },
     { name = "imap-data-access" },
     { name = "imap-processing" },
     { name = "lmfit" },
@@ -738,13 +739,14 @@ dependencies = [
     { name = "spacepy" },
     { name = "spiceypy" },
     { name = "uncertainties" },
+    { name = "uv-dynamic-versioning" },
     { name = "xarray" },
 ]
 
 [[package]]
 name = "imap-processing"
-version = "1.0.14.post5.dev0+176a6df8"
-source = { git = "https://github.com/IMAP-Science-Operations-Center/imap_processing#176a6df886c01a5141a42500b738d8726e856d41" }
+version = "1.0.14.post18.dev0+bca1f0a1"
+source = { git = "https://github.com/IMAP-Science-Operations-Center/imap_processing#bca1f0a1e6e7fa205bde8168544fe9bf38568ac9" }
 dependencies = [
     { name = "astropy-healpix" },
     { name = "cdflib" },
