@@ -83,6 +83,7 @@ class DependencyCollector:
             descriptor=self.descriptor.get_descriptor_for_query("glows"),
             start_date=self.start_date.strftime("%Y%m%d"),
             end_date=self.end_date.strftime("%Y%m%d"),
+            version="latest"
         )
 
         return [ScienceInput(Path(f["file_path"]).name) for f in psets]

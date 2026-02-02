@@ -563,6 +563,7 @@ class TestDependencyCollector(unittest.TestCase):
                         descriptor=expected_glows_descriptor,
                         start_date="20250101",
                         end_date="20250201",
+                        version='latest'
                     )
 
                     expected_inputs = [
