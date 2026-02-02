@@ -11,6 +11,7 @@ from imap_data_access.processing_input import AncillaryInput, ScienceInput
 from mapping_tool.dependency_collector import DependencyCollector
 from test import test_helpers
 from test.test_builders import create_map_descriptor
+from spacepy.pycdf import CDF
 
 
 class TestDependencyCollector(unittest.TestCase):
@@ -237,10 +238,13 @@ class TestDependencyCollector(unittest.TestCase):
 
                 mock_query.assert_called_with(table="ancillary", instrument="hi")
                 expected_ancillary_dependencies = [AncillaryInput(f"imap_hi_{sensor}sensor-cal-prod_20240101_v002.csv"),
-                                                   AncillaryInput(f"imap_hi_{sensor}sensor-esa-energies_20240101_v002.csv"),
-                                                   AncillaryInput(f"imap_hi_{sensor}sensor-esa-eta-fit-factors_20240101_v002.csv")]
+                                                   AncillaryInput(
+                                                       f"imap_hi_{sensor}sensor-esa-energies_20240101_v002.csv"),
+                                                   AncillaryInput(
+                                                       f"imap_hi_{sensor}sensor-esa-eta-fit-factors_20240101_v002.csv")]
 
-                test_helpers.assert_imap_processing_inputs_match(expected_ancillary_dependencies, ancillary_dependencies)
+                test_helpers.assert_imap_processing_inputs_match(expected_ancillary_dependencies,
+                                                                 ancillary_dependencies)
 
     @patch('mapping_tool.dependency_collector.imap_data_access.query')
     def test_get_ancillary_dependencies_finds_nearest_files_to_map_end_date(self, mock_query):
@@ -277,12 +281,18 @@ class TestDependencyCollector(unittest.TestCase):
     @patch('mapping_tool.dependency_collector.imap_data_access.query')
     def test_get_ancillary_dependencies_correctly_filters_ancillary_inputs(self, mock_query):
         cases = [
-            (create_map_descriptor(instrument=MappableInstrumentShortName.HI, sensor="90", survival_corrected="nsp"), ["90sensor-cal-prod", "90sensor-esa-energies", "90sensor-esa-eta-fit-factors"]),
-            (create_map_descriptor(instrument=MappableInstrumentShortName.HI, sensor="45", survival_corrected="nsp"), ["45sensor-cal-prod", "45sensor-esa-energies", "45sensor-esa-eta-fit-factors"]),
-            (create_map_descriptor(instrument=MappableInstrumentShortName.LO, survival_corrected="nsp"), ["esa-eta-fit-factors"]),
-            (create_map_descriptor(instrument=MappableInstrumentShortName.ULTRA, principal_data="spx", sensor="combined"), ["ulc-spx-energy-ranges"]),
-            (create_map_descriptor(instrument=MappableInstrumentShortName.ULTRA, principal_data="spx", sensor="45"), ["ulc-spx-energy-ranges"]),
-            (create_map_descriptor(instrument=MappableInstrumentShortName.ULTRA, principal_data="ena"), ["l2-energy-bin-group-sizes"]),
+            (create_map_descriptor(instrument=MappableInstrumentShortName.HI, sensor="90", survival_corrected="nsp"),
+             ["90sensor-cal-prod", "90sensor-esa-energies", "90sensor-esa-eta-fit-factors"]),
+            (create_map_descriptor(instrument=MappableInstrumentShortName.HI, sensor="45", survival_corrected="nsp"),
+             ["45sensor-cal-prod", "45sensor-esa-energies", "45sensor-esa-eta-fit-factors"]),
+            (create_map_descriptor(instrument=MappableInstrumentShortName.LO, survival_corrected="nsp"),
+             ["esa-eta-fit-factors"]),
+            (create_map_descriptor(instrument=MappableInstrumentShortName.ULTRA, principal_data="spx",
+                                   sensor="combined"), ["ulc-spx-energy-ranges"]),
+            (create_map_descriptor(instrument=MappableInstrumentShortName.ULTRA, principal_data="spx", sensor="45"),
+             ["ulc-spx-energy-ranges"]),
+            (create_map_descriptor(instrument=MappableInstrumentShortName.ULTRA, principal_data="ena"),
+             ["l2-energy-bin-group-sizes"]),
             (create_map_descriptor(instrument=MappableInstrumentShortName.LO, survival_corrected="sp"), [])
         ]
 
@@ -367,7 +377,8 @@ class TestDependencyCollector(unittest.TestCase):
                 self.assertTrue(ultra_dep.is_file())
                 self.assertEqual("0,10,20,40", ultra_dep.read_text())
                 mock_query.assert_called_once_with(table="ancillary", instrument="ultra")
-                expected_ancillary_dependencies = [AncillaryInput("imap_ultra_l2-energy-bin-group-sizes_20250924_v000.csv")]
+                expected_ancillary_dependencies = [
+                    AncillaryInput("imap_ultra_l2-energy-bin-group-sizes_20250924_v000.csv")]
                 test_helpers.assert_imap_processing_inputs_match(expected_ancillary_dependencies,
                                                                  ancillary_dependencies)
         finally:
@@ -507,35 +518,60 @@ class TestDependencyCollector(unittest.TestCase):
 
     @patch('mapping_tool.dependency_collector.imap_data_access.query')
     def test_get_sp_dependencies(self, mock_query):
+        hi90_descriptor = create_map_descriptor(instrument=MappableInstrumentShortName.HI, sensor="90", )
+        hi45_descriptor = create_map_descriptor(instrument=MappableInstrumentShortName.HI, sensor="45", )
+        ultra_sf_descriptor = create_map_descriptor(instrument=MappableInstrumentShortName.ULTRA, sensor="90",
+                                                    frame_descriptor="sf")
+        ultra_hf_descriptor = create_map_descriptor(instrument=MappableInstrumentShortName.ULTRA, sensor="90",
+                                                    frame_descriptor="hf")
+        lo_descriptor = create_map_descriptor(instrument=MappableInstrumentShortName.LO)
 
-        start_date = datetime(2025, 1, 1)
-        end_date = datetime(2025, 2, 1)
-        input_maps = [Path(test_helpers.get_test_cdf_file_path() / "l2_ena-few-parents_20250115.cdf")]
-
-        mock_query.return_value = [{"file_path": "imap_glows_l3e_hi-90-pset_20250101_v000.cdf"}]
-
-        descriptor = create_map_descriptor(
-            instrument=MappableInstrumentShortName.HI,
-            sensor="90",
-        )
-
-        dependency_collector = DependencyCollector(descriptor, start_date=start_date, end_date=end_date)
-        sp_deps = dependency_collector.get_survival_probability_dependencies(input_maps)
-
-        mock_query.assert_called_once_with(
-            instrument="glows",
-            descriptor="survival-probability-hi-90",
-            start_date="20250101",
-            end_date="20250201",
-        )
-
-        expected_inputs = [
-            ScienceInput("imap_glows_l3e_hi-90-pset_20250101_v000.cdf"),
-            ScienceInput("imap_hi_l1c_90sensor-pset_20250615_v001.cdf"),
-            ScienceInput("imap_hi_l1c_90sensor-pset_20250616_v001.cdf")
+        test_cases = [
+            (hi90_descriptor, "hi", "survival-probability-hi-90"),
+            (hi45_descriptor, "hi", "survival-probability-hi-45"),
+            (ultra_sf_descriptor, "ultra", "survival-probability-ul-sf"),
+            (ultra_hf_descriptor, "ultra", "survival-probability-ul-hf"),
+            (lo_descriptor, "lo", "survival-probability-lo")
         ]
 
-        test_helpers.assert_imap_processing_inputs_match(expected_inputs, sp_deps, any_order=True)
+        for descriptor, instrument_name, expected_glows_descriptor in test_cases:
+            mock_query.reset_mock()
+
+            with self.subTest(str(descriptor)):
+                start_date = datetime(2025, 1, 1)
+                end_date = datetime(2025, 2, 1)
+
+                with tempfile.TemporaryDirectory() as tmpdir:
+                    tmpdir = Path(tmpdir)
+
+                    input_l2_path = tmpdir / f'imap_{instrument_name}_l2_map_20250101_v000.cdf'
+
+                    with CDF(str(input_l2_path), masterpath="") as cdf:
+                        cdf.attrs["Parents"] = [
+                            f"imap_{instrument_name}_l1c_pset_20250615_v001.cdf",
+                            f"imap_{instrument_name}_l1c_pset_20250616_v001.cdf"
+                        ]
+
+                    mock_query.return_value = [
+                        {"file_path": f"imap_glows_l3e_{expected_glows_descriptor}_20250101_v000.cdf"}]
+
+                    dependency_collector = DependencyCollector(descriptor, start_date=start_date, end_date=end_date)
+                    sp_deps = dependency_collector.get_survival_probability_dependencies([input_l2_path])
+
+                    mock_query.assert_called_once_with(
+                        instrument="glows",
+                        descriptor=expected_glows_descriptor,
+                        start_date="20250101",
+                        end_date="20250201",
+                    )
+
+                    expected_inputs = [
+                        ScienceInput(f"imap_glows_l3e_{expected_glows_descriptor}_20250101_v000.cdf"),
+                        ScienceInput(f"imap_{instrument_name}_l1c_pset_20250615_v001.cdf"),
+                        ScienceInput(f"imap_{instrument_name}_l1c_pset_20250616_v001.cdf")
+                    ]
+
+                    test_helpers.assert_imap_processing_inputs_match(expected_inputs, sp_deps, any_order=True)
 
     def test_get_sp_deps_returns_empty_list_if_descriptor_is_nsp(self):
         nsp_map_descriptor = create_map_descriptor(survival_corrected="nsp")

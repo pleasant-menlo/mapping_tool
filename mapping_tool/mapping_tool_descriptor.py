@@ -62,6 +62,11 @@ class MappingToolDescriptor(MapDescriptor):
                     return "survival-probability-hi-45"
                 elif self.sensor == "90":
                     return "survival-probability-hi-90"
+            elif self.instrument == MappableInstrumentShortName.ULTRA:
+                if self.frame_descriptor == 'hf':
+                    return "survival-probability-ul-hf"
+                if self.frame_descriptor == 'sf':
+                    return "survival-probability-ul-sf"
             else:
                 return f"survival-probability-{self.instrument.name.lower()[:2]}"
         elif query_type == "l1c":
