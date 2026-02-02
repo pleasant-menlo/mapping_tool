@@ -78,6 +78,8 @@ def get_dependencies_for_lo_l3_map(map_descriptor: MappingToolDescriptor) -> lis
     match map_descriptor:
         case MapDescriptor(principal_data="spx"):
             return [replace(map_descriptor, principal_data="ena")]
+        case MapDescriptor(principal_data="spxnbs"):
+            return [replace(map_descriptor, principal_data="enanbs")]
         case MapDescriptor(survival_corrected="sp"):
             return [replace(map_descriptor, survival_corrected="nsp")]
         case _:
@@ -87,7 +89,8 @@ def get_dependencies_for_lo_l3_map(map_descriptor: MappingToolDescriptor) -> lis
 def get_data_level_for_descriptor(descriptor: MappingToolDescriptor):
     if descriptor.instrument == MappableInstrumentShortName.GLOWS or descriptor.instrument == MappableInstrumentShortName.IDEX:
         return DataLevel.NA
-    elif descriptor.survival_corrected == "sp" or "combined" == descriptor.sensor or descriptor.principal_data == "spx":
+    elif descriptor.survival_corrected == "sp" or "combined" == descriptor.sensor or descriptor.principal_data in (
+    "spx", "spxnbs"):
         return DataLevel.L3
     else:
         return DataLevel.L2

@@ -179,7 +179,8 @@ class TestConfiguration(TestCase):
     def test_get_map_descriptors_principal_data(self):
         cases = [
             ("ENA Intensity", "ena", DataLevel.L2),
-            ("Spectral Index", "spx", DataLevel.L3)
+            ("Spectral Index", "spx", DataLevel.L3),
+            ("Spectral Index NBS", "spxnbs", DataLevel.L3),
         ]
 
         for case, expected_descriptor, expected_data_level in cases:
