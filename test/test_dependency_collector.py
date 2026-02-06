@@ -13,6 +13,8 @@ from test import test_helpers
 from test.test_builders import create_map_descriptor
 from spacepy.pycdf import CDF
 
+from test.test_helpers import get_test_cdf_file_path
+
 
 class TestDependencyCollector(unittest.TestCase):
     @patch('mapping_tool.dependency_collector.imap_data_access.query')
@@ -169,7 +171,7 @@ class TestDependencyCollector(unittest.TestCase):
         self.assertEqual(expected_pointing_sets, pointing_sets)
 
     @patch('mapping_tool.dependency_collector.imap_data_access.query')
-    def test_get_files_returns_latest_file_versions(self, mock_query):
+    def test_get_pointing_sets_returns_latest_file_versions(self, mock_query):
         mock_query.side_effect = [
             [{"file_path": "imap_hi_l1c_45sensor-pset_20260101_v001.cdf", "version": "v001", "start_date": "20260101"},
              {"file_path": "imap_hi_l1c_45sensor-pset_20260101_v002.cdf", "version": "v002", "start_date": "20260101"},
@@ -574,12 +576,104 @@ class TestDependencyCollector(unittest.TestCase):
 
                     test_helpers.assert_imap_processing_inputs_match(expected_inputs, sp_deps, any_order=True)
 
-    def test_get_sp_deps_returns_empty_list_if_descriptor_is_nsp(self):
-        nsp_map_descriptor = create_map_descriptor(survival_corrected="nsp")
+    @patch('mapping_tool.dependency_collector.imap_data_access.query')
+    def test_get_sp_dependencies_for_ultra_nsp_combined(self, mock_query):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            tmpdir = Path(tmpdir)
+
+            input_l2_45_path = tmpdir / f'imap_ultra_l2_map45_20250101_v000.cdf'
+            with CDF(str(input_l2_45_path), masterpath="") as cdf:
+                cdf.attrs["Parents"] = [
+                    f"imap_ultra_l1c_45pset_20250615_v001.cdf",
+                    f"imap_ultra_l1c_45pset_20250616_v001.cdf"
+                ]
+
+            input_l2_90_path = tmpdir / f'imap_ultra_l2_map90_20250101_v000.cdf'
+            with CDF(str(input_l2_90_path), masterpath="") as cdf:
+                cdf.attrs["Parents"] = [
+                    f"imap_ultra_l1c_90pset_20250615_v001.cdf",
+                    f"imap_ultra_l1c_90pset_20250616_v001.cdf"
+                ]
+
+            dependency_collector = DependencyCollector(
+                create_map_descriptor(instrument=MappableInstrumentShortName.ULTRA, sensor="combined",
+                                      survival_corrected="nsp"),
+                datetime(2026, 2, 6),
+                datetime(2026, 2, 7),
+            )
+
+            sp_deps = dependency_collector.get_survival_probability_dependencies([
+                input_l2_45_path,
+                input_l2_90_path,
+            ])
+
+            expected_inputs = [
+                ScienceInput(f"imap_ultra_l1c_45pset_20250615_v001.cdf"),
+                ScienceInput(f"imap_ultra_l1c_45pset_20250616_v001.cdf"),
+                ScienceInput(f"imap_ultra_l1c_90pset_20250615_v001.cdf"),
+                ScienceInput(f"imap_ultra_l1c_90pset_20250616_v001.cdf"),
+            ]
+
+            test_helpers.assert_imap_processing_inputs_match(expected_inputs, sp_deps, any_order=True)
+
+    def test_get_sp_deps_returns_empty_list_for_hi_combined_nsp(self):
+        nsp_map_descriptor = create_map_descriptor(
+            instrument=MappableInstrumentShortName.HI,
+            sensor="combined",
+            survival_corrected="nsp",
+        )
 
         dependency_collector = DependencyCollector(nsp_map_descriptor, Mock(), Mock())
-        sp_deps = dependency_collector.get_survival_probability_dependencies([])
+        sp_deps = dependency_collector.get_survival_probability_dependencies(
+            [get_test_cdf_file_path() / "l2_ena_20250115.cdf"])
         self.assertEqual([], sp_deps)
+
+    def test_get_sp_deps_returns_empty_list_for_spx_maps(self):
+        hi_spx_sp_descriptor = create_map_descriptor(
+            instrument=MappableInstrumentShortName.HI,
+            sensor="combined",
+            principal_data='spx'
+        )
+
+        lo_spx_sp_descriptor = create_map_descriptor(
+            instrument=MappableInstrumentShortName.LO,
+            principal_data='spx'
+        )
+
+        lo_spxnbs_sp_descriptor = create_map_descriptor(
+            instrument=MappableInstrumentShortName.LO,
+            principal_data='spxnbs'
+        )
+
+        hi_spx_descriptor = create_map_descriptor(
+            instrument=MappableInstrumentShortName.HI,
+            sensor="combined",
+            survival_corrected="nsp",
+            principal_data='spx'
+        )
+
+        lo_spx_descriptor = create_map_descriptor(
+            instrument=MappableInstrumentShortName.LO,
+            survival_corrected="nsp",
+            principal_data='spx'
+        )
+
+        ultra_spx_descriptor = create_map_descriptor(
+            instrument=MappableInstrumentShortName.ULTRA,
+            survival_corrected="nsp",
+            principal_data='spx'
+        )
+
+        cases = [('hi', hi_spx_descriptor), ('lo', lo_spx_descriptor), ('hi sp', hi_spx_sp_descriptor),
+                 ('lo sp', lo_spx_sp_descriptor), ('lo spxnbs', lo_spxnbs_sp_descriptor),
+                 ('ultra', ultra_spx_descriptor)]
+
+        for case, descriptor in cases:
+            with self.subTest(case):
+                dependency_collector = DependencyCollector(descriptor, Mock(), Mock())
+                sp_deps = dependency_collector.get_survival_probability_dependencies(
+                    [get_test_cdf_file_path() / "l2_ena_20250115.cdf"])
+                self.assertEqual([], sp_deps)
 
     @patch('mapping_tool.dependency_collector.requests')
     def test_raises_error_if_http_request_fails(self, mock_requests):

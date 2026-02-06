@@ -90,7 +90,7 @@ def get_data_level_for_descriptor(descriptor: MappingToolDescriptor):
     if descriptor.instrument == MappableInstrumentShortName.GLOWS or descriptor.instrument == MappableInstrumentShortName.IDEX:
         return DataLevel.NA
     elif descriptor.survival_corrected == "sp" or "combined" == descriptor.sensor or descriptor.principal_data in (
-    "spx", "spxnbs"):
+            "spx", "spxnbs"):
         return DataLevel.L3
     else:
         return DataLevel.L2
