@@ -1,0 +1,14 @@
+# yaml-language-server: $schema=../mapping_tool/config_schema.json
+# Docs: ../README.md
+
+time_ranges:
+  - start: 2025-11-01
+    end: 2025-11-27
+instrument: Lo
+spin_phase: anti-ram
+reference_frame_type: spacecraft
+survival_corrected: false
+spice_frame_name: hae
+pixelation_scheme: square
+pixel_parameter: 4
+map_data_type: Spectral Index NBS

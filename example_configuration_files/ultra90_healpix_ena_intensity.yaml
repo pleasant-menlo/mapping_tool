@@ -3,15 +3,14 @@
 
 canonical_map_period:
   year: 2025
-  quarter: 2
-  map_period: 3
+  quarter: 4
+  map_period: 1
   number_of_maps: 1
 instrument: Ultra 90
 spin_phase: full spin
 reference_frame_type: spacecraft
-survival_corrected: true
+survival_corrected: false
 spice_frame_name: hae
 pixelation_scheme: healpix  # Specifies that the map should be projected into HEALPix
 pixel_parameter: 16         # Specifies HEALPix NSide
-map_data_type: Spectral Index
-quantity_suffix: ultra90spx
+map_data_type: ENA Intensity
