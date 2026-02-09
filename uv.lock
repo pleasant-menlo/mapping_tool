@@ -715,8 +715,8 @@ wheels = [
 
 [[package]]
 name = "imap-l3-processing"
-version = "1.0.0.post2.dev0+17d6360e"
-source = { git = "https://github.com/IMAP-Science-Operations-Center/imap_L3_processing#17d6360ec69cc857648fc8c52240cb75cd0d2029" }
+version = "1.0.1"
+source = { git = "https://github.com/IMAP-Science-Operations-Center/imap_L3_processing#1a467833724db38a531e1870f60dfaa40a9b22fb" }
 dependencies = [
     { name = "astropy" },
     { name = "astropy-healpix" },
@@ -745,8 +745,8 @@ dependencies = [
 
 [[package]]
 name = "imap-processing"
-version = "1.0.15"
-source = { git = "https://github.com/IMAP-Science-Operations-Center/imap_processing#b5d6ea3cb83161c473061bd47deb8083678dc927" }
+version = "1.0.17"
+source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "astropy-healpix" },
     { name = "cdflib" },
@@ -759,6 +759,10 @@ dependencies = [
     { name = "space-packet-parser" },
     { name = "spiceypy" },
     { name = "xarray" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/d2/49/3586e6b6feab50b017aa25e4792bfd1c82987f59dbceb18904af9401506f/imap_processing-1.0.17.tar.gz", hash = "sha256:066c6aeb1214a74f40837f18b59ae9df893aaaa3c3b602cdd94dd94502812a04", size = 960911, upload-time = "2026-02-09T16:32:55.182Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/cf/ae/c12fbece1ece2f867f8f9c041b0f5336acd389161eaae4be296ec274c334/imap_processing-1.0.17-py3-none-any.whl", hash = "sha256:7c95ee06d8fc5124c4f6b5d3116952070af67e5976491830094005ec5a75781a", size = 1098497, upload-time = "2026-02-09T16:32:52.648Z" },
 ]
 
 [[package]]
@@ -1077,7 +1081,7 @@ requires-dist = [
     { name = "argparse", specifier = ">=1.4.0" },
     { name = "hatchling" },
     { name = "imap-l3-processing", git = "https://github.com/IMAP-Science-Operations-Center/imap_L3_processing" },
-    { name = "imap-processing", git = "https://github.com/IMAP-Science-Operations-Center/imap_processing" },
+    { name = "imap-processing", specifier = ">=1.0.17" },
     { name = "jsonschema", specifier = ">=4.25.0" },
     { name = "pyyaml", specifier = ">=6.0.2" },
     { name = "uv-dynamic-versioning" },
