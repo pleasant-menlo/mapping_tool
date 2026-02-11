@@ -65,7 +65,17 @@ class DependencyCollector:
         return [Path(pset['file_path']).name for pset in files]
 
     def get_survival_probability_dependencies(self, input_maps: list[Path]) -> list[ScienceInput]:
-        if self.descriptor.survival_corrected == "nsp":
+        hi_nsp_combined = (
+                self.descriptor.instrument == MappableInstrumentShortName.HI
+                and self.descriptor.sensor == 'combined'
+                and self.descriptor.survival_corrected == 'nsp'
+        )
+        spectral_index = (
+                'spx' in self.descriptor.principal_data
+        )
+        not_requiring_pointing_sets = hi_nsp_combined or spectral_index
+
+        if not_requiring_pointing_sets:
             return []
 
         l1c_parent_names = set()

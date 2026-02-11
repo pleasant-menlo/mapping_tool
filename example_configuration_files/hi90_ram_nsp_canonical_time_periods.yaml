@@ -3,15 +3,14 @@
 
 canonical_map_period:
   year: 2025            # The year corresponding to the first map
-  quarter: 2            # The quarter corresponding to the first map
-  map_period: 3         # The map period for each map in months (e.g. 3, 6, 12)
+  quarter: 4            # The quarter corresponding to the first map
+  map_period: 1         # The map period for each map in months (e.g. 3, 6, 12)
   number_of_maps: 1     # The number of maps to be calculated for the output CDF file
 instrument: Hi 90
 spin_phase: ram
 reference_frame_type: spacecraft
-survival_corrected: true
+survival_corrected: false
 spice_frame_name: hae
 pixelation_scheme: square
 pixel_parameter: 2
 map_data_type: ENA Intensity
-quantity_suffix: hi90ena
