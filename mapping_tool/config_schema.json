@@ -178,7 +178,8 @@
     "spice_frame_name",
     "pixelation_scheme",
     "pixel_parameter",
-    "map_data_type"
+    "map_data_type",
+    "output_directory"
   ],
   "oneOf": [
     {

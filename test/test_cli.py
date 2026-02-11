@@ -29,114 +29,103 @@ class TestCli(unittest.TestCase):
     @patch('mapping_tool.cli.sort_cdfs_by_epoch')
     def test_do_mapping_tool(self, mock_sort_cdfs_by_epoch, mock_cleanup, mock_dependency_collector,
                              mock_generate_map, mock_copy_file, mock_cdf, mock_print):
-        test_cases = [
-            (None, Path('.')),
-            (Path("some/output/path"), Path("some/output/path"))
+        self.assertTrue(hasattr(cli, "logger"))
+        cli.logger.info = Mock()
+
+        mock_configuration = Mock()
+
+        hi_descriptor = create_map_descriptor(instrument=MappableInstrumentShortName.HI, sensor="90",
+                                              quantity_suffix="TEST")
+
+        mock_configuration.get_map_descriptor.return_value = hi_descriptor
+        mock_configuration.raw_config = "config: something \n another_thing: something_2"
+
+        generated_cdf_path_1 = Path('path/to/cdf/imap_hi_l3_h90-ena-h-sf-sp-ram-hae-2deg-6mo_20250101_v000.cdf')
+        generated_cdf_path_2 = Path('path/to/cdf/imap_hi_l3_h90-ena-h-sf-sp-ram-hae-2deg-6mo_20260101_v000.cdf')
+        mock_sort_cdfs_by_epoch.return_value = [generated_cdf_path_1, generated_cdf_path_2]
+
+        mock_dependency_collector.side_effect = [
+            sentinel.dependency_collector_1,
+            sentinel.dependency_collector_2,
         ]
 
-        for configured_output_path, expected_output_path in test_cases:
-            mock_sort_cdfs_by_epoch.reset_mock()
-            mock_cleanup.reset_mock()
-            mock_generate_map.reset_mock()
-            mock_cdf.reset_mock()
-            mock_print.reset_mock()
+        mock_generate_map.side_effect = [
+            generated_cdf_path_1,
+            generated_cdf_path_2,
+        ]
 
-            with self.subTest(configured_output_path=configured_output_path):
-                self.assertTrue(hasattr(cli, "logger"))
-                cli.logger.info = Mock()
+        map_date_ranges = [
+            (datetime(2025, 1, 1, tzinfo=timezone.utc), datetime(2026, 1, 1, tzinfo=timezone.utc)),
+            (datetime(2026, 1, 1, tzinfo=timezone.utc), datetime(2027, 1, 1, tzinfo=timezone.utc))
+        ]
 
-                mock_configuration = Mock()
+        mock_configuration.get_map_date_ranges.return_value = map_date_ranges
+        mock_configuration.output_directory = Path("some/output/path")
+        mock_configuration.quantity_suffix = "TEST"
+        mock_configuration.ultra_energy_bin_group_edges = sentinel.ultra_energy_bin_group_edges
 
-                hi_descriptor = create_map_descriptor(instrument=MappableInstrumentShortName.HI, sensor="90",
-                                                      quantity_suffix="TEST")
+        mock_cdf_file_1 = MagicMock()
+        mock_cdf_file_2 = MagicMock()
+        mock_cdf.return_value.__enter__.side_effect = [mock_cdf_file_1, mock_cdf_file_2]
 
-                mock_configuration.get_map_descriptor.return_value = hi_descriptor
-                mock_configuration.raw_config = "config: something \n another_thing: something_2"
+        mock_cdf_file_1.attrs = {
+            "Logical_source": "old logical source",
+            "Logical_file_id": "old logical file_id",
+            "Data_type": f"L3_{hi_descriptor.to_string()}>other_stuff",
+        }
 
-                generated_cdf_path_1 = Path('path/to/cdf/imap_hi_l3_h90-ena-h-sf-sp-ram-hae-2deg-6mo_20250101_v000.cdf')
-                generated_cdf_path_2 = Path('path/to/cdf/imap_hi_l3_h90-ena-h-sf-sp-ram-hae-2deg-6mo_20260101_v000.cdf')
-                mock_sort_cdfs_by_epoch.return_value = [generated_cdf_path_1, generated_cdf_path_2]
+        mock_cdf_file_2.attrs = {
+            "Logical_source": "old logical source",
+            "Logical_file_id": "old logical file_id",
+            "Data_type": f"L3_{hi_descriptor.to_string()}>more_other_stuff",
+        }
 
-                mock_dependency_collector.side_effect = [
-                    sentinel.dependency_collector_1,
-                    sentinel.dependency_collector_2,
-                ]
+        do_mapping_tool(mock_configuration)
 
-                mock_generate_map.side_effect = [
-                    generated_cdf_path_1,
-                    generated_cdf_path_2,
-                ]
+        self.assertEqual(2, mock_configuration.get_map_descriptor.call_count)
+        mock_configuration.get_map_date_ranges.assert_called_once()
+        mock_sort_cdfs_by_epoch.assert_called_once_with([generated_cdf_path_1, generated_cdf_path_2])
 
-                map_date_ranges = [
-                    (datetime(2025, 1, 1, tzinfo=timezone.utc), datetime(2026, 1, 1, tzinfo=timezone.utc)),
-                    (datetime(2026, 1, 1, tzinfo=timezone.utc), datetime(2027, 1, 1, tzinfo=timezone.utc))
-                ]
+        output_map_path = str(
+            Path("some/output/path") / 'imap_hi_l3_h90-enaTEST-h-sf-sp-ram-hae-2deg-6mo-mapper_20250101_v000.cdf')
+        mock_cdf.assert_has_calls([
+            call(output_map_path, str(generated_cdf_path_1), readonly=False),
+            call().__enter__(),
+            call(str(generated_cdf_path_2)),
+            call().__enter__(),
+            call().__exit__(None, None, None),
+            call().__exit__(None, None, None)
+        ])
+        self.assertEqual(2, mock_cdf.call_count)
 
-                mock_configuration.get_map_date_ranges.return_value = map_date_ranges
-                mock_configuration.output_directory = configured_output_path
-                mock_configuration.quantity_suffix = "TEST"
-                mock_configuration.ultra_energy_bin_group_edges = sentinel.ultra_energy_bin_group_edges
+        cli.logger.info.assert_has_calls([
+            call('Generating map: h90-enaTEST-h-sf-sp-ram-hae-2deg-6mo-mapper 2025-01-01 to 2026-01-01'),
+            call('Generating map: h90-enaTEST-h-sf-sp-ram-hae-2deg-6mo-mapper 2026-01-01 to 2027-01-01'),
+        ])
 
-                mock_cdf_file_1 = MagicMock()
-                mock_cdf_file_2 = MagicMock()
-                mock_cdf.return_value.__enter__.side_effect = [mock_cdf_file_1, mock_cdf_file_2]
+        mock_dependency_collector.assert_has_calls([
+            call(hi_descriptor, map_date_ranges[0][0], map_date_ranges[0][1],
+                 sentinel.ultra_energy_bin_group_edges),
+            call(hi_descriptor, map_date_ranges[1][0], map_date_ranges[1][1],
+                 sentinel.ultra_energy_bin_group_edges),
+        ])
 
-                mock_cdf_file_1.attrs = {
-                    "Logical_source": "old logical source",
-                    "Logical_file_id": "old logical file_id",
-                    "Data_type": f"L3_{hi_descriptor.to_string()}>other_stuff",
-                }
+        mock_generate_map.assert_has_calls([
+            call(sentinel.dependency_collector_1),
+            call(sentinel.dependency_collector_2),
+        ])
 
-                mock_cdf_file_2.attrs = {
-                    "Logical_source": "old logical source",
-                    "Logical_file_id": "old logical file_id",
-                    "Data_type": f"L3_{hi_descriptor.to_string()}>more_other_stuff",
-                }
+        self.assertEqual('h90-enaTEST-h-sf-sp-ram-hae-2deg-6mo-mapper', mock_cdf_file_1.attrs["Logical_source"])
+        self.assertEqual(mock_configuration.raw_config, mock_cdf_file_1.attrs.get("Mapper_tool_configuration"))
+        self.assertEqual('imap_hi_l3_h90-enaTEST-h-sf-sp-ram-hae-2deg-6mo-mapper_20250101_v000',
+                         mock_cdf_file_1.attrs["Logical_file_id"])
+        self.assertEqual('L3_h90-enaTEST-h-sf-sp-ram-hae-2deg-6mo-mapper>other_stuff',
+                         mock_cdf_file_1.attrs["Data_type"])
 
-                do_mapping_tool(mock_configuration)
-
-                self.assertEqual(2, mock_configuration.get_map_descriptor.call_count)
-                mock_configuration.get_map_date_ranges.assert_called_once()
-                mock_sort_cdfs_by_epoch.assert_called_once_with([generated_cdf_path_1, generated_cdf_path_2])
-
-                output_map_path = str(
-                    expected_output_path / 'imap_hi_l3_h90-enaTEST-h-sf-sp-ram-hae-2deg-6mo-mapper_20250101_v000.cdf')
-                mock_cdf.assert_has_calls([
-                    call(output_map_path, str(generated_cdf_path_1), readonly=False),
-                    call().__enter__(),
-                    call(str(generated_cdf_path_2)),
-                    call().__enter__(),
-                    call().__exit__(None, None, None),
-                    call().__exit__(None, None, None)
-                ])
-                self.assertEqual(2, mock_cdf.call_count)
-
-                cli.logger.info.assert_has_calls([
-                    call('Generating map: h90-enaTEST-h-sf-sp-ram-hae-2deg-6mo-mapper 2025-01-01 to 2026-01-01'),
-                    call('Generating map: h90-enaTEST-h-sf-sp-ram-hae-2deg-6mo-mapper 2026-01-01 to 2027-01-01'),
-                ])
-
-                mock_dependency_collector.assert_has_calls([
-                    call(hi_descriptor, map_date_ranges[0][0], map_date_ranges[0][1], sentinel.ultra_energy_bin_group_edges),
-                    call(hi_descriptor, map_date_ranges[1][0], map_date_ranges[1][1], sentinel.ultra_energy_bin_group_edges),
-                ])
-
-                mock_generate_map.assert_has_calls([
-                    call(sentinel.dependency_collector_1),
-                    call(sentinel.dependency_collector_2),
-                ])
-
-                self.assertEqual('h90-enaTEST-h-sf-sp-ram-hae-2deg-6mo-mapper', mock_cdf_file_1.attrs["Logical_source"])
-                self.assertEqual(mock_configuration.raw_config, mock_cdf_file_1.attrs.get("Mapper_tool_configuration"))
-                self.assertEqual('imap_hi_l3_h90-enaTEST-h-sf-sp-ram-hae-2deg-6mo-mapper_20250101_v000',
-                                 mock_cdf_file_1.attrs["Logical_file_id"])
-                self.assertEqual('L3_h90-enaTEST-h-sf-sp-ram-hae-2deg-6mo-mapper>other_stuff',
-                                 mock_cdf_file_1.attrs["Data_type"])
-
-                mock_cleanup.assert_called_once_with(hi_descriptor)
-                mock_print.assert_has_calls([
-                    call(f"Created file {output_map_path}")
-                ])
+        mock_cleanup.assert_called_once_with(hi_descriptor)
+        mock_print.assert_has_calls([
+            call(f"Created file {output_map_path}")
+        ])
 
     @patch('mapping_tool.cli.generate_map')
     def test_ena_maps_with_multiple_date_ranges_are_concatenated_into_a_single_cdf_file(self, mock_generate_map):

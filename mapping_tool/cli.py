@@ -48,7 +48,7 @@ def do_mapping_tool(config: Configuration):
     try:
         first_start_date = map_date_ranges[0][0]
         output_filename = get_output_filename(descriptor, first_start_date)
-        output_directory = config.output_directory or Path('.')
+        output_directory = config.output_directory
         final_output_path = output_directory / output_filename
         if final_output_path.exists():
             print(f"Skipping generation of map: {output_filename}, because it already exists!")

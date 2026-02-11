@@ -58,7 +58,7 @@ def create_configuration(
         pixel_parameter: int = 4,
         map_data_type: str = "ENA Intensity",
         lo_species: str = "h",
-        output_directory: Path = None,
+        output_directory: Path = Path.home() / "Documents" / "Tests",
         kernel_path: Optional[Path] = None,
         time_ranges=None,
         spectral_index_energy_step_range=None,
@@ -107,7 +107,8 @@ def create_config_dict(args: Dict):
         "pixelation_scheme": "square",
         "pixel_parameter": 2,
         "map_data_type": "ENA Intensity",
-        "lo_species": "h"
+        "lo_species": "h",
+        "output_directory": "path/to/output",
     }
     config.update(args)
 

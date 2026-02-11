@@ -37,7 +37,7 @@ class TestConfiguration(TestCase):
                     pixel_parameter=2,
                     map_data_type="ENA Intensity",
                     lo_species=None,
-                    output_directory=None,
+                    output_directory=Path("path/to/output"),
                     quantity_suffix="",
                     kernel_path=Path("path/to/another_kernel"),
                     ultra_energy_bin_group_edges=None,
@@ -68,10 +68,10 @@ class TestConfiguration(TestCase):
                     pixel_parameter=2,
                     map_data_type="ENA Intensity",
                     lo_species=None,
-                    output_directory=None,
+                    output_directory=Path("path/to/output"),
                     quantity_suffix="",
                     kernel_path=Path("path/to/another_kernel"),
-                    raw_config=yaml.dump(yaml.safe_load(example_config_path.read_text()))
+                    raw_config=yaml.dump(yaml.safe_load(example_config_path.read_text())),
                 )
 
                 self.assertEqual(expected_config, config)
@@ -132,6 +132,7 @@ class TestConfiguration(TestCase):
                     "pixel_parameter": 2,
                     "map_data_type": "ENA Intensity",
                     "kernel_path": Path("path/to/another_kernel"),
+                    "output_directory": Path("path/to/output")
                 }
 
                 mock_validate.assert_called_with(expected_config, config_schema.schema)
@@ -155,11 +156,32 @@ class TestConfiguration(TestCase):
             ("invalid cannot have both canonical and time_ranges included",
              {"time_ranges": {"start": "2025-01-03T03:03:03.3", "stop": "2025-01-04T03:03:03.3"}}),
             ("invalid must include either time ranges or canonical map period", {}),
-            ("invalid map_data_type", {"map_data_type": "Directions", **create_canonical_map_period_dict()})
+            ("invalid map_data_type", {"map_data_type": "Directions", **create_canonical_map_period_dict()}),
         ]
         for name, case in validation_error_cases:
             with self.subTest(name):
                 mock_parse.return_value = create_config_dict(case)
+                with self.assertRaises(jsonschema.exceptions.ValidationError):
+                    Configuration.from_file(get_example_config_path() / "test_l2_config.json")
+
+    @patch("mapping_tool.configuration.parse_yaml_no_datetime_conversion")
+    def test_from_file_fails_validation_when_missing_required_fields(self, mock_parse):
+        validation_error_cases = [
+            "instrument",
+            "spin_phase",
+            "reference_frame_type",
+            "survival_corrected",
+            "spice_frame_name",
+            "pixelation_scheme",
+            "pixel_parameter",
+            "map_data_type",
+            "output_directory"
+        ]
+        for field in validation_error_cases:
+            with self.subTest(field):
+                config = create_config_dict(create_canonical_map_period_dict())
+                del config[field]
+                mock_parse.return_value = config
                 with self.assertRaises(jsonschema.exceptions.ValidationError):
                     Configuration.from_file(get_example_config_path() / "test_l2_config.json")
 

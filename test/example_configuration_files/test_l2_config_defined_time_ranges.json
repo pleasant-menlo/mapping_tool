@@ -17,5 +17,6 @@
   "pixelation_scheme": "square",
   "pixel_parameter": 2,
   "map_data_type": "ENA Intensity",
-  "kernel_path": "path/to/another_kernel"
+  "kernel_path": "path/to/another_kernel",
+  "output_directory": "path/to/output"
 }
