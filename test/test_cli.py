@@ -285,10 +285,11 @@ class TestCli(unittest.TestCase):
                 tmpdir) / f"imap_hi_l2_{config.get_map_descriptor().to_mapping_tool_string()}_20250101_v000.cdf"
             existing_file.write_text("text")
 
-            do_mapping_tool(config)
+            output_file = do_mapping_tool(config)
 
             mock_generate_map.assert_not_called()
             self.assertEqual("text", existing_file.read_text())
+            self.assertEqual(existing_file, output_file)
 
     @patch("mapping_tool.cli.generate_map")
     @patch("mapping_tool.cli.save_output_cdf")

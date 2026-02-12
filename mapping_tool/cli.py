@@ -52,7 +52,7 @@ def do_mapping_tool(config: Configuration):
         final_output_path = output_directory / output_filename
         if final_output_path.exists():
             print(f"Skipping generation of map: {output_filename}, because it already exists!")
-            return
+            return final_output_path
 
         output_map_paths = []
         for i, (start_date, end_date) in enumerate(map_date_ranges, start=1):
