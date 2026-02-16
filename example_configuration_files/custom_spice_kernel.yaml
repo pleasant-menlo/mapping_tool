@@ -14,3 +14,4 @@ pixel_parameter: 2
 map_data_type: ENA Intensity
 quantity_suffix: customkernel
 kernel_path: ./spice_kernel.tf # References a SPICE kernel in the current directory called "spice_kernel.tf" that contains the "CUSTOM_FRAME" frame
+output_directory: C:\Users\Harrison\Documents\CAVA Mapping Tool

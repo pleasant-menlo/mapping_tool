@@ -71,6 +71,7 @@ corresponding values are:
 
 * `survival_corrected` - Boolean value indicating whether the map should be survival-probability corrected.
 
+* `output_directory` - Directory where output maps should be saved.
 
 * `spice_frame_name` - The SPICE frame to be used for the map projection. Some frames (e.g. "hae") are defined by the
   mission and can be used without supplying a custom spice kernel.

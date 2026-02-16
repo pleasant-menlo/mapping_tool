@@ -14,3 +14,4 @@ spice_frame_name: hae
 pixelation_scheme: healpix  # Specifies that the map should be projected into HEALPix
 pixel_parameter: 16         # Specifies HEALPix NSide
 map_data_type: ENA Intensity
+output_directory: C:\Users\Harrison\Documents\CAVA Mapping Tool

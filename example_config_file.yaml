@@ -49,6 +49,9 @@ pixel_parameter: 2
 # Valid parameters are "ENA Intensity", "Spectral Index", or "Spectral Index NBS"
 map_data_type: ENA Intensity
 
+## The directory to save output maps
+output_directory: C:\Users\Joanie\Documents\CustomMaps
+
 ## The species used to create the map. Optional property, which only applies to IMAP-Lo maps.
 # Valid parameters are "h" or "o"
 #lo_species: h
