@@ -83,16 +83,14 @@ corresponding values are:
     * Full names for IMAP frames, such as:
         - J2000
         - ECLIPJ2000
-        - ITRF93
-        - IMAP_EARTHFIXED
-        - IMAP_ECLIPDATE
         - IMAP_HCI
         - IMAP_HAE
         - IMAP_HEE
         - IMAP_HRE
         - IMAP_HNU
         - IMAP_GCS
-        - See this [IMAP science frames kernel](https://api.imap-mission.com/download/imap/spice/fk/imap_science_110.tf)
+        - IMAP_HRC
+        - See this [IMAP science frames kernel](https://api.imap-mission.com/download/imap/spice/fk/imap_science_120.tf)
           for a full list and more information about each frame.
 
 * `pixelation_scheme` - The pixelation scheme to be used for map generation. Valid options are "square" or "healpix".
