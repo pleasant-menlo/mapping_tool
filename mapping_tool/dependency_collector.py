@@ -6,12 +6,28 @@ from typing import Optional
 from spacepy.pycdf import CDF
 
 import imap_data_access
-import requests
+from imap_l3_processing.utils import (
+    furnish_spice_metakernel,
+    get_spice_kernels_file_names,
+    FurnishMetakernelOutput,
+    SpiceKernelTypes,
+)
 from imap_processing.ena_maps.utils.naming import MappableInstrumentShortName, MapDescriptor
 from imap_data_access.processing_input import AncillaryInput, ScienceInput
 from imap_data_access.file_validation import AncillaryFilePath
 
 from mapping_tool.mapping_tool_descriptor import MappingToolDescriptor
+
+MAPPING_TOOL_KERNEL_TYPES = [
+    SpiceKernelTypes.Leapseconds,
+    SpiceKernelTypes.SpacecraftClock,
+    SpiceKernelTypes.PointingAttitude,
+    SpiceKernelTypes.IMAPFrames,
+    SpiceKernelTypes.ScienceFrames,
+    SpiceKernelTypes.PlanetaryEphemeris,
+    SpiceKernelTypes.EphemerisReconstructed,
+    SpiceKernelTypes.PlanetaryConstants,
+]
 
 
 class DependencyCollector:
@@ -103,25 +119,21 @@ class DependencyCollector:
         with CDF(str(input_map)) as cdf:
             return set(parent for parent in cdf.attrs["Parents"] if "l1c" in parent)
 
-    def collect_spice_kernels(self) -> list[str]:
-        file_names = []
-        auth_headers = {"Authorization": f"Bearer {imap_data_access.config['ACCESS_TOKEN']}"}
-        for kernel_type in ["leapseconds", "spacecraft_clock", "pointing_attitude", "imap_frames", "science_frames",
-                            "planetary_ephemeris", "ephemeris_reconstructed", "planetary_constants"]:
-            response = requests.get(
-                imap_data_access.config["DATA_ACCESS_URL"] + f"/spice-query?type={kernel_type}&start_time=0",
-                headers=auth_headers
+    def furnish_spice_kernels(self) -> FurnishMetakernelOutput:
+        return furnish_spice_metakernel(
+            self.start_date.replace(tzinfo=None),
+            self.end_date.replace(tzinfo=None),
+            MAPPING_TOOL_KERNEL_TYPES,
+        )
+
+    def get_spice_kernel_names(self) -> list[str]:
+        return [
+            Path(name).name for name in get_spice_kernels_file_names(
+                self.start_date.replace(tzinfo=None),
+                self.end_date.replace(tzinfo=None),
+                MAPPING_TOOL_KERNEL_TYPES,
             )
-            response.raise_for_status()
-            file_json = response.json()
-            for spice_file in file_json:
-                spice_start_date = datetime.strptime(spice_file["min_date_datetime"], "%Y-%m-%d, %H:%M:%S")
-                spice_start_date = spice_start_date.replace(tzinfo=timezone.utc)
-                spice_end_date = datetime.strptime(spice_file["max_date_datetime"], "%Y-%m-%d, %H:%M:%S")
-                spice_end_date = spice_end_date.replace(tzinfo=timezone.utc)
-                if spice_start_date <= self.end_date and self.start_date < spice_end_date:
-                    file_names.append(Path(spice_file["file_name"]).name)
-        return file_names
+        ]
 
     def _filter_ancillary_dependencies(self, files: list[dict[str, str]]) -> list[
         dict[str, str]]:

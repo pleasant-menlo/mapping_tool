@@ -104,17 +104,16 @@ def generate_map(dependency_collector: DependencyCollector) -> Path:
     logger.info("preparing to generate map %s", descriptor.to_mapping_tool_string())
     data_level = get_data_level_for_descriptor(descriptor)
     if data_level == DataLevel.L2:
-        logger.info("generating l2 map %s", descriptor.to_mapping_tool_string())
+        print(f"Generating L2 map {descriptor.to_mapping_tool_string()}")
         return generate_l2_map(dependency_collector)
     elif data_level == DataLevel.L3:
         map_deps = []
         deps = get_dependencies_for_l3_map(descriptor)
         logger.info("identified dependencies %s", deps)
         for dependency in deps:
-            print(f"Generating intermediate map {dependency.to_mapping_tool_string()}")
             dependency_collector_for_intermediate_map = DependencyCollector(dependency, start, end)
             map_deps.append(generate_map(dependency_collector_for_intermediate_map))
-        logger.info("generating l3 map %s", descriptor.to_mapping_tool_string())
+        print(f"Generating L3 map {descriptor.to_mapping_tool_string()}")
         return generate_l3_map(dependency_collector, map_deps)
     else:
         raise ValueError(f"Cannot produce map for instrument: {descriptor.instrument_descriptor}")
@@ -136,12 +135,9 @@ def generate_l3_map(dependency_collector: DependencyCollector, input_maps: list[
         descriptor=dependency_collector.descriptor.to_l3_input_string(),
     )
 
-    spice_kernel_paths = dependency_collector.collect_spice_kernels()
+    dependency_collector.furnish_spice_kernels()
     sp_inputs = dependency_collector.get_survival_probability_dependencies(input_maps)
     ancillary_inputs = dependency_collector.get_ancillary_dependencies()
-    for kernel in spice_kernel_paths:
-        kernel_path = imap_data_access.download(kernel)
-        spiceypy.furnsh(str(kernel_path))
     if dependency_collector.descriptor.kernel_path is not None:
         spiceypy.furnsh(str(dependency_collector.descriptor.kernel_path))
 
@@ -149,6 +145,7 @@ def generate_l3_map(dependency_collector: DependencyCollector, input_maps: list[
                                                             *sp_inputs,
                                                             *ancillary_inputs)
 
+    print(f"Processing {dependency_collector.descriptor.instrument.name.capitalize()} L3 map...")
     processor = processor_class(
         processing_input_collection,
         input_metadata
@@ -176,7 +173,7 @@ def generate_l2_map(dependency_collector: DependencyCollector) -> Path:
     descriptor = dependency_collector.descriptor
     start_date = dependency_collector.start_date
     end_date = dependency_collector.end_date
-    spice_kernel_names = dependency_collector.collect_spice_kernels()
+    spice_kernel_names = dependency_collector.get_spice_kernel_names()
 
     map_details = f'{descriptor.to_string()} {start_date.strftime("%Y-%m-%d")} to {end_date.strftime("%Y-%m-%d")}'
     psets = dependency_collector.get_pointing_sets()
@@ -186,6 +183,7 @@ def generate_l2_map(dependency_collector: DependencyCollector) -> Path:
         print(f"\rDownloading psets {i}/{len(psets)}... ", end="")
         sys.stdout.flush()
         imap_data_access.download(pset)
+    print()
 
     ancillary_inputs = dependency_collector.get_ancillary_dependencies()
 

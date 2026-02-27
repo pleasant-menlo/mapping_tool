@@ -5,10 +5,11 @@ from pathlib import Path
 from unittest.mock import patch, call, Mock
 
 import imap_data_access
-from imap_processing.ena_maps.utils.naming import MapDescriptor, MappableInstrumentShortName
+from imap_processing.ena_maps.utils.naming import MappableInstrumentShortName
 from imap_data_access.processing_input import AncillaryInput, ScienceInput
 
-from mapping_tool.dependency_collector import DependencyCollector
+from imap_l3_processing.utils import FurnishMetakernelOutput
+from mapping_tool.dependency_collector import DependencyCollector, MAPPING_TOOL_KERNEL_TYPES
 from test import test_helpers
 from test.test_builders import create_map_descriptor
 from spacepy.pycdf import CDF
@@ -386,137 +387,6 @@ class TestDependencyCollector(unittest.TestCase):
         finally:
             imap_data_access.config["DATA_DIR"] = original_imap_data_dir
 
-    @patch('mapping_tool.dependency_collector.requests')
-    def test_furnish_spice(self, mock_requests):
-        desired_spice_start = datetime(2025, 1, 1, tzinfo=timezone.utc)
-        desired_spice_end = datetime(2025, 3, 1, tzinfo=timezone.utc)
-
-        mock_naif_json = [
-            {
-                "file_name": "lsk/naif0012.tls",
-                "min_date_datetime": "2024-12-01, 00:00:00",
-                "max_date_datetime": "2025-05-01, 00:00:00"
-            },
-        ]
-
-        mock_sclk_json = [
-            {
-                "file_name": "lsk/imap_sclk_0000.tsc",
-                "min_date_datetime": "2024-12-01, 00:00:00",
-                "max_date_datetime": "2025-05-01, 00:00:00"
-            },
-        ]
-
-        mock_dps_json = [
-            {
-                "file_name": "ck/imap_dps_2024_270_2026_335_01.ah.bc",
-                "min_date_datetime": "2024-09-01, 00:00:00",
-                "max_date_datetime": "2024-12-01, 00:00:00",
-            },
-            {
-                "file_name": "ck/imap_dps_2024_335_2025_031_01.ah.bc",
-                "min_date_datetime": "2024-12-01, 00:00:00",
-                "max_date_datetime": "2025-02-01, 00:00:00",
-            },
-            {
-                "file_name": "ck/imap_dps_2025_031_2025_120_01.ah.bc",
-                "min_date_datetime": "2025-02-01, 00:00:00",
-                "max_date_datetime": "2025-05-01, 00:00:00",
-            },
-        ]
-
-        mock_imap_frame_json = [
-            {
-                "file_name": "fk/imap_001.tf",
-                "min_date_datetime": "2024-12-01, 00:00:00",
-                "max_date_datetime": "2025-05-01, 00:00:00"
-            },
-        ]
-
-        mock_science_frame_json = [
-            {
-                "file_name": "fk/imap_science_0001.tf",
-                "min_date_datetime": "2024-12-01, 00:00:00",
-                "max_date_datetime": "2025-05-01, 00:00:00"
-            }
-        ]
-
-        mock_planetary_ephemeris_json = [
-            {
-                "file_name": "spk/de440.bsp",
-                "min_date_datetime": "2024-12-01, 00:00:00",
-                "max_date_datetime": "2025-05-01, 00:00:00"
-            }
-        ]
-
-        mock_ephemeris_reconstructed_json = [
-            {
-                "file_name": "spk/imap_recon_od004_20250924_20251002_v01.bsp",
-                "min_date_datetime": "2024-12-01, 00:00:00",
-                "max_date_datetime": "2025-05-01, 00:00:00"
-            }
-        ]
-
-        mock_planetary_constants_json = [
-            {
-                "file_name": "pck/pck00010.tpc",
-                "min_date_datetime": "2024-12-01, 00:00:00",
-                "max_date_datetime": "2025-05-01, 00:00:00"
-            }
-        ]
-
-        mock_naif_response = Mock(json=Mock(return_value=mock_naif_json))
-        mock_sclk_response = Mock(json=Mock(return_value=mock_sclk_json))
-        mock_dps_response = Mock(json=Mock(return_value=mock_dps_json))
-        mock_imap_frame_response = Mock(json=Mock(return_value=mock_imap_frame_json))
-        mock_science_frame_response = Mock(json=Mock(return_value=mock_science_frame_json))
-        mock_planetary_ephemeris_response = Mock(json=Mock(return_value=mock_planetary_ephemeris_json))
-        mock_ephemeris_reconstructed_response = Mock(json=Mock(return_value=mock_ephemeris_reconstructed_json))
-        mock_planetary_constants_response = Mock(json=Mock(return_value=mock_planetary_constants_json))
-
-        mock_requests.get.side_effect = [
-            mock_naif_response,
-            mock_sclk_response,
-            mock_dps_response,
-            mock_imap_frame_response,
-            mock_science_frame_response,
-            mock_planetary_ephemeris_response,
-            mock_ephemeris_reconstructed_response,
-            mock_planetary_constants_response
-        ]
-
-        previous_imap_data_access_url = imap_data_access.config["DATA_ACCESS_URL"]
-        previous_imap_data_access_token = imap_data_access.config["ACCESS_TOKEN"]
-
-        imap_data_access.config["DATA_ACCESS_URL"] = "expected-url"
-        imap_data_access.config["ACCESS_TOKEN"] = "expected-access-token"
-
-        dependency_collector = DependencyCollector(create_map_descriptor(), desired_spice_start, desired_spice_end)
-        spice_kernels = dependency_collector.collect_spice_kernels()
-
-        imap_data_access.config["DATA_ACCESS_URL"] = previous_imap_data_access_url
-        imap_data_access.config["ACCESS_TOKEN"] = previous_imap_data_access_token
-
-        expected_auth_header = {"Authorization": r"Bearer expected-access-token"}
-        mock_requests.get.assert_has_calls([
-            call("expected-url/spice-query?type=leapseconds&start_time=0", headers=expected_auth_header),
-            call("expected-url/spice-query?type=spacecraft_clock&start_time=0", headers=expected_auth_header),
-            call("expected-url/spice-query?type=pointing_attitude&start_time=0", headers=expected_auth_header),
-            call("expected-url/spice-query?type=imap_frames&start_time=0", headers=expected_auth_header),
-            call("expected-url/spice-query?type=science_frames&start_time=0", headers=expected_auth_header),
-            call("expected-url/spice-query?type=planetary_ephemeris&start_time=0", headers=expected_auth_header),
-            call("expected-url/spice-query?type=ephemeris_reconstructed&start_time=0", headers=expected_auth_header),
-            call("expected-url/spice-query?type=planetary_constants&start_time=0", headers=expected_auth_header),
-        ])
-        self.assertEqual(["naif0012.tls",
-                          "imap_sclk_0000.tsc",
-                          "imap_dps_2024_335_2025_031_01.ah.bc",
-                          "imap_dps_2025_031_2025_120_01.ah.bc",
-                          "imap_001.tf",
-                          "imap_science_0001.tf",
-                          "de440.bsp",
-                          "imap_recon_od004_20250924_20251002_v01.bsp",
-                          "pck00010.tpc"], spice_kernels)
 
     @patch('mapping_tool.dependency_collector.imap_data_access.query')
     def test_get_sp_dependencies(self, mock_query):
@@ -675,22 +545,86 @@ class TestDependencyCollector(unittest.TestCase):
                     [get_test_cdf_file_path() / "l2_ena_20250115.cdf"])
                 self.assertEqual([], sp_deps)
 
-    @patch('mapping_tool.dependency_collector.requests')
-    def test_raises_error_if_http_request_fails(self, mock_requests):
-        desired_spice_start = datetime(2025, 1, 1, tzinfo=timezone.utc)
-        desired_spice_end = datetime(2025, 3, 1, tzinfo=timezone.utc)
+    @patch('mapping_tool.dependency_collector.furnish_spice_metakernel')
+    def test_furnish_spice_kernels(self, mock_furnish):
+        expected_output = Mock(spec=FurnishMetakernelOutput)
+        mock_furnish.return_value = expected_output
 
-        expected_exception = Exception("unauthenticated")
-        mock_requests.get.return_value.raise_for_status.side_effect = expected_exception
+        start = datetime(2025, 1, 1, tzinfo=timezone.utc)
+        end = datetime(2025, 3, 1, tzinfo=timezone.utc)
+        dc = DependencyCollector(create_map_descriptor(), start, end)
 
-        imap_data_access.config["DATA_ACCESS_URL"] = "expected-url"
-        imap_data_access.config["ACCESS_TOKEN"] = "bad-token"
+        result = dc.furnish_spice_kernels()
 
-        dependency_collector = DependencyCollector(Mock(), desired_spice_start, desired_spice_end)
-        with self.assertRaises(Exception) as cm:
-            spice_kernels = dependency_collector.collect_spice_kernels()
+        mock_furnish.assert_called_once_with(
+            datetime(2025, 1, 1),
+            datetime(2025, 3, 1),
+            MAPPING_TOOL_KERNEL_TYPES,
+        )
+        self.assertIs(expected_output, result)
 
-        self.assertEqual(expected_exception, cm.exception)
+    @patch('mapping_tool.dependency_collector.furnish_spice_metakernel')
+    def test_furnish_spice_kernels_strips_timezone(self, mock_furnish):
+        mock_furnish.return_value = Mock(spec=FurnishMetakernelOutput)
+
+        start = datetime(2025, 1, 1, tzinfo=timezone.utc)
+        end = datetime(2025, 3, 1, tzinfo=timezone.utc)
+        dc = DependencyCollector(create_map_descriptor(), start, end)
+
+        dc.furnish_spice_kernels()
+
+        self.assertIsNone(mock_furnish.call_args[0][0].tzinfo)
+        self.assertIsNone(mock_furnish.call_args[0][1].tzinfo)
+
+    @patch('mapping_tool.dependency_collector.furnish_spice_metakernel')
+    def test_furnish_spice_kernels_propagates_errors(self, mock_furnish):
+        mock_furnish.side_effect = ConnectionError("network failure")
+        dc = DependencyCollector(create_map_descriptor(),
+                                 datetime(2025, 1, 1, tzinfo=timezone.utc),
+                                 datetime(2025, 3, 1, tzinfo=timezone.utc))
+        with self.assertRaises(ConnectionError):
+            dc.furnish_spice_kernels()
+
+    @patch('mapping_tool.dependency_collector.get_spice_kernels_file_names')
+    def test_get_spice_kernel_names(self, mock_get_spice_kernels_file_names):
+        mock_get_spice_kernels_file_names.return_value = [
+            "imap/spice/lsk/naif0012.tls",
+            "imap/spice/spk/de440.bsp",
+        ]
+        start = datetime(2025, 1, 1, tzinfo=timezone.utc)
+        end = datetime(2025, 3, 1, tzinfo=timezone.utc)
+        dc = DependencyCollector(create_map_descriptor(), start, end)
+
+        result = dc.get_spice_kernel_names()
+
+        mock_get_spice_kernels_file_names.assert_called_once_with(
+            datetime(2025, 1, 1),
+            datetime(2025, 3, 1),
+            MAPPING_TOOL_KERNEL_TYPES,
+        )
+        self.assertEqual(["naif0012.tls", "de440.bsp"], result)
+
+    @patch('mapping_tool.dependency_collector.get_spice_kernels_file_names')
+    def test_get_spice_kernel_names_strips_timezone(self, mock_get_spice_kernels_file_names):
+        mock_get_spice_kernels_file_names.return_value = []
+
+        start = datetime(2025, 1, 1, tzinfo=timezone.utc)
+        end = datetime(2025, 3, 1, tzinfo=timezone.utc)
+        dc = DependencyCollector(create_map_descriptor(), start, end)
+
+        dc.get_spice_kernel_names()
+
+        self.assertIsNone(mock_get_spice_kernels_file_names.call_args[0][0].tzinfo)
+        self.assertIsNone(mock_get_spice_kernels_file_names.call_args[0][1].tzinfo)
+
+    @patch('mapping_tool.dependency_collector.get_spice_kernels_file_names')
+    def test_get_spice_kernel_names_propagates_errors(self, mock_get_spice_kernels_file_names):
+        mock_get_spice_kernels_file_names.side_effect = ConnectionError("network failure")
+        dc = DependencyCollector(create_map_descriptor(),
+                                 datetime(2025, 1, 1, tzinfo=timezone.utc),
+                                 datetime(2025, 3, 1, tzinfo=timezone.utc))
+        with self.assertRaises(ConnectionError):
+            dc.get_spice_kernel_names()
 
 
 def create_imap_query_response_item(instrument="hi", descriptor="descriptor", version="v001", start_date="20240101"):
