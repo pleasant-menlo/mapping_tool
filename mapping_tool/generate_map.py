@@ -202,12 +202,11 @@ def generate_l2_map(dependency_collector: DependencyCollector) -> Path:
     with patch('imap_processing.ena_maps.utils.naming.MapDescriptor.get_map_coord_frame') as mock_coord_frame:
         mock_coord_frame.return_value = descriptor.spice_frame
 
-        workaround_hi_requiring_repointing = "1" if descriptor.instrument == MappableInstrumentShortName.HI else None
         processor = processor_class(
             data_level="l2", data_descriptor=descriptor.to_string(),
             dependency_str=processing_input_collection.serialize(),
             start_date=start_date.strftime("%Y%m%d"),
-            repointing=workaround_hi_requiring_repointing,
+            repointing=None,
             version="0",
             upload_to_sdc=False
         )

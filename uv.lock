@@ -745,7 +745,7 @@ dependencies = [
 
 [[package]]
 name = "imap-processing"
-version = "1.0.21"
+version = "1.0.22"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "astropy-healpix" },
@@ -760,9 +760,9 @@ dependencies = [
     { name = "spiceypy" },
     { name = "xarray" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/e0/fe/8929c8f3ffff666d31f713163f14f023038676c8a92bbce61bd9ded5f2d6/imap_processing-1.0.21.tar.gz", hash = "sha256:b7cc3df550389418bce34793bf4f314acfea5724889dec1a659b4c5d569f9136", size = 1017077, upload-time = "2026-03-05T21:01:55.385Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/80/9c/bcd0117a9dd82d60418e85f0004f18302c6ac740809fdd21c30e1a5f9db3/imap_processing-1.0.22.tar.gz", hash = "sha256:e032419b127111ff0eb067aaedd33a2c1d47ab38f7f6e98bf1a8a6df8930f9c7", size = 1026733, upload-time = "2026-03-10T14:12:29.937Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/c9/fa/3b21df05dc510c09107ff48c89f3dcbecc2e87920c93808dccc06020876e/imap_processing-1.0.21-py3-none-any.whl", hash = "sha256:6bd2665928f20f5f9d1e28545251a9cd5a4d7fb3e3bf1faeb72e2c6eaf02df4e", size = 1156501, upload-time = "2026-03-05T21:01:53.618Z" },
+    { url = "https://files.pythonhosted.org/packages/68/3e/4cc18ff565a452c88172696d1229dfcb2f27d8c614617ff17e459bf27d48/imap_processing-1.0.22-py3-none-any.whl", hash = "sha256:5997d3fcd31b61973378e0f19816ab77dfe03798343d523332c627a7f652202a", size = 1168329, upload-time = "2026-03-10T14:12:25.757Z" },
 ]
 
 [[package]]

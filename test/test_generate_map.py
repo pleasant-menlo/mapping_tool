@@ -348,15 +348,15 @@ class TestGenerateMap(unittest.TestCase):
         ultra_descriptor = create_map_descriptor(instrument=MappableInstrumentShortName.ULTRA, survival_corrected="nsp")
 
         cases = [
-            (hi_descriptor, mock_hi, 1, "1"),
-            (lo_descriptor, mock_lo, 0, None),
-            (ultra_descriptor, mock_ultra, 0, None),
+            (hi_descriptor, mock_hi, 1),
+            (lo_descriptor, mock_lo, 0),
+            (ultra_descriptor, mock_ultra, 0),
         ]
 
         start_date = datetime(2020, 1, 1)
         end_date = datetime(2020, 1, 2)
 
-        for descriptor, mock_processor_class, num_furnsh_calls, expected_repointing in cases:
+        for descriptor, mock_processor_class, num_furnsh_calls in cases:
             with self.subTest(descriptor.to_string()):
                 mock_dependency_collector.reset_mock()
                 mock_dependency_collector.descriptor = descriptor
@@ -390,7 +390,7 @@ class TestGenerateMap(unittest.TestCase):
                     data_level="l2", data_descriptor=descriptor.to_string(),
                     dependency_str=expected_dependency_str,
                     start_date=start_date.strftime("%Y%m%d"),
-                    repointing=expected_repointing,
+                    repointing=None,
                     version="0",
                     upload_to_sdc=False
                 )
