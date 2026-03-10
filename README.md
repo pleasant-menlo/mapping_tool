@@ -76,10 +76,9 @@ corresponding values are:
 * `spice_frame_name` - The SPICE frame to be used for the map projection. Some frames (e.g. "hae") are defined by the
   mission and can be used without supplying a custom spice kernel.
     * Shorthand names:
-        - hae
-        - hre
-        - hnu
-        - gcs
+        - `hae` for Heliocentric Aries Ecliptic (ECLIPJ2000)
+        - `gcs` for Galactic
+        - `hrc` for Ribbon centered
     * Full names for IMAP frames, such as:
         - J2000
         - ECLIPJ2000
