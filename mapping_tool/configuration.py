@@ -177,7 +177,7 @@ class Configuration:
         if self.kernel_path is None:
             try:
                 spice_frame = MapDescriptor.get_map_coord_frame(self.spice_frame_name)
-            except NotImplementedError:
+            except KeyError:
                 try:
                     spice_frame = SpiceFrame[self.spice_frame_name]
                 except KeyError:
