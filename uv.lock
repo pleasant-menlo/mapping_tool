@@ -715,8 +715,8 @@ wheels = [
 
 [[package]]
 name = "imap-l3-processing"
-version = "1.0.4"
-source = { git = "https://github.com/IMAP-Science-Operations-Center/imap_L3_processing#9c86123289f952b62c676242757d0b36bd9cc27b" }
+version = "1.0.5"
+source = { git = "https://github.com/IMAP-Science-Operations-Center/imap_L3_processing#0938debf75fb6cd511a378bf16063e7d5db4b627" }
 dependencies = [
     { name = "astropy" },
     { name = "astropy-healpix" },
@@ -745,7 +745,7 @@ dependencies = [
 
 [[package]]
 name = "imap-processing"
-version = "1.0.22"
+version = "1.0.25"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "astropy-healpix" },
@@ -760,9 +760,9 @@ dependencies = [
     { name = "spiceypy" },
     { name = "xarray" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/80/9c/bcd0117a9dd82d60418e85f0004f18302c6ac740809fdd21c30e1a5f9db3/imap_processing-1.0.22.tar.gz", hash = "sha256:e032419b127111ff0eb067aaedd33a2c1d47ab38f7f6e98bf1a8a6df8930f9c7", size = 1026733, upload-time = "2026-03-10T14:12:29.937Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/ac/c9/33461f1fcd3486bd99b859eff94576c305b9bacc3652e6e40f7378cc474a/imap_processing-1.0.25.tar.gz", hash = "sha256:5c9e626bfcddbf658f0249117618b02ddec51e0dd2a5d06a018457d0278518a6", size = 1029465, upload-time = "2026-03-13T17:05:14.665Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/68/3e/4cc18ff565a452c88172696d1229dfcb2f27d8c614617ff17e459bf27d48/imap_processing-1.0.22-py3-none-any.whl", hash = "sha256:5997d3fcd31b61973378e0f19816ab77dfe03798343d523332c627a7f652202a", size = 1168329, upload-time = "2026-03-10T14:12:25.757Z" },
+    { url = "https://files.pythonhosted.org/packages/6c/60/3ab33ac45074b53d06e9fa605cf0e7736d45e9a11d5ad8a5eb66ce7fd54e/imap_processing-1.0.25-py3-none-any.whl", hash = "sha256:e610188a9b09f9980e52961f32535df6303dca144e6bc7eb1674d741f6138334", size = 1170757, upload-time = "2026-03-13T17:05:13.019Z" },
 ]
 
 [[package]]
@@ -1081,7 +1081,7 @@ requires-dist = [
     { name = "argparse", specifier = ">=1.4.0" },
     { name = "hatchling" },
     { name = "imap-l3-processing", git = "https://github.com/IMAP-Science-Operations-Center/imap_L3_processing" },
-    { name = "imap-processing", specifier = ">=1.0.21" },
+    { name = "imap-processing", specifier = ">=1.0.25" },
     { name = "jsonschema", specifier = ">=4.25.0" },
     { name = "pyyaml", specifier = ">=6.0.2" },
     { name = "uv-dynamic-versioning" },
