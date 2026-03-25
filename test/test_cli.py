@@ -104,9 +104,9 @@ class TestCli(unittest.TestCase):
         ])
 
         mock_dependency_collector.assert_has_calls([
-            call(hi_descriptor, map_date_ranges[0][0], map_date_ranges[0][1],
+            call(hi_descriptor, [map_date_ranges[0]],
                  sentinel.ultra_energy_bin_group_edges),
-            call(hi_descriptor, map_date_ranges[1][0], map_date_ranges[1][1],
+            call(hi_descriptor, [map_date_ranges[1]],
                  sentinel.ultra_energy_bin_group_edges),
         ])
 

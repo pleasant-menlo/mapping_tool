@@ -138,16 +138,15 @@ class TestGenerateMap(unittest.TestCase):
         mock_generate_l2.side_effect = [l2_ram_map, l2_antiram_map]
         mock_generate_l3.side_effect = [l3_full_map, l3_spx_map]
 
-        spx_dependency_collector = DependencyCollector(map_descriptor, start_date=start_date, end_date=end_date)
+        spx_dependency_collector = DependencyCollector(map_descriptor, [(start_date, end_date)])
         output_map = generate_map(spx_dependency_collector)
 
         mock_dependency_collector_class.assert_has_calls([
-            call(create_map_descriptor(instrument=MappableInstrumentShortName.HI, spin_phase="full"), start_date,
-                 end_date),
+            call(create_map_descriptor(instrument=MappableInstrumentShortName.HI, spin_phase="full"), [(start_date, end_date)]),
             call(create_map_descriptor(instrument=MappableInstrumentShortName.HI, survival_corrected='nsp',
-                                       spin_phase="ram"), start_date, end_date),
+                                       spin_phase="ram"), [(start_date, end_date)]),
             call(create_map_descriptor(instrument=MappableInstrumentShortName.HI, survival_corrected='nsp',
-                                       spin_phase="anti"), start_date, end_date),
+                                       spin_phase="anti"), [(start_date, end_date)]),
         ])
 
         mock_generate_l2.assert_has_calls([
@@ -167,7 +166,7 @@ class TestGenerateMap(unittest.TestCase):
         start_date = datetime(2020, 1, 1)
         end_date = datetime(2020, 7, 1)
 
-        dependency_collector = DependencyCollector(map_descriptor, start_date=start_date, end_date=end_date)
+        dependency_collector = DependencyCollector(map_descriptor,[( start_date, end_date)])
 
         with self.assertRaises(ValueError) as context:
             generate_map(dependency_collector)
@@ -505,8 +504,8 @@ class TestGenerateMap(unittest.TestCase):
 
         hi_descriptor = create_map_descriptor(instrument=MappableInstrumentShortName.HI)
         dependency_collector = DependencyCollector(hi_descriptor,
-                                                   datetime(2020, 1, 1, tzinfo=timezone.utc),
-                                                   datetime(2020, 1, 2, tzinfo=timezone.utc))
+                                                   [(datetime(2020, 1, 1, tzinfo=timezone.utc),
+                                                   datetime(2020, 1, 2, tzinfo=timezone.utc))])
         with self.assertRaises(ValueError) as e:
             generate_l2_map(dependency_collector)
         self.assertIn(f"Processing for {hi_descriptor.to_string()} failed", e.exception.__notes__)

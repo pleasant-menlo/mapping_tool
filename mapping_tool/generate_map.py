@@ -111,7 +111,7 @@ def generate_map(dependency_collector: DependencyCollector) -> Path:
         deps = get_dependencies_for_l3_map(descriptor)
         logger.info("identified dependencies %s", deps)
         for dependency in deps:
-            dependency_collector_for_intermediate_map = DependencyCollector(dependency, start, end)
+            dependency_collector_for_intermediate_map = DependencyCollector(dependency, [(start, end)])
             map_deps.append(generate_map(dependency_collector_for_intermediate_map))
         print(f"Generating L3 map {descriptor.to_mapping_tool_string()}")
         return generate_l3_map(dependency_collector, map_deps)

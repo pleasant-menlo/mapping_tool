@@ -31,16 +31,21 @@ MAPPING_TOOL_KERNEL_TYPES = [
 
 
 class DependencyCollector:
-    def __init__(self, descriptor: MappingToolDescriptor, start_date: datetime, end_date: datetime,
+    def __init__(self, descriptor: MappingToolDescriptor, time_ranges: list[tuple[datetime, datetime]],
                  ultra_energy_ranges: Optional[str] = None):
         self.descriptor = descriptor
-        self.start_date = start_date
-        self.end_date = end_date
+        self.time_ranges = time_ranges
+        self.start_date = min([start for start, _end in time_ranges])
+        self.end_date = max([end for _start, end in time_ranges])
         self.ultra_energy_ranges = ultra_energy_ranges
 
     def get_pointing_sets(self) -> list[str]:
-        map_instrument_pset_descriptors = []
+        pset_descriptors = self._map_instrument_pset_descriptors()
+        assert len(pset_descriptors) > 0
+        return self._find_psets_in_time_ranges( self._query_psets(pset_descriptors))
 
+    def _map_instrument_pset_descriptors(self):
+        map_instrument_pset_descriptors =[]
         if self.descriptor.instrument == MappableInstrumentShortName.HI:
             if self.descriptor.sensor in ["45", "combined"]:
                 map_instrument_pset_descriptors.append(f"45sensor-pset")
@@ -56,29 +61,26 @@ class DependencyCollector:
                 map_instrument_pset_descriptors.append(f"45sensor-{pset_string}")
             if self.descriptor.sensor in ["90", "combined"]:
                 map_instrument_pset_descriptors.append(f"90sensor-{pset_string}")
+        return map_instrument_pset_descriptors
 
-        assert len(map_instrument_pset_descriptors) > 0
-        instrument_for_query = self.descriptor.instrument.name.lower()
-        start_date = self.start_date.strftime("%Y%m%d")
-        end_date = self.end_date.strftime("%Y%m%d")
-
-        def filter_files_by_highest_version(files: list):
-            dates_to_files = {}
-            for file in files:
-                if file["start_date"] not in dates_to_files or file["version"] > dates_to_files[file["start_date"]][
-                    "version"]:
-                    dates_to_files[file["start_date"]] = file
-            return dates_to_files.values()
-
-        files = []
-        for pset_descriptor in map_instrument_pset_descriptors:
-            files.extend(filter_files_by_highest_version(imap_data_access.query(instrument=instrument_for_query,
-                                                                                start_date=start_date,
-                                                                                end_date=end_date,
+    def _query_psets(self, pset_descriptors: list[str]) -> list[dict]:
+        query_results = []
+        for pset_descriptor in pset_descriptors:
+            query_results.extend(imap_data_access.query(instrument=self.descriptor.instrument.name.lower(),
+                                                                                start_date=self.start_date.strftime("%Y%m%d"),
+                                                                                end_date=self.end_date.strftime("%Y%m%d"),
                                                                                 data_level="l1c",
-                                                                                descriptor=pset_descriptor)))
+                                                                                descriptor=pset_descriptor,
+                                                                                version="latest"))
+        return query_results
 
-        return [Path(pset['file_path']).name for pset in files]
+    def _find_psets_in_time_ranges(self, query_results: list[dict]) -> list[str]:
+        psets = []
+        for pset in query_results:
+            pset_date = datetime.strptime(pset["start_date"], "%Y%m%d").replace(tzinfo=timezone.utc)
+            if any(range_start <= pset_date <= range_end for range_start, range_end in self.time_ranges):
+                psets.append(Path(pset['file_path']).name)
+        return psets
 
     def get_survival_probability_dependencies(self, input_maps: list[Path]) -> list[ScienceInput]:
         hi_nsp_combined = (
