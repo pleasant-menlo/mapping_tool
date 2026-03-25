@@ -324,6 +324,34 @@ class TestGenerateMap(unittest.TestCase):
         self.assertIn(f"Processing for {hi_descriptor.to_l3_input_string()} failed",
                       str(e.exception.__notes__))
 
+    @patch("mapping_tool.generate_map.HiProcessor.process")
+    def test_generate_l3_map_patches_l3_processing_get_map_coord_frame(self, mock_process):
+        descriptor = create_map_descriptor(instrument=MappableInstrumentShortName.HI, spice_frame=SpiceFrame.IMAP_RTN)
+        start_date = datetime(2020, 1, 1)
+        end_date = datetime(2020, 1, 2)
+
+        mock_dependency_collector = Mock(descriptor=descriptor, start_date=start_date, end_date=end_date)
+
+        mock_dependency_collector.get_spice_kernel_names.return_value = ["imap_science_0001.tf", "imap_sclk_0000.tsc"]
+        mock_dependency_collector.get_ancillary_dependencies.return_value = []
+        mock_dependency_collector.get_survival_probability_dependencies.return_value = []
+        mock_dependency_collector.get_pointing_sets.return_value = ["imap_hi_l1c_pset-1_20250101_v000.cdf",
+                                                                    "imap_hi_l1c_pset-2_20250101_v000.cdf"]
+
+        def mock_do_processing(deps):
+            self.assertEqual(SpiceFrame.IMAP_RTN,
+                             MapDescriptor.from_string(descriptor.to_string()).map_spice_coord_frame)
+            return ["One whole processed file"]
+
+        #mock_process.return_value = [Path("some_path")]
+        mock_process.side_effect = mock_do_processing
+
+        _ = generate_l3_map(mock_dependency_collector, [])
+
+        normal_pipeline_descriptor = "h90-ena-h-sf-nsp-ram-hae-2deg-6mo"
+        self.assertEqual(SpiceFrame.IMAP_HAE,
+                         MapDescriptor.from_string(normal_pipeline_descriptor).map_spice_coord_frame)
+
     @patch("mapping_tool.generate_map.spiceypy")
     @patch("mapping_tool.generate_map.Hi")
     @patch("mapping_tool.generate_map.Lo")

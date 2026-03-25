@@ -151,15 +151,18 @@ def generate_l3_map(dependency_collector: DependencyCollector, input_maps: list[
         input_metadata
     )
 
-    try:
-        processed_files = processor.process(dependency_collector.descriptor.spice_frame)
-    except Exception as e:
-        note = f"Processing for {dependency_collector.descriptor.to_l3_input_string()} failed"
-        if hasattr(e, "add_note"):
-            e.add_note(note)
-        else:
-            e.__notes__ = [note]
-        raise e
+    with patch('imap_processing.ena_maps.utils.naming.MapDescriptor.get_map_coord_frame') as mock_coord_frame:
+        mock_coord_frame.return_value = dependency_collector.descriptor.spice_frame
+
+        try:
+            processed_files = processor.process(dependency_collector.descriptor.spice_frame)
+        except Exception as e:
+            note = f"Processing for {dependency_collector.descriptor.to_l3_input_string()} failed"
+            if hasattr(e, "add_note"):
+                e.add_note(note)
+            else:
+                e.__notes__ = [note]
+            raise e
 
     if len(processed_files) < 1:
         raise ValueError("L3 processing did not return any files!")
