@@ -55,8 +55,18 @@ class TestCli(unittest.TestCase):
         ]
 
         map_date_ranges = [
-            (datetime(2025, 1, 1, tzinfo=timezone.utc), datetime(2026, 1, 1, tzinfo=timezone.utc)),
-            (datetime(2026, 1, 1, tzinfo=timezone.utc), datetime(2027, 1, 1, tzinfo=timezone.utc))
+            [
+                (
+                    datetime(2025, 1, 1, tzinfo=timezone.utc),
+                    datetime(2026, 1, 1, tzinfo=timezone.utc),
+                )
+            ],
+            [
+                (
+                    datetime(2026, 1, 1, tzinfo=timezone.utc),
+                    datetime(2027, 1, 1, tzinfo=timezone.utc),
+                )
+            ],
         ]
 
         mock_configuration.get_map_date_ranges.return_value = map_date_ranges
@@ -103,12 +113,20 @@ class TestCli(unittest.TestCase):
             call('Generating map: h90-enaTEST-h-sf-sp-ram-hae-2deg-6mo-mapper 2026-01-01 to 2027-01-01'),
         ])
 
-        mock_dependency_collector.assert_has_calls([
-            call(hi_descriptor, [map_date_ranges[0]],
-                 sentinel.ultra_energy_bin_group_edges),
-            call(hi_descriptor, [map_date_ranges[1]],
-                 sentinel.ultra_energy_bin_group_edges),
-        ])
+        mock_dependency_collector.assert_has_calls(
+            [
+                call(
+                    hi_descriptor,
+                    map_date_ranges[0],
+                    sentinel.ultra_energy_bin_group_edges,
+                ),
+                call(
+                    hi_descriptor,
+                    map_date_ranges[1],
+                    sentinel.ultra_energy_bin_group_edges,
+                ),
+            ]
+        )
 
         mock_generate_map.assert_has_calls([
             call(sentinel.dependency_collector_1),

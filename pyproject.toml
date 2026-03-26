@@ -15,7 +15,7 @@ dependencies = [
     "jsonschema>=4.25.0",
     "pyyaml>=6.0.2",
     "hatchling",
-    "uv-dynamic-versioning"
+    "uv-dynamic-versioning",
 ]
 
 [tool.hatch.version]
@@ -29,4 +29,14 @@ imap-l3-processing = { git = "https://github.com/IMAP-Science-Operations-Center/
 
 [tool.setuptools]
 py-modules = ["mapping_tool"]
+
+[tool.ruff]
+line-length = 120
+target-version = "py313"
+
+
+[dependency-groups]
+dev = [
+    "ruff>=0.15.8",
+]
 

@@ -40,9 +40,9 @@ class CanonicalMapPeriod:
 
 
 class DataLevel(enum.Enum):
-    L2 = 'l2'
-    L3 = 'l3'
-    NA = 'no applicable level'
+    L2 = "l2"
+    L3 = "l3"
+    NA = "no applicable level"
 
 
 class MapSettings:
@@ -82,6 +82,7 @@ class Configuration:
     pixel_parameter: int
     map_data_type: str
     output_directory: Path
+    combine_data_across_time_ranges: Optional[bool] = None
     canonical_map_period: Optional[CanonicalMapPeriod] = None
     time_ranges: Optional[list[TimeRange]] = None
     kernel_path: Optional[Path] = None
@@ -135,7 +136,7 @@ class Configuration:
 
     @classmethod
     def parse_instrument(cls, instrument_sensor: str):
-        instrument_split = instrument_sensor.split(' ')
+        instrument_split = instrument_sensor.split(" ")
         instrument = instrument_split[0]
         if len(instrument_split) > 1:
             sensor = instrument_split[1]
@@ -155,14 +156,10 @@ class Configuration:
         principal_data = {
             "ENA Intensity": "ena",
             "Spectral Index": "spx",
-            "Spectral Index NBS": "spxnbs"
+            "Spectral Index NBS": "spxnbs",
         }
 
-        spin_phase = {
-            "ram": "ram",
-            "anti-ram": "anti",
-            "full spin": "full"
-        }
+        spin_phase = {"ram": "ram", "anti-ram": "anti", "full spin": "full"}
 
         resolution = f"{self.pixel_parameter}deg" if self.pixelation_scheme.lower() == "square" else f"nside{self.pixel_parameter}"
         duration = "0mo" if self.canonical_map_period is None else str(self.canonical_map_period.map_period) + "mo"
@@ -195,18 +192,25 @@ class Configuration:
             sensor=sensor,
             principal_data=principal_data[self.map_data_type],
             quantity_suffix=self.quantity_suffix,
-            species=self.lo_species or 'h',
+            species=self.lo_species or "h",
             survival_corrected="sp" if self.survival_corrected else "nsp",
             spin_phase=spin_phase[self.spin_phase.lower()],
             coordinate_system=coordinate_system,
             spice_frame=spice_frame,
             kernel_path=self.kernel_path,
-            spectral_index_energy_step_range=spectral_index_energy_step_range
+            spectral_index_energy_step_range=spectral_index_energy_step_range,
         )
 
-    def get_map_date_ranges(self) -> list[tuple[datetime, datetime]]:
+    def get_map_date_ranges(self) -> list[list[tuple[datetime, datetime]]]:
         if self.canonical_map_period is not None:
-            return self.canonical_map_period.calculate_date_ranges()
+            time_ranges = self.canonical_map_period.calculate_date_ranges()
         else:
             self.time_ranges.sort(key=lambda time_range: time_range.start)
-            return [(time_range.start, time_range.end) for time_range in self.time_ranges]
+            time_ranges = [
+                (time_range.start, time_range.end) for time_range in self.time_ranges
+            ]
+
+        if self.combine_data_across_time_ranges or False:
+            return [time_ranges]
+        else:
+            return [[time_range] for time_range in time_ranges]

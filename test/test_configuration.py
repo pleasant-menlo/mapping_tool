@@ -41,7 +41,10 @@ class TestConfiguration(TestCase):
                     quantity_suffix="",
                     kernel_path=Path("path/to/another_kernel"),
                     ultra_energy_bin_group_edges=None,
-                    raw_config=yaml.dump(yaml.safe_load(example_config_path.read_text()))
+                    raw_config=yaml.dump(
+                        yaml.safe_load(example_config_path.read_text())
+                    ),
+                    combine_data_across_time_ranges=None,
                 )
 
                 self.assertEqual(expected_config, config)
@@ -71,7 +74,10 @@ class TestConfiguration(TestCase):
                     output_directory=Path("path/to/output"),
                     quantity_suffix="",
                     kernel_path=Path("path/to/another_kernel"),
-                    raw_config=yaml.dump(yaml.safe_load(example_config_path.read_text())),
+                    raw_config=yaml.dump(
+                        yaml.safe_load(example_config_path.read_text())
+                    ),
+                    combine_data_across_time_ranges=False,
                 )
 
                 self.assertEqual(expected_config, config)
@@ -100,11 +106,12 @@ class TestConfiguration(TestCase):
                     pixel_parameter=2,
                     map_data_type="ENA Intensity",
                     lo_species="h",
-                    output_directory=Path('path/to/output'),
+                    output_directory=Path("path/to/output"),
                     quantity_suffix="custom",
                     kernel_path=Path("path/to/kernel"),
                     ultra_energy_bin_group_edges="0,4,8,12,16,20,24,28,32,36,40,44,46",
-                    spectral_index_energy_step_range=(1, 4)
+                    spectral_index_energy_step_range=(1, 4),
+                    combine_data_across_time_ranges=True,
                 )
 
                 self.assertEqual(expected_config, config)
@@ -132,7 +139,7 @@ class TestConfiguration(TestCase):
                     "pixel_parameter": 2,
                     "map_data_type": "ENA Intensity",
                     "kernel_path": Path("path/to/another_kernel"),
-                    "output_directory": Path("path/to/output")
+                    "output_directory": Path("path/to/output"),
                 }
 
                 mock_validate.assert_called_with(expected_config, config_schema.schema)
@@ -183,7 +190,9 @@ class TestConfiguration(TestCase):
                 del config[field]
                 mock_parse.return_value = config
                 with self.assertRaises(jsonschema.exceptions.ValidationError):
-                    Configuration.from_file(get_example_config_path() / "test_l2_config.json")
+                    Configuration.from_file(
+                        get_example_config_path() / "test_l2_config.json"
+                    )
 
     def test_get_map_descriptors_frame_descriptors(self):
         cases = [
@@ -218,7 +227,7 @@ class TestConfiguration(TestCase):
             ("Anti-ram", "anti"),
             ("anti-ram", "anti"),
             ("Full spin", "full"),
-            ("full spin", "full")
+            ("full spin", "full"),
         ]
 
         for case, expected in cases:
@@ -336,7 +345,7 @@ class TestConfiguration(TestCase):
         input_config = create_configuration(time_ranges=time_ranges)
 
         actual_date_ranges = input_config.get_map_date_ranges()
-        expected_date_ranges = [(start_1, end_1), (start_2, end_2)]
+        expected_date_ranges = [[(start_1, end_1)], [(start_2, end_2)]]
 
         self.assertEqual(expected_date_ranges, actual_date_ranges)
 
@@ -352,35 +361,35 @@ class TestConfiguration(TestCase):
         input_config = create_configuration(time_ranges=time_ranges)
 
         actual_date_ranges = input_config.get_map_date_ranges()
-        expected_date_ranges = [(start_1, end_1), (start_2, end_2)]
+        expected_date_ranges = [[(start_1, end_1)], [(start_2, end_2)]]
 
         self.assertEqual(expected_date_ranges, actual_date_ranges)
 
     def test_get_map_date_ranges_canonical(self):
         # @formatter:off
         cases = [
-            (2010, 1, 3, 1, [(datetime(2010, 1, 1, 0, 0, tzinfo=timezone.utc), datetime(2010, 4, 2, 7, 30, tzinfo=timezone.utc))]),
-            (2012, 2, 3, 1, [(datetime(2012, 4, 1, 7, 30, tzinfo=timezone.utc), datetime(2012, 7, 1, 15, 0, tzinfo=timezone.utc))]),
-            (2013, 3, 3, 1, [(datetime(2013, 7, 2, 15, 0, tzinfo=timezone.utc), datetime(2013, 10, 1, 22, 30, tzinfo=timezone.utc))]),
-            (2017, 4, 3, 1, [(datetime(2017, 10, 1, 22, 30, tzinfo=timezone.utc), datetime(2018, 1, 1, 6, 0, tzinfo=timezone.utc))]),
+            (2010, 1, 3, 1, [[(datetime(2010, 1, 1, 0, 0, tzinfo=timezone.utc), datetime(2010, 4, 2, 7, 30, tzinfo=timezone.utc))]]),
+            (2012, 2, 3, 1, [[(datetime(2012, 4, 1, 7, 30, tzinfo=timezone.utc), datetime(2012, 7, 1, 15, 0, tzinfo=timezone.utc))]]),
+            (2013, 3, 3, 1, [[(datetime(2013, 7, 2, 15, 0, tzinfo=timezone.utc), datetime(2013, 10, 1, 22, 30, tzinfo=timezone.utc))]]),
+            (2017, 4, 3, 1, [[(datetime(2017, 10, 1, 22, 30, tzinfo=timezone.utc), datetime(2018, 1, 1, 6, 0, tzinfo=timezone.utc))]]),
 
-            (2010, 1, 6, 1, [(datetime(2010, 1, 1, 0, 0, tzinfo=timezone.utc), datetime(2010, 7, 2, 15, 0, tzinfo=timezone.utc))]),
-            (2012, 2, 6, 1, [(datetime(2012, 4, 1, 7, 30, tzinfo=timezone.utc), datetime(2012, 9, 30, 22, 30, tzinfo=timezone.utc))]),
-            (2013, 3, 6, 1, [(datetime(2013, 7, 2, 15, 0, tzinfo=timezone.utc), datetime(2014, 1, 1, 6, 0, tzinfo=timezone.utc))]),
-            (2017, 4, 6, 1, [(datetime(2017, 10, 1, 22, 30, tzinfo=timezone.utc), datetime(2018, 4, 2, 13, 30, tzinfo=timezone.utc))]),
+            (2010, 1, 6, 1, [[(datetime(2010, 1, 1, 0, 0, tzinfo=timezone.utc), datetime(2010, 7, 2, 15, 0, tzinfo=timezone.utc))]]),
+            (2012, 2, 6, 1, [[(datetime(2012, 4, 1, 7, 30, tzinfo=timezone.utc), datetime(2012, 9, 30, 22, 30, tzinfo=timezone.utc))]]),
+            (2013, 3, 6, 1, [[(datetime(2013, 7, 2, 15, 0, tzinfo=timezone.utc), datetime(2014, 1, 1, 6, 0, tzinfo=timezone.utc))]]),
+            (2017, 4, 6, 1, [[(datetime(2017, 10, 1, 22, 30, tzinfo=timezone.utc), datetime(2018, 4, 2, 13, 30, tzinfo=timezone.utc))]]),
 
-            (2010, 1, 12, 1, [(datetime(2010, 1, 1, 0, 0, tzinfo=timezone.utc), datetime(2011, 1, 1, 6, 0, tzinfo=timezone.utc))]),
-            (2012, 2, 12, 1, [(datetime(2012, 4, 1, 7, 30, tzinfo=timezone.utc), datetime(2013, 4, 1, 13, 30, tzinfo=timezone.utc))]),
-            (2013, 3, 12, 1, [(datetime(2013, 7, 2, 15, 0, tzinfo=timezone.utc), datetime(2014, 7, 2, 21, 0, tzinfo=timezone.utc))]),
-            (2017, 4, 12, 1, [(datetime(2017, 10, 1, 22, 30, tzinfo=timezone.utc), datetime(2018, 10, 2, 4, 30, tzinfo=timezone.utc))]),
+            (2010, 1, 12, 1, [[(datetime(2010, 1, 1, 0, 0, tzinfo=timezone.utc), datetime(2011, 1, 1, 6, 0, tzinfo=timezone.utc))]]),
+            (2012, 2, 12, 1, [[(datetime(2012, 4, 1, 7, 30, tzinfo=timezone.utc), datetime(2013, 4, 1, 13, 30, tzinfo=timezone.utc))]]),
+            (2013, 3, 12, 1, [[(datetime(2013, 7, 2, 15, 0, tzinfo=timezone.utc), datetime(2014, 7, 2, 21, 0, tzinfo=timezone.utc))]]),
+            (2017, 4, 12, 1, [[(datetime(2017, 10, 1, 22, 30, tzinfo=timezone.utc), datetime(2018, 10, 2, 4, 30, tzinfo=timezone.utc))]]),
 
-            (2010, 1, 3, 2, [(datetime(2010, 1, 1, 0, 0, tzinfo=timezone.utc), datetime(2010, 4, 2, 7, 30, tzinfo=timezone.utc)),
-                             (datetime(2010, 4, 2, 7, 30, tzinfo=timezone.utc), datetime(2010, 7, 2, 15, 0, tzinfo=timezone.utc))]),
-            (2010, 2, 12, 2, [(datetime(2010, 4, 2, 7, 30, tzinfo=timezone.utc), datetime(2011, 4, 2, 13, 30, tzinfo=timezone.utc)),
-                              (datetime(2011, 4, 2, 13, 30, tzinfo=timezone.utc), datetime(2012, 4, 1, 19, 30, tzinfo=timezone.utc))]),
-            (2012, 4, 6, 3, [(datetime(2012, 9, 30, 22, 30, tzinfo=timezone.utc), datetime(2013, 4, 1, 13, 30, tzinfo=timezone.utc)),
-                             (datetime(2013, 4, 1, 13, 30, tzinfo=timezone.utc), datetime(2013, 10, 1, 4, 30, tzinfo=timezone.utc)),
-                             (datetime(2013, 10, 1, 4, 30, tzinfo=timezone.utc), datetime(2014, 4, 1, 19, 30, tzinfo=timezone.utc))]),
+            (2010, 1, 3, 2, [[(datetime(2010, 1, 1, 0, 0, tzinfo=timezone.utc), datetime(2010, 4, 2, 7, 30, tzinfo=timezone.utc))],
+                             [(datetime(2010, 4, 2, 7, 30, tzinfo=timezone.utc), datetime(2010, 7, 2, 15, 0, tzinfo=timezone.utc))]]),
+            (2010, 2, 12, 2, [[(datetime(2010, 4, 2, 7, 30, tzinfo=timezone.utc), datetime(2011, 4, 2, 13, 30, tzinfo=timezone.utc))],
+                              [(datetime(2011, 4, 2, 13, 30, tzinfo=timezone.utc), datetime(2012, 4, 1, 19, 30, tzinfo=timezone.utc))]]),
+            (2012, 4, 6, 3, [[(datetime(2012, 9, 30, 22, 30, tzinfo=timezone.utc), datetime(2013, 4, 1, 13, 30, tzinfo=timezone.utc))],
+                             [(datetime(2013, 4, 1, 13, 30, tzinfo=timezone.utc), datetime(2013, 10, 1, 4, 30, tzinfo=timezone.utc))],
+                             [(datetime(2013, 10, 1, 4, 30, tzinfo=timezone.utc), datetime(2014, 4, 1, 19, 30, tzinfo=timezone.utc))]]),
         ]
         # @formatter:on
         for year, quarter, period, number_of_maps, expected in cases:
@@ -392,6 +401,29 @@ class TestConfiguration(TestCase):
                 date_range = input_config.get_map_date_ranges()
 
                 self.assertEqual(expected, date_range)
+
+    # pre change: [map_1, map_2, map_3]
+    # [[map_1_time_range_1, map_1_time_range_2], [map_2_time_range_1, ..]]
+    # combine data -> [[map_1_time_range_1, map_1_time_range_2]]
+    # don't combine data -> [[map_1_time_range], [map_2_time_range]]
+
+    def test_get_date_ranges_when_combining_data_across_time_ranges(self):
+        start_1 = create_utc_datetime()
+        end_1 = start_1 + timedelta(hours=1)
+        start_2 = end_1 + timedelta(days=23)
+        end_2 = start_2 + timedelta(hours=24)
+        time_ranges = [
+            TimeRange(start=start_1, end=end_1),
+            TimeRange(start=start_2, end=end_2),
+        ]
+        input_config = create_configuration(
+            time_ranges=time_ranges, combine_data_across_time_ranges=True
+        )
+
+        actual_date_ranges = input_config.get_map_date_ranges()
+        expected_date_ranges = [[(start_1, end_1), (start_2, end_2)]]
+
+        self.assertEqual(expected_date_ranges, actual_date_ranges)
 
 
 class TestCanonicalMapPeriod(TestCase):

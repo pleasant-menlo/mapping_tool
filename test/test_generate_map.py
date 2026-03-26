@@ -110,8 +110,11 @@ class TestGenerateMap(unittest.TestCase):
     def test_generate_map(self, mock_generate_l2, mock_generate_l3, mock_dependency_collector_class):
         map_descriptor = create_map_descriptor(instrument=MappableInstrumentShortName.HI, principal_data="spx",
                                                spin_phase="full")
-        start_date = datetime(2020, 1, 1)
-        end_date = datetime(2020, 7, 1)
+
+        time_ranges = [
+            (datetime(2020, 1, 1), datetime(2020, 7, 1)),
+            (datetime(2021, 1, 1), datetime(2021, 7, 1)),
+        ]
 
         l2_ram_descriptor = create_map_descriptor(instrument=MappableInstrumentShortName.HI, survival_corrected='nsp',
                                                   spin_phase="ram")
@@ -120,10 +123,9 @@ class TestGenerateMap(unittest.TestCase):
                                                           spin_phase="anti")
         l3_ena_map_descriptor = create_map_descriptor(instrument=MappableInstrumentShortName.HI, spin_phase="full")
 
-        l2_ram_dependency_collector = Mock(descriptor=l2_ram_descriptor, start_date=start_date, end_date=end_date)
-        l2_antiram_dependency_collector = Mock(descriptor=l2_antiram_map_descriptor, start_date=start_date,
-                                               end_date=end_date)
-        l3_ena_dependency_collector = Mock(descriptor=l3_ena_map_descriptor, start_date=start_date, end_date=end_date)
+        l2_ram_dependency_collector = Mock(descriptor=l2_ram_descriptor, time_ranges=time_ranges)
+        l2_antiram_dependency_collector = Mock(descriptor=l2_antiram_map_descriptor, time_ranges=time_ranges)
+        l3_ena_dependency_collector = Mock(descriptor=l3_ena_map_descriptor, time_ranges=time_ranges)
 
         mock_dependency_collector_class.side_effect = [
             l3_ena_dependency_collector,
@@ -138,15 +140,16 @@ class TestGenerateMap(unittest.TestCase):
         mock_generate_l2.side_effect = [l2_ram_map, l2_antiram_map]
         mock_generate_l3.side_effect = [l3_full_map, l3_spx_map]
 
-        spx_dependency_collector = DependencyCollector(map_descriptor, [(start_date, end_date)])
+        spx_dependency_collector = DependencyCollector(map_descriptor, time_ranges)
         output_map = generate_map(spx_dependency_collector)
 
         mock_dependency_collector_class.assert_has_calls([
-            call(create_map_descriptor(instrument=MappableInstrumentShortName.HI, spin_phase="full"), [(start_date, end_date)]),
+            call(create_map_descriptor(instrument=MappableInstrumentShortName.HI, spin_phase="full"),
+                 time_ranges),
             call(create_map_descriptor(instrument=MappableInstrumentShortName.HI, survival_corrected='nsp',
-                                       spin_phase="ram"), [(start_date, end_date)]),
+                                       spin_phase="ram"), time_ranges),
             call(create_map_descriptor(instrument=MappableInstrumentShortName.HI, survival_corrected='nsp',
-                                       spin_phase="anti"), [(start_date, end_date)]),
+                                       spin_phase="anti"), time_ranges),
         ])
 
         mock_generate_l2.assert_has_calls([
@@ -166,7 +169,7 @@ class TestGenerateMap(unittest.TestCase):
         start_date = datetime(2020, 1, 1)
         end_date = datetime(2020, 7, 1)
 
-        dependency_collector = DependencyCollector(map_descriptor,[( start_date, end_date)])
+        dependency_collector = DependencyCollector(map_descriptor, [(start_date, end_date)])
 
         with self.assertRaises(ValueError) as context:
             generate_map(dependency_collector)
@@ -342,7 +345,7 @@ class TestGenerateMap(unittest.TestCase):
                              MapDescriptor.from_string(descriptor.to_string()).map_spice_coord_frame)
             return ["One whole processed file"]
 
-        #mock_process.return_value = [Path("some_path")]
+        # mock_process.return_value = [Path("some_path")]
         mock_process.side_effect = mock_do_processing
 
         _ = generate_l3_map(mock_dependency_collector, [])
@@ -505,7 +508,7 @@ class TestGenerateMap(unittest.TestCase):
         hi_descriptor = create_map_descriptor(instrument=MappableInstrumentShortName.HI)
         dependency_collector = DependencyCollector(hi_descriptor,
                                                    [(datetime(2020, 1, 1, tzinfo=timezone.utc),
-                                                   datetime(2020, 1, 2, tzinfo=timezone.utc))])
+                                                     datetime(2020, 1, 2, tzinfo=timezone.utc))])
         with self.assertRaises(ValueError) as e:
             generate_l2_map(dependency_collector)
         self.assertIn(f"Processing for {hi_descriptor.to_string()} failed", e.exception.__notes__)

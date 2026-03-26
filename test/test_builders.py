@@ -39,7 +39,7 @@ def create_map_descriptor(
         quantity_suffix=quantity_suffix,
         spice_frame=spice_frame,
         kernel_path=kernel_path,
-        spectral_index_energy_step_range=spectral_index_energy_step_range
+        spectral_index_energy_step_range=spectral_index_energy_step_range,
     )
 
 
@@ -62,6 +62,7 @@ def create_configuration(
         kernel_path: Optional[Path] = None,
         time_ranges=None,
         spectral_index_energy_step_range=None,
+        combine_data_across_time_ranges: bool = None,
 ):
     if canonical_map_period is None and time_ranges is None:
         canonical_map_period = canonical_map_period if canonical_map_period is not None else create_canonical_map_period()
@@ -82,7 +83,8 @@ def create_configuration(
         output_directory=output_directory,
         kernel_path=kernel_path,
         time_ranges=time_ranges,
-        spectral_index_energy_step_range=spectral_index_energy_step_range
+        spectral_index_energy_step_range=spectral_index_energy_step_range,
+        combine_data_across_time_ranges=combine_data_across_time_ranges,
     )
 
 
@@ -92,7 +94,7 @@ def create_canonical_map_period_dict():
             "year": 2025,
             "quarter": 1,
             "map_period": 6,
-            "number_of_maps": 1
+            "number_of_maps": 1,
         }
     }
 

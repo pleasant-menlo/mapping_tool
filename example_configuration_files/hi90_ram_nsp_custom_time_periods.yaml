@@ -2,10 +2,10 @@
 # Docs: ../README.md
 
 time_ranges:
-  - start: 2025-11-01  # The start date of a first map
-    end: 2025-11-15    # The end date of a first map
-  - start: 2025-11-16  # The start date of the second map period
-    end: 2025-11-27    # The end date of the second map period
+  - start: 2026-01-01  # The start date of a first map
+    end: 2026-01-12    # The end date of a first map
+  - start: 2026-02-20  # The start date of the second map period
+    end: 2026-02-23    # The end date of the second map period
 instrument: Hi 90
 spin_phase: ram
 reference_frame_type: spacecraft
@@ -14,4 +14,6 @@ spice_frame_name: hae
 pixelation_scheme: square
 pixel_parameter: 2
 map_data_type: ENA Intensity
-output_directory: C:\Users\Harrison\Documents\CAVA Mapping Tool
+output_directory: .
+quantity_suffix: timeUncombined
+combine_data_across_time_ranges: false

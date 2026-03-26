@@ -42,10 +42,10 @@ class DependencyCollector:
     def get_pointing_sets(self) -> list[str]:
         pset_descriptors = self._map_instrument_pset_descriptors()
         assert len(pset_descriptors) > 0
-        return self._find_psets_in_time_ranges( self._query_psets(pset_descriptors))
+        return self._find_psets_in_time_ranges(self._query_psets(pset_descriptors))
 
     def _map_instrument_pset_descriptors(self):
-        map_instrument_pset_descriptors =[]
+        map_instrument_pset_descriptors = []
         if self.descriptor.instrument == MappableInstrumentShortName.HI:
             if self.descriptor.sensor in ["45", "combined"]:
                 map_instrument_pset_descriptors.append(f"45sensor-pset")
@@ -66,12 +66,16 @@ class DependencyCollector:
     def _query_psets(self, pset_descriptors: list[str]) -> list[dict]:
         query_results = []
         for pset_descriptor in pset_descriptors:
-            query_results.extend(imap_data_access.query(instrument=self.descriptor.instrument.name.lower(),
-                                                                                start_date=self.start_date.strftime("%Y%m%d"),
-                                                                                end_date=self.end_date.strftime("%Y%m%d"),
-                                                                                data_level="l1c",
-                                                                                descriptor=pset_descriptor,
-                                                                                version="latest"))
+            query_results.extend(
+                imap_data_access.query(
+                    instrument=self.descriptor.instrument.name.lower(),
+                    start_date=self.start_date.strftime("%Y%m%d"),
+                    end_date=self.end_date.strftime("%Y%m%d"),
+                    data_level="l1c",
+                    descriptor=pset_descriptor,
+                    version="latest",
+                )
+            )
         return query_results
 
     def _find_psets_in_time_ranges(self, query_results: list[dict]) -> list[str]:
@@ -85,12 +89,10 @@ class DependencyCollector:
     def get_survival_probability_dependencies(self, input_maps: list[Path]) -> list[ScienceInput]:
         hi_nsp_combined = (
                 self.descriptor.instrument == MappableInstrumentShortName.HI
-                and self.descriptor.sensor == 'combined'
-                and self.descriptor.survival_corrected == 'nsp'
+                and self.descriptor.sensor == "combined"
+                and self.descriptor.survival_corrected == "nsp"
         )
-        spectral_index = (
-                'spx' in self.descriptor.principal_data
-        )
+        spectral_index = "spx" in self.descriptor.principal_data
         not_requiring_pointing_sets = hi_nsp_combined or spectral_index
 
         if not_requiring_pointing_sets:
@@ -106,15 +108,15 @@ class DependencyCollector:
         if self.descriptor.survival_corrected == "nsp":
             return []
 
-        psets = imap_data_access.query(
-            instrument='glows',
+        query_results = imap_data_access.query(
+            instrument="glows",
             descriptor=self.descriptor.get_descriptor_for_query("glows"),
             start_date=self.start_date.strftime("%Y%m%d"),
             end_date=self.end_date.strftime("%Y%m%d"),
-            version="latest"
+            version="latest",
         )
 
-        return [ScienceInput(Path(f["file_path"]).name) for f in psets]
+        return [ScienceInput(f) for f in self._find_psets_in_time_ranges(query_results)]
 
     @staticmethod
     def _get_l1c_parents(input_map: Path) -> set[str]:
@@ -153,7 +155,7 @@ class DependencyCollector:
             case _:
                 relevant_descriptors = []
 
-        return [f for f in files if f['descriptor'] in relevant_descriptors]
+        return [f for f in files if f["descriptor"] in relevant_descriptors]
 
     def get_ancillary_dependencies(self) -> list[AncillaryInput]:
         ancillaries = imap_data_access.query(table="ancillary", instrument=self.descriptor.instrument.name.lower())
@@ -181,8 +183,10 @@ class DependencyCollector:
 
             return dates_to_files.values()
 
-        latest_ancillary_inputs = [AncillaryInput(Path(file['file_path']).name) for file in
-                                   filter_files_by_highest_version(ancillaries)]
+        latest_ancillary_inputs = [
+            AncillaryInput(Path(file["file_path"]).name)
+            for file in filter_files_by_highest_version(ancillaries)
+        ]
 
         if self.descriptor.instrument == MappableInstrumentShortName.ULTRA:
             if self.ultra_energy_ranges:

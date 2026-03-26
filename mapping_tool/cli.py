@@ -46,7 +46,7 @@ def do_mapping_tool(config: Configuration):
     descriptor = config.get_map_descriptor()
 
     try:
-        first_start_date = map_date_ranges[0][0]
+        first_start_date, _end = map_date_ranges[0][0]
         output_filename = get_output_filename(descriptor, first_start_date)
         output_directory = config.output_directory
         final_output_path = output_directory / output_filename
@@ -55,13 +55,15 @@ def do_mapping_tool(config: Configuration):
             return final_output_path
 
         output_map_paths = []
-        for i, (start_date, end_date) in enumerate(map_date_ranges, start=1):
-            map_details = f'{descriptor.to_mapping_tool_string()} {start_date.strftime("%Y-%m-%d")} to {end_date.strftime("%Y-%m-%d")}'
+        for i, map_date_range in enumerate(map_date_ranges, start=1):
+            start_date, end_date = map_date_range[0]
+            map_details = f"{descriptor.to_mapping_tool_string()} {start_date.strftime('%Y-%m-%d')} to {end_date.strftime('%Y-%m-%d')}"
 
             print(f"Generating map {i}/{len(map_date_ranges)}...")
             logger.info(f"Generating map: {map_details}")
-            dependency_collector = DependencyCollector(descriptor, [(start_date, end_date)],
-                                                       config.ultra_energy_bin_group_edges)
+            dependency_collector = DependencyCollector(
+                descriptor, map_date_range, config.ultra_energy_bin_group_edges
+            )
             generated_map_path = generate_map(dependency_collector)
             output_map_paths.append(generated_map_path)
 
@@ -90,14 +92,15 @@ def save_output_cdf(output_path: Path, map_cdf_paths: list[Path], config: Config
 
     first_map_path = map_cdf_paths[0]
     with CDF(str(output_path), str(first_map_path), readonly=False) as cdf:
-        cdf.attrs['Logical_source'] = descriptor.to_mapping_tool_string()
-        cdf.attrs['Logical_file_id'] = output_path.stem
-        cdf.attrs['Mapper_tool_configuration'] = config.raw_config
+        cdf.attrs["Logical_source"] = descriptor.to_mapping_tool_string()
+        cdf.attrs["Logical_file_id"] = output_path.stem
+        cdf.attrs["Mapper_tool_configuration"] = config.raw_config
 
         _, data_type_description = str(cdf.attrs["Data_type"]).split(">")
         data_level = get_data_level_for_descriptor(descriptor)
-        cdf.attrs[
-            'Data_type'] = f"{data_level.value.upper()}_{descriptor.to_mapping_tool_string()}>{data_type_description}"
+        cdf.attrs["Data_type"] = (
+            f"{data_level.value.upper()}_{descriptor.to_mapping_tool_string()}>{data_type_description}"
+        )
 
         for additional_map_path in map_cdf_paths[1:]:
             with CDF(str(additional_map_path)) as additional_map:

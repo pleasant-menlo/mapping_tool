@@ -56,6 +56,10 @@
         ]
       }
     },
+    "combine_data_across_time_ranges": {
+      "type": "boolean",
+      "description": "A flag that when true the mapper will produce a map with a single epoch with input data from all specified time ranges. Cannot be used with canonical map period."
+    },
     "instrument": {
       "type": "string",
       "enum": [
@@ -192,5 +196,12 @@
         "canonical_map_period"
       ]
     }
-  ]
+  ],
+  "dependentSchemas": {
+    "time_ranges": {
+      "required": [
+        "combine_data_across_time_ranges"
+      ]
+    }
+  }
 }
