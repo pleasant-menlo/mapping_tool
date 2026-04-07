@@ -240,7 +240,11 @@ class TestConfiguration(TestCase):
         cases = [
             ("ECLIPJ2000", None, "eclipj2000", SpiceFrame),
             ("hae", None, "hae", SpiceFrame),
-            ("IMAP_HNU", None, "imaphnu", SpiceFrame),
+            ("IMAP_HAE", None, "hae", SpiceFrame),
+            ("IMAP_HRC", None, "hrc", SpiceFrame),
+            ("IMAP_GCS", None, "gcs", SpiceFrame),
+            ("IMAP_HRE", None, "hre", SpiceFrame),
+            ("IMAP_HNU", None, "hnu", SpiceFrame),
             ("IMAP_CUSTOM", Path("path_to_custom_kernel"), "imapcustom", CustomSpiceFrame),
             ("ECLIPJ2000", Path("path_to_custom_kernel"), "eclipj2000", CustomSpiceFrame),
         ]

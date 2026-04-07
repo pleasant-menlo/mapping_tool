@@ -183,6 +183,10 @@ class Configuration:
             spice_frame = CustomSpiceFrame(name=self.spice_frame_name)
 
         coordinate_system = re.sub(r"[^A-Za-z0-9]", "", self.spice_frame_name).lower()
+        known_coord_frames = {"hae", "hre", "hnu", "gcs", "hrc"}
+        without_imap = re.sub(r"^imap", "", coordinate_system)
+        if without_imap in known_coord_frames:
+            coordinate_system = without_imap
 
         return MappingToolDescriptor(
             frame_descriptor=frame_descriptors[self.reference_frame_type],
