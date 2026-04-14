@@ -1,5 +1,5 @@
 version = 1
-revision = 3
+revision = 2
 requires-python = ">=3.10"
 resolution-markers = [
     "python_full_version >= '3.12' and platform_machine == 'ARM64' and sys_platform == 'win32'",
@@ -715,8 +715,8 @@ wheels = [
 
 [[package]]
 name = "imap-l3-processing"
-version = "1.0.7"
-source = { git = "https://github.com/IMAP-Science-Operations-Center/imap_L3_processing#25e7a251103dc10a96b3118bb67a5c778013a0ba" }
+version = "1.0.8"
+source = { git = "https://github.com/IMAP-Science-Operations-Center/imap_L3_processing#8a130cc474d233300f03feea4789d4caced3ae2f" }
 dependencies = [
     { name = "astropy" },
     { name = "astropy-healpix" },
@@ -745,7 +745,7 @@ dependencies = [
 
 [[package]]
 name = "imap-processing"
-version = "1.0.25"
+version = "1.0.29"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "astropy-healpix" },
@@ -760,9 +760,9 @@ dependencies = [
     { name = "spiceypy" },
     { name = "xarray" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/ac/c9/33461f1fcd3486bd99b859eff94576c305b9bacc3652e6e40f7378cc474a/imap_processing-1.0.25.tar.gz", hash = "sha256:5c9e626bfcddbf658f0249117618b02ddec51e0dd2a5d06a018457d0278518a6", size = 1029465, upload-time = "2026-03-13T17:05:14.665Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/72/46/3d6cfd3e4d9db2813c962ecd671dd1917efdc409e01b76346a707972eb31/imap_processing-1.0.29.tar.gz", hash = "sha256:5f7fc33732bf28598e8e24b5e5abb01f5e47e6a0962a6564319466c06bb1e688", size = 1057562, upload-time = "2026-04-13T21:29:52.409Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/6c/60/3ab33ac45074b53d06e9fa605cf0e7736d45e9a11d5ad8a5eb66ce7fd54e/imap_processing-1.0.25-py3-none-any.whl", hash = "sha256:e610188a9b09f9980e52961f32535df6303dca144e6bc7eb1674d741f6138334", size = 1170757, upload-time = "2026-03-13T17:05:13.019Z" },
+    { url = "https://files.pythonhosted.org/packages/3c/89/0365d0c3ed07e5871fbdaa6cb9b0d24e22166c611ac38e39a25d47e8a493/imap_processing-1.0.29-py3-none-any.whl", hash = "sha256:96c5e8d8781438b157a20d6c8a7943f5b6e9a4ee890cf869d72f01be8c847d8e", size = 1200192, upload-time = "2026-04-13T21:29:50.631Z" },
 ]
 
 [[package]]
@@ -1086,7 +1086,7 @@ requires-dist = [
     { name = "argparse", specifier = ">=1.4.0" },
     { name = "hatchling" },
     { name = "imap-l3-processing", git = "https://github.com/IMAP-Science-Operations-Center/imap_L3_processing" },
-    { name = "imap-processing", specifier = "==1.0.25" },
+    { name = "imap-processing", specifier = ">=1.0.29" },
     { name = "jsonschema", specifier = ">=4.25.0" },
     { name = "pyyaml", specifier = ">=6.0.2" },
     { name = "uv-dynamic-versioning" },
