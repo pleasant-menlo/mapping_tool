@@ -6,10 +6,10 @@
 ## Specification of the time periods to be used for map creation. Either a canonical map period or a list of custom time ranges can be specified, but not both.
 # For the canonical_map_period, all properties below are required. Example of a canonical map period definition:
 canonical_map_period:
-  year: 2025            # The year corresponding to the first map
-  quarter: 2            # The quarter corresponding to the first map
+  year: 2026            # The year corresponding to the first map
+  quarter: 1            # The quarter corresponding to the first map
   map_period: 3         # The map period for each map in months (e.g. 3, 6, 12)
-  number_of_maps: 2     # The number of maps to be calculated for the output CDF file
+  number_of_maps: 1     # The number of maps to be calculated for the output CDF file
 
 # Example of a list of custom date ranges definition:
 #time_ranges:
@@ -37,13 +37,17 @@ survival_corrected: true
 # Some frames (e.g. "hae" or "IMAP_HAE") are defined by the mission and can be used without supplying a custom spice kernel.
 spice_frame_name: hae
 
+## Boolean value indicating whether to use predicted ephemeris data
+# If false is passed, only reconstructed ephemeris data will be used
+use_predicted_ephemeris: true
+
 ## The pixelation scheme to be used for map generation.
 # Valid options are "square" or "healpix"
 pixelation_scheme: square
 
 ## The pixel parameter to be used for map generation. This defines the degree resolution for square maps, and the nside for HEALPix maps
 # Valid options are 2, 4, and 6 for square maps, and 16, 32, 64, 128, 256, and 512 for HEALPix maps
-pixel_parameter: 2
+pixel_parameter: 6
 
 ## The primary map data type
 # Valid parameters are "ENA Intensity", "Spectral Index", or "Spectral Index NBS"

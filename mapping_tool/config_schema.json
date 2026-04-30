@@ -172,6 +172,10 @@
       "type": "string",
       "description": "The range of energy steps to be used for the spectral fitting",
       "pattern": "^[0-9]{1,2}-[0-9]{1,2}$"
+    },
+    "use_predicted_ephemeris": {
+      "type": "boolean",
+      "description": "Whether to use predicted ephemeris kernels. If false, only use reconstructed SPICE data."
     }
   },
   "required": [
@@ -183,7 +187,8 @@
     "pixelation_scheme",
     "pixel_parameter",
     "map_data_type",
-    "output_directory"
+    "output_directory",
+    "use_predicted_ephemeris"
   ],
   "oneOf": [
     {

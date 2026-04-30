@@ -12,33 +12,35 @@ from spacepy.pycdf import CDF
 
 import mapping_tool.cli as cli
 from mapping_tool.cli import do_mapping_tool, cleanup_l2_l3_dependencies
-from mapping_tool.configuration import TimeRange
+from mapping_tool.configuration import TimeRange, Configuration
 from mapping_tool.mapping_tool_descriptor import MappingToolDescriptor
 from test.test_builders import create_map_descriptor, create_configuration, create_canonical_map_period
 from test.test_helpers import get_test_cdf_file_path, utcdatetime
 
+MODULE = "mapping_tool.cli"
+
 
 class TestCli(unittest.TestCase):
-
-    @patch('mapping_tool.cli.print')
-    @patch('mapping_tool.cli.CDF')
-    @patch('mapping_tool.cli.shutil.copy')
-    @patch('mapping_tool.cli.generate_map')
-    @patch('mapping_tool.cli.DependencyCollector')
-    @patch('mapping_tool.cli.cleanup_l2_l3_dependencies')
-    @patch('mapping_tool.cli.sort_cdfs_by_epoch')
+    @patch(f'{MODULE}.shutil.copy')
+    @patch(f'{MODULE}.print')
+    @patch(f'{MODULE}.CDF')
+    @patch(f'{MODULE}.generate_map')
+    @patch(f'{MODULE}.DependencyCollector')
+    @patch(f'{MODULE}.cleanup_l2_l3_dependencies')
+    @patch(f'{MODULE}.sort_cdfs_by_epoch')
     def test_do_mapping_tool(self, mock_sort_cdfs_by_epoch, mock_cleanup, mock_dependency_collector,
-                             mock_generate_map, mock_copy_file, mock_cdf, mock_print):
+                             mock_generate_map, mock_cdf, mock_print, _):
         self.assertTrue(hasattr(cli, "logger"))
         cli.logger.info = Mock()
 
-        mock_configuration = Mock()
+        mock_configuration = Mock(spec=Configuration)
 
         hi_descriptor = create_map_descriptor(instrument=MappableInstrumentShortName.HI, sensor="90",
                                               quantity_suffix="TEST")
 
         mock_configuration.get_map_descriptor.return_value = hi_descriptor
         mock_configuration.raw_config = "config: something \n another_thing: something_2"
+        mock_configuration.use_predicted_ephemeris = sentinel.use_predicted_ephemeris
 
         generated_cdf_path_1 = Path('path/to/cdf/imap_hi_l3_h90-ena-h-sf-sp-ram-hae-2deg-6mo_20250101_v000.cdf')
         generated_cdf_path_2 = Path('path/to/cdf/imap_hi_l3_h90-ena-h-sf-sp-ram-hae-2deg-6mo_20260101_v000.cdf')
@@ -118,11 +120,13 @@ class TestCli(unittest.TestCase):
                 call(
                     hi_descriptor,
                     map_date_ranges[0],
+                    sentinel.use_predicted_ephemeris,
                     sentinel.ultra_energy_bin_group_edges,
                 ),
                 call(
                     hi_descriptor,
                     map_date_ranges[1],
+                    sentinel.use_predicted_ephemeris,
                     sentinel.ultra_energy_bin_group_edges,
                 ),
             ]
@@ -145,7 +149,7 @@ class TestCli(unittest.TestCase):
             call(f"Created file {output_map_path}")
         ])
 
-    @patch('mapping_tool.cli.generate_map')
+    @patch(f'{MODULE}.generate_map')
     def test_ena_maps_with_multiple_date_ranges_are_concatenated_into_a_single_cdf_file(self, mock_generate_map):
         l2_maps = ("l2_maps",
                    [get_test_cdf_file_path() / 'l2_ena_20250215.cdf', get_test_cdf_file_path() / 'l2_ena_20250115.cdf'])
@@ -196,7 +200,7 @@ class TestCli(unittest.TestCase):
 
                         self.assertEqual(expected_energy_shape, cdf['energy'].shape)
 
-    @patch('mapping_tool.cli.generate_map')
+    @patch(f'{MODULE}.generate_map')
     def test_uses_custom_for_duration_of_custom_time_range_map(self, mock_generate_map):
         l2_maps = [get_test_cdf_file_path() / 'l2_ena_20250215.cdf', get_test_cdf_file_path() / 'l2_ena_20250115.cdf']
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -223,11 +227,11 @@ class TestCli(unittest.TestCase):
                     "L2_h90-ena-h-sf-nsp-ram-eclipj2000-4deg-custom-mapper>Level-2 ENA Intensity Map for Hi90",
                     str(cdf.attrs["Data_type"]))
 
-    @patch('mapping_tool.cli.CDF')
-    @patch('mapping_tool.cli.shutil.copy')
-    @patch('mapping_tool.cli.cleanup_l2_l3_dependencies')
-    @patch('mapping_tool.cli.generate_map')
-    @patch('mapping_tool.cli.sort_cdfs_by_epoch')
+    @patch(f'{MODULE}.CDF')
+    @patch(f'{MODULE}.shutil.copy')
+    @patch(f'{MODULE}.cleanup_l2_l3_dependencies')
+    @patch(f'{MODULE}.generate_map')
+    @patch(f'{MODULE}.sort_cdfs_by_epoch')
     def test_generate_maps_raises_exception_when_one_map_fails(self, mock_sort_cdfs_by_epoch, mock_generate_map,
                                                                mock_cleanup_l2_l3_dependencies,
                                                                _mock_copy, _mock_cdf):
@@ -295,7 +299,7 @@ class TestCli(unittest.TestCase):
                 finally:
                     imap_data_access.config["DATA_DIR"] = original_imap_data_dir
 
-    @patch("mapping_tool.cli.generate_map")
+    @patch(f"{MODULE}.generate_map")
     def test_tool_does_not_generate_map_if_file_already_exists(self, mock_generate_map):
         with tempfile.TemporaryDirectory() as tmpdir:
             config = create_configuration(output_directory=Path(tmpdir))
@@ -309,10 +313,10 @@ class TestCli(unittest.TestCase):
             self.assertEqual("text", existing_file.read_text())
             self.assertEqual(existing_file, output_file)
 
-    @patch("mapping_tool.cli.generate_map")
-    @patch("mapping_tool.cli.save_output_cdf")
-    @patch("mapping_tool.cli.cleanup_l2_l3_dependencies")
-    @patch("mapping_tool.cli.CDF")
+    @patch(f"{MODULE}.generate_map")
+    @patch(f"{MODULE}.save_output_cdf")
+    @patch(f"{MODULE}.cleanup_l2_l3_dependencies")
+    @patch(f"{MODULE}.CDF")
     def test_cleanup_is_called_after_exception_on_save(self, mock_cdf, mock_cleanup, mock_save_output_cdf,
                                                        mock_generate_map):
         config = create_configuration()
@@ -320,7 +324,7 @@ class TestCli(unittest.TestCase):
         mock_generate_map.return_value = Path("")
         mock_save_output_cdf.side_effect = Exception("injected exception")
 
-        with self.assertLogs(cli.logger, logging.ERROR) as log_context:
+        with self.assertLogs(cli.logger, logging.ERROR):
             do_mapping_tool(config)
 
         mock_cleanup.assert_called_once_with(config.get_map_descriptor())

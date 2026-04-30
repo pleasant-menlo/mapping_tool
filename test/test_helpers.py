@@ -13,11 +13,11 @@ import pytz
 
 
 def get_example_config_path():
-    return Path(__name__).parent / "example_configuration_files"
+    return Path(__file__).parent / "example_configuration_files"
 
 
 def get_test_cdf_file_path():
-    return Path(__name__).parent / "cdf_files"
+    return Path(__file__).parent / "cdf_files"
 
 
 def utcdatetime():

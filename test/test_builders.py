@@ -59,6 +59,7 @@ def create_configuration(
         map_data_type: str = "ENA Intensity",
         lo_species: str = "h",
         output_directory: Path = Path.home() / "Documents" / "Tests",
+        use_predicted_ephemeris: bool = False,
         kernel_path: Optional[Path] = None,
         time_ranges=None,
         spectral_index_energy_step_range=None,
@@ -85,6 +86,7 @@ def create_configuration(
         time_ranges=time_ranges,
         spectral_index_energy_step_range=spectral_index_energy_step_range,
         combine_data_across_time_ranges=combine_data_across_time_ranges,
+        use_predicted_ephemeris=use_predicted_ephemeris,
     )
 
 
@@ -111,6 +113,7 @@ def create_config_dict(args: Dict):
         "map_data_type": "ENA Intensity",
         "lo_species": "h",
         "output_directory": "path/to/output",
+        "use_predicted_ephemeris": False,
     }
     config.update(args)
 

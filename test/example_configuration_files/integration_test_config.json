@@ -16,5 +16,6 @@
   "map_data_type": "ENA Intensity",
   "lo_species": "h",
   "output_directory": ".",
-  "quantity_suffix": "test"
+  "quantity_suffix": "test",
+  "use_predicted_ephemeris": false
 }

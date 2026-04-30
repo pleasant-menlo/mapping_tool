@@ -24,9 +24,9 @@ class TestConfiguration(TestCase):
         for extension in ["json", "yaml"]:
             with self.subTest(extension):
                 example_config_path = get_example_config_path() / f"test_l2_config.{extension}"
-                config: Configuration = Configuration.from_file(example_config_path)
+                config = Configuration.from_file(example_config_path)
 
-                expected_config: Configuration = Configuration(
+                expected_config = Configuration(
                     canonical_map_period=CanonicalMapPeriod(year=2025, quarter=1, map_period=6, number_of_maps=1),
                     instrument="Hi 90",
                     spin_phase="Ram",
@@ -45,6 +45,7 @@ class TestConfiguration(TestCase):
                         yaml.safe_load(example_config_path.read_text())
                     ),
                     combine_data_across_time_ranges=None,
+                    use_predicted_ephemeris=False,
                 )
 
                 self.assertEqual(expected_config, config)
@@ -53,9 +54,9 @@ class TestConfiguration(TestCase):
         for extension in ["json", "yaml"]:
             with self.subTest(extension):
                 example_config_path = get_example_config_path() / f"test_l2_config_defined_time_ranges.{extension}"
-                config: Configuration = Configuration.from_file(example_config_path)
+                config = Configuration.from_file(example_config_path)
 
-                expected_config: Configuration = Configuration(
+                expected_config = Configuration(
                     time_ranges=[
                         TimeRange(start=datetime(2025, 1, 1, 1, 1, 1, 100000, tzinfo=timezone(timedelta(seconds=3600))),
                                   end=datetime(2025, 1, 2, 2, 2, 2, 200000, tzinfo=timezone(timedelta(seconds=7200)))),
@@ -78,6 +79,7 @@ class TestConfiguration(TestCase):
                         yaml.safe_load(example_config_path.read_text())
                     ),
                     combine_data_across_time_ranges=False,
+                    use_predicted_ephemeris=False,
                 )
 
                 self.assertEqual(expected_config, config)
@@ -92,9 +94,9 @@ class TestConfiguration(TestCase):
         for extension in ["json", "yaml"]:
             with self.subTest(extension):
                 example_config_path = get_example_config_path() / f"test_config_with_optionals.{extension}"
-                config: Configuration = Configuration.from_file(example_config_path)
+                config = Configuration.from_file(example_config_path)
 
-                expected_config: Configuration = Configuration(
+                expected_config = Configuration(
                     raw_config=yaml.dump(yaml.safe_load(example_config_path.read_text())),
                     canonical_map_period=CanonicalMapPeriod(year=2025, quarter=1, map_period=6, number_of_maps=1),
                     instrument='Ultra 45',
@@ -112,6 +114,7 @@ class TestConfiguration(TestCase):
                     ultra_energy_bin_group_edges="0,4,8,12,16,20,24,28,32,36,40,44,46",
                     spectral_index_energy_step_range=(1, 4),
                     combine_data_across_time_ranges=True,
+                    use_predicted_ephemeris=False,
                 )
 
                 self.assertEqual(expected_config, config)
@@ -140,6 +143,7 @@ class TestConfiguration(TestCase):
                     "map_data_type": "ENA Intensity",
                     "kernel_path": Path("path/to/another_kernel"),
                     "output_directory": Path("path/to/output"),
+                    "use_predicted_ephemeris": False,
                 }
 
                 mock_validate.assert_called_with(expected_config, config_schema.schema)
@@ -182,7 +186,8 @@ class TestConfiguration(TestCase):
             "pixelation_scheme",
             "pixel_parameter",
             "map_data_type",
-            "output_directory"
+            "output_directory",
+            "use_predicted_ephemeris"
         ]
         for field in validation_error_cases:
             with self.subTest(field):
@@ -190,9 +195,7 @@ class TestConfiguration(TestCase):
                 del config[field]
                 mock_parse.return_value = config
                 with self.assertRaises(jsonschema.exceptions.ValidationError):
-                    Configuration.from_file(
-                        get_example_config_path() / "test_l2_config.json"
-                    )
+                    Configuration.from_file(get_example_config_path() / "test_l2_config.json")
 
     def test_get_map_descriptors_frame_descriptors(self):
         cases = [

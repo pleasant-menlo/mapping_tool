@@ -8,7 +8,7 @@ import imap_data_access
 from imap_processing.ena_maps.utils.naming import MappableInstrumentShortName
 from imap_data_access.processing_input import AncillaryInput, ScienceInput
 
-from imap_l3_processing.utils import FurnishMetakernelOutput
+from imap_l3_processing.utils import FurnishMetakernelOutput, SpiceKernelTypes
 from mapping_tool.dependency_collector import (
     DependencyCollector,
     MAPPING_TOOL_KERNEL_TYPES,
@@ -19,9 +19,11 @@ from spacepy.pycdf import CDF
 
 from test.test_helpers import get_test_cdf_file_path
 
+MODULE = "mapping_tool.dependency_collector"
+
 
 class TestDependencyCollector(unittest.TestCase):
-    @patch("mapping_tool.dependency_collector.imap_data_access.query")
+    @patch(f"{MODULE}.imap_data_access.query")
     def test_get_pointing_sets(self, mock_query):
         day_one = datetime(2025, 1, 1, tzinfo=timezone.utc)
         day_two = datetime(2025, 1, 2, tzinfo=timezone.utc)
@@ -72,7 +74,7 @@ class TestDependencyCollector(unittest.TestCase):
                     coordinate_system="hae",
                 )
 
-                dependency_collector = DependencyCollector(descriptor, [(day_one, final_day)])
+                dependency_collector = DependencyCollector(descriptor, [(day_one, final_day)], False)
                 pointing_sets = dependency_collector.get_pointing_sets()
 
                 mock_query.assert_called_once_with(
@@ -85,7 +87,7 @@ class TestDependencyCollector(unittest.TestCase):
                 )
                 self.assertEqual(expected_pointing_sets, pointing_sets)
 
-    @patch("mapping_tool.dependency_collector.imap_data_access.query")
+    @patch(f"{MODULE}.imap_data_access.query")
     def test_get_pointing_sets_for_multiple_time_ranges(self, mock_query):
         day_one = datetime(2025, 1, 1, tzinfo=timezone.utc)
         day_two = datetime(2025, 1, 2, tzinfo=timezone.utc)
@@ -135,7 +137,7 @@ class TestDependencyCollector(unittest.TestCase):
         day_three_utc = day_three.replace(tzinfo=timezone.utc)
 
         dependency_collector = DependencyCollector(
-            descriptor, [(day_one_utc, day_one_utc), (day_three_utc, day_three_utc)]
+            descriptor, [(day_one_utc, day_one_utc), (day_three_utc, day_three_utc)], False
         )
         pointing_sets = dependency_collector.get_pointing_sets()
 
@@ -149,7 +151,7 @@ class TestDependencyCollector(unittest.TestCase):
         )
         self.assertEqual(expected_pointing_sets, pointing_sets)
 
-    @patch("mapping_tool.dependency_collector.imap_data_access.query")
+    @patch(f"{MODULE}.imap_data_access.query")
     def test_get_pointing_sets_for_ultra_combined(self, mock_query):
         expected_pointing_sets = ["u45-pset1", "u45-pset2", "u90-pset1", "u90-pset2"]
         mock_query.side_effect = [
@@ -183,7 +185,7 @@ class TestDependencyCollector(unittest.TestCase):
             )
         ]
 
-        dependency_collector = DependencyCollector(descriptor, time_ranges)
+        dependency_collector = DependencyCollector(descriptor, time_ranges, False)
         pointing_sets = dependency_collector.get_pointing_sets()
 
         mock_query.assert_has_calls(
@@ -209,7 +211,7 @@ class TestDependencyCollector(unittest.TestCase):
 
         self.assertEqual(expected_pointing_sets, pointing_sets)
 
-    @patch("mapping_tool.dependency_collector.imap_data_access.query")
+    @patch(f"{MODULE}.imap_data_access.query")
     def test_get_pointing_sets_for_hi_combined(self, mock_query):
         expected_pointing_sets = [
             "h45-pset1",
@@ -248,7 +250,7 @@ class TestDependencyCollector(unittest.TestCase):
                 datetime(2025, 2, 1, tzinfo=timezone.utc),
             )
         ]
-        dependency_collector = DependencyCollector(descriptor, time_ranges)
+        dependency_collector = DependencyCollector(descriptor, time_ranges, False)
         pointing_sets = dependency_collector.get_pointing_sets()
 
         mock_query.assert_has_calls(
@@ -274,7 +276,7 @@ class TestDependencyCollector(unittest.TestCase):
 
         self.assertEqual(expected_pointing_sets, pointing_sets)
 
-    @patch("mapping_tool.dependency_collector.imap_data_access.query")
+    @patch(f"{MODULE}.imap_data_access.query")
     def test_get_pointing_sets_for_lo_survival_corrected(self, mock_query):
         expected_pointing_sets = [
             "l90-pset1",
@@ -306,7 +308,7 @@ class TestDependencyCollector(unittest.TestCase):
                 datetime(2025, 2, 1, tzinfo=timezone.utc),
             )
         ]
-        dependency_collector = DependencyCollector(descriptor, time_ranges)
+        dependency_collector = DependencyCollector(descriptor, time_ranges, False)
         pointing_sets = dependency_collector.get_pointing_sets()
 
         mock_query.assert_has_calls([
@@ -316,7 +318,7 @@ class TestDependencyCollector(unittest.TestCase):
 
         self.assertEqual(expected_pointing_sets, pointing_sets)
 
-    @patch("mapping_tool.dependency_collector.imap_data_access.query")
+    @patch(f"{MODULE}.imap_data_access.query")
     def test_get_latest_version_of_ancillary_dependencies(self, mock_query):
         sensors = ["90", "45"]
 
@@ -353,7 +355,7 @@ class TestDependencyCollector(unittest.TestCase):
                     coordinate_system="hae",
                 )
 
-                dependency_collector = DependencyCollector(descriptor, [(Mock(), end_date)])
+                dependency_collector = DependencyCollector(descriptor, [(Mock(), end_date)], False)
                 ancillary_dependencies = dependency_collector.get_ancillary_dependencies()
 
                 mock_query.assert_called_with(table="ancillary", instrument="hi")
@@ -366,7 +368,7 @@ class TestDependencyCollector(unittest.TestCase):
                 test_helpers.assert_imap_processing_inputs_match(expected_ancillary_dependencies,
                                                                  ancillary_dependencies)
 
-    @patch("mapping_tool.dependency_collector.imap_data_access.query")
+    @patch(f"{MODULE}.imap_data_access.query")
     def test_get_ancillary_dependencies_finds_nearest_files_to_map_end_date(
             self, mock_query
     ):
@@ -409,7 +411,7 @@ class TestDependencyCollector(unittest.TestCase):
             coordinate_system="hae",
         )
 
-        dependency_collector = DependencyCollector(descriptor, [(Mock(), end_date)])
+        dependency_collector = DependencyCollector(descriptor, [(Mock(), end_date)], False)
         ancillary_dependencies = dependency_collector.get_ancillary_dependencies()
 
         mock_query.assert_called_with(table="ancillary", instrument="hi")
@@ -420,7 +422,7 @@ class TestDependencyCollector(unittest.TestCase):
             expected_ancillary_dependencies, ancillary_dependencies
         )
 
-    @patch("mapping_tool.dependency_collector.imap_data_access.query")
+    @patch(f"{MODULE}.imap_data_access.query")
     def test_get_ancillary_dependencies_correctly_filters_ancillary_inputs(
             self, mock_query
     ):
@@ -476,13 +478,13 @@ class TestDependencyCollector(unittest.TestCase):
             with self.subTest(descriptor=descriptor.to_string()):
                 end_date = datetime(2026, 2, 1, tzinfo=timezone.utc)
 
-                dependency_collector = DependencyCollector(descriptor, [(Mock(), end_date)])
+                dependency_collector = DependencyCollector(descriptor, [(Mock(), end_date)], False)
                 ancillary_dependencies = dependency_collector.get_ancillary_dependencies()
 
                 mock_query.assert_called_with(table="ancillary", instrument=descriptor.instrument.name.lower())
                 self.assertEqual(set(expected_ancillary_descriptors), {d.descriptor for d in ancillary_dependencies})
 
-    @patch('mapping_tool.dependency_collector.imap_data_access.query')
+    @patch(f'{MODULE}.imap_data_access.query')
     def test_get_ancillary_dependencies_writes_energy_bin_edges_to_imap_dir(self, mock_query):
         mock_query.side_effect = [
             [
@@ -519,7 +521,7 @@ class TestDependencyCollector(unittest.TestCase):
                 )
 
                 dependency_collector = DependencyCollector(
-                    descriptor, [(Mock(), end_date)], "0, 10, 20, 40"
+                    descriptor, [(Mock(), end_date)], False, "0, 10, 20, 40"
                 )
                 ancillary_dependencies = (
                     dependency_collector.get_ancillary_dependencies()
@@ -541,7 +543,7 @@ class TestDependencyCollector(unittest.TestCase):
         finally:
             imap_data_access.config["DATA_DIR"] = original_imap_data_dir
 
-    @patch("mapping_tool.dependency_collector.imap_data_access.query")
+    @patch(f"{MODULE}.imap_data_access.query")
     def test_get_sp_dependencies(self, mock_query):
         hi90_descriptor = create_map_descriptor(instrument=MappableInstrumentShortName.HI, sensor="90", )
         hi45_descriptor = create_map_descriptor(instrument=MappableInstrumentShortName.HI, sensor="45", )
@@ -587,7 +589,7 @@ class TestDependencyCollector(unittest.TestCase):
                     ]
 
                     dependency_collector = DependencyCollector(
-                        descriptor, [(start_date, end_date)]
+                        descriptor, [(start_date, end_date)], False
                     )
                     sp_deps = (
                         dependency_collector.get_survival_probability_dependencies(
@@ -619,7 +621,7 @@ class TestDependencyCollector(unittest.TestCase):
                         expected_inputs, sp_deps, any_order=True
                     )
 
-    @patch("mapping_tool.dependency_collector.imap_data_access.query")
+    @patch(f"{MODULE}.imap_data_access.query")
     def test_get_sp_dependencies_for_combine_data_across_time_ranges(self, mock_query):
         hi90_descriptor = create_map_descriptor(
             instrument=MappableInstrumentShortName.HI,
@@ -685,7 +687,7 @@ class TestDependencyCollector(unittest.TestCase):
                     ]
 
                     dependency_collector = DependencyCollector(
-                        descriptor, [(day_one, day_one), (day_three, day_three)]
+                        descriptor, [(day_one, day_one), (day_three, day_three)], False
                     )
                     sp_deps = (
                         dependency_collector.get_survival_probability_dependencies(
@@ -720,8 +722,8 @@ class TestDependencyCollector(unittest.TestCase):
                         expected_inputs, sp_deps, any_order=True
                     )
 
-    @patch("mapping_tool.dependency_collector.imap_data_access.query")
-    def test_get_sp_dependencies_for_ultra_nsp_combined(self, mock_query):
+    @patch(f"{MODULE}.imap_data_access.query")
+    def test_get_sp_dependencies_for_ultra_nsp_combined(self, _):
         with tempfile.TemporaryDirectory() as tmpdir:
             tmpdir = Path(tmpdir)
 
@@ -746,6 +748,7 @@ class TestDependencyCollector(unittest.TestCase):
                     survival_corrected="nsp",
                 ),
                 [(datetime(2026, 2, 6), datetime(2026, 2, 7))],
+                False,
             )
 
             sp_deps = dependency_collector.get_survival_probability_dependencies(
@@ -774,7 +777,7 @@ class TestDependencyCollector(unittest.TestCase):
         )
 
         dependency_collector = DependencyCollector(
-            nsp_map_descriptor, [((Mock(), Mock()))]
+            nsp_map_descriptor, [((Mock(), Mock()))], False
         )
         sp_deps = dependency_collector.get_survival_probability_dependencies(
             [get_test_cdf_file_path() / "l2_ena_20250115.cdf"]
@@ -827,21 +830,21 @@ class TestDependencyCollector(unittest.TestCase):
         for case, descriptor in cases:
             with self.subTest(case):
                 dependency_collector = DependencyCollector(
-                    descriptor, [(Mock(), Mock())]
+                    descriptor, [(Mock(), Mock())], False
                 )
                 sp_deps = dependency_collector.get_survival_probability_dependencies(
                     [get_test_cdf_file_path() / "l2_ena_20250115.cdf"]
                 )
                 self.assertEqual([], sp_deps)
 
-    @patch("mapping_tool.dependency_collector.furnish_spice_metakernel")
+    @patch(f"{MODULE}.furnish_spice_metakernel")
     def test_furnish_spice_kernels(self, mock_furnish):
         expected_output = Mock(spec=FurnishMetakernelOutput)
         mock_furnish.return_value = expected_output
 
         start = datetime(2025, 1, 1, tzinfo=timezone.utc)
         end = datetime(2025, 3, 1, tzinfo=timezone.utc)
-        dc = DependencyCollector(create_map_descriptor(), [(start, end)])
+        dc = DependencyCollector(create_map_descriptor(), [(start, end)], False)
 
         result = dc.furnish_spice_kernels()
 
@@ -852,20 +855,33 @@ class TestDependencyCollector(unittest.TestCase):
         )
         self.assertIs(expected_output, result)
 
-    @patch("mapping_tool.dependency_collector.furnish_spice_metakernel")
+    @patch(f"{MODULE}.furnish_spice_metakernel")
+    def test_furnish_spice_kernels_uses_predicted_ephemeris_when_flag_is_set(self, mock_furnish):
+        start = datetime(2025, 1, 1, tzinfo=timezone.utc)
+        end = datetime(2025, 3, 1, tzinfo=timezone.utc)
+        dc = DependencyCollector(create_map_descriptor(), [(start, end)], use_predicted_ephemeris=True)
+        dc.furnish_spice_kernels()
+
+        mock_furnish.assert_called_once_with(
+            datetime(2025, 1, 1),
+            datetime(2025, 3, 1),
+            MAPPING_TOOL_KERNEL_TYPES + [SpiceKernelTypes.EphemerisPredicted],
+        )
+
+    @patch(f"{MODULE}.furnish_spice_metakernel")
     def test_furnish_spice_kernels_strips_timezone(self, mock_furnish):
         mock_furnish.return_value = Mock(spec=FurnishMetakernelOutput)
 
         start = datetime(2025, 1, 1, tzinfo=timezone.utc)
         end = datetime(2025, 3, 1, tzinfo=timezone.utc)
-        dc = DependencyCollector(create_map_descriptor(), [(start, end)])
+        dc = DependencyCollector(create_map_descriptor(), [(start, end)], False)
 
         dc.furnish_spice_kernels()
 
         self.assertIsNone(mock_furnish.call_args[0][0].tzinfo)
         self.assertIsNone(mock_furnish.call_args[0][1].tzinfo)
 
-    @patch("mapping_tool.dependency_collector.furnish_spice_metakernel")
+    @patch(f"{MODULE}.furnish_spice_metakernel")
     def test_furnish_spice_kernels_propagates_errors(self, mock_furnish):
         mock_furnish.side_effect = ConnectionError("network failure")
         dc = DependencyCollector(
@@ -876,11 +892,12 @@ class TestDependencyCollector(unittest.TestCase):
                     datetime(2025, 3, 1, tzinfo=timezone.utc),
                 )
             ],
+            False,
         )
         with self.assertRaises(ConnectionError):
             dc.furnish_spice_kernels()
 
-    @patch("mapping_tool.dependency_collector.get_spice_kernels_file_names")
+    @patch(f"{MODULE}.get_spice_kernels_file_names")
     def test_get_spice_kernel_names(self, mock_get_spice_kernels_file_names):
         mock_get_spice_kernels_file_names.return_value = [
             "imap/spice/lsk/naif0012.tls",
@@ -888,7 +905,7 @@ class TestDependencyCollector(unittest.TestCase):
         ]
         start = datetime(2025, 1, 1, tzinfo=timezone.utc)
         end = datetime(2025, 3, 1, tzinfo=timezone.utc)
-        dc = DependencyCollector(create_map_descriptor(), [(start, end)])
+        dc = DependencyCollector(create_map_descriptor(), [(start, end)], False)
 
         result = dc.get_spice_kernel_names()
 
@@ -899,7 +916,20 @@ class TestDependencyCollector(unittest.TestCase):
         )
         self.assertEqual(["naif0012.tls", "de440.bsp"], result)
 
-    @patch("mapping_tool.dependency_collector.get_spice_kernels_file_names")
+    @patch(f"{MODULE}.get_spice_kernels_file_names")
+    def test_get_spice_kernel_names_uses_predicted_ephemeris_when_flag_is_set(self, mock_get_spice_kernels_file_names):
+        start = datetime(2025, 1, 1, tzinfo=timezone.utc)
+        end = datetime(2025, 3, 1, tzinfo=timezone.utc)
+        dc = DependencyCollector(create_map_descriptor(), [(start, end)], use_predicted_ephemeris=True)
+        dc.get_spice_kernel_names()
+
+        mock_get_spice_kernels_file_names.assert_called_once_with(
+            datetime(2025, 1, 1),
+            datetime(2025, 3, 1),
+            MAPPING_TOOL_KERNEL_TYPES + [SpiceKernelTypes.EphemerisPredicted],
+        )
+
+    @patch(f"{MODULE}.get_spice_kernels_file_names")
     def test_get_spice_kernel_names_strips_timezone(
             self, mock_get_spice_kernels_file_names
     ):
@@ -907,19 +937,24 @@ class TestDependencyCollector(unittest.TestCase):
 
         start = datetime(2025, 1, 1, tzinfo=timezone.utc)
         end = datetime(2025, 3, 1, tzinfo=timezone.utc)
-        dc = DependencyCollector(create_map_descriptor(), [(start, end)])
+        dc = DependencyCollector(create_map_descriptor(), [(start, end)], False)
 
         dc.get_spice_kernel_names()
 
         self.assertIsNone(mock_get_spice_kernels_file_names.call_args[0][0].tzinfo)
         self.assertIsNone(mock_get_spice_kernels_file_names.call_args[0][1].tzinfo)
 
-    @patch('mapping_tool.dependency_collector.get_spice_kernels_file_names')
+    @patch(f'{MODULE}.get_spice_kernels_file_names')
     def test_get_spice_kernel_names_propagates_errors(self, mock_get_spice_kernels_file_names):
         mock_get_spice_kernels_file_names.side_effect = ConnectionError("network failure")
-        dc = DependencyCollector(create_map_descriptor(),
-                                 [(datetime(2025, 1, 1, tzinfo=timezone.utc),
-                                   datetime(2025, 3, 1, tzinfo=timezone.utc))])
+        dc = DependencyCollector(
+            create_map_descriptor(),
+            [
+                (datetime(2025, 1, 1, tzinfo=timezone.utc),
+                datetime(2025, 3, 1, tzinfo=timezone.utc))
+            ],
+            False,
+        )
         with self.assertRaises(ConnectionError):
             dc.get_spice_kernel_names()
 

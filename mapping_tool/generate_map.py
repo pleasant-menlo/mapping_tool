@@ -98,8 +98,6 @@ def get_data_level_for_descriptor(descriptor: MappingToolDescriptor):
 
 def generate_map(dependency_collector: DependencyCollector) -> Path:
     descriptor = dependency_collector.descriptor
-    start = dependency_collector.start_date
-    end = dependency_collector.end_date
 
     logger.info("preparing to generate map %s", descriptor.to_mapping_tool_string())
     data_level = get_data_level_for_descriptor(descriptor)
@@ -111,8 +109,11 @@ def generate_map(dependency_collector: DependencyCollector) -> Path:
         deps = get_dependencies_for_l3_map(descriptor)
         logger.info("identified dependencies %s", deps)
         for dependency in deps:
-            dependency_collector_for_intermediate_map = DependencyCollector(dependency,
-                                                                            dependency_collector.time_ranges)
+            dependency_collector_for_intermediate_map = DependencyCollector(
+                dependency,
+                dependency_collector.time_ranges,
+                dependency_collector.use_predicted_ephemeris,
+            )
             map_deps.append(generate_map(dependency_collector_for_intermediate_map))
         print(f"Generating L3 map {descriptor.to_mapping_tool_string()}")
         return generate_l3_map(dependency_collector, map_deps)
