@@ -35,7 +35,7 @@ class DependencyCollector:
             self,
             descriptor: MappingToolDescriptor,
             time_ranges: list[tuple[datetime, datetime]],
-            use_predicted_ephemeris: bool,
+            include_predicted_ephemeris: bool,
             ultra_energy_ranges: Optional[str] = None,
         ):
         self.descriptor = descriptor
@@ -43,7 +43,7 @@ class DependencyCollector:
         self.start_date = min([start for start, _end in time_ranges])
         self.end_date = max([end for _start, end in time_ranges])
         self.ultra_energy_ranges = ultra_energy_ranges
-        self.use_predicted_ephemeris = use_predicted_ephemeris
+        self.include_predicted_ephemeris = include_predicted_ephemeris
 
     def get_pointing_sets(self) -> list[str]:
         pset_descriptors = self._map_instrument_pset_descriptors()
@@ -131,7 +131,7 @@ class DependencyCollector:
 
     def furnish_spice_kernels(self) -> FurnishMetakernelOutput:
         kernels_to_furnish = MAPPING_TOOL_KERNEL_TYPES.copy()
-        if self.use_predicted_ephemeris:
+        if self.include_predicted_ephemeris:
             kernels_to_furnish.append(SpiceKernelTypes.EphemerisPredicted)
         return furnish_spice_metakernel(
             self.start_date.replace(tzinfo=None),
@@ -141,7 +141,7 @@ class DependencyCollector:
 
     def get_spice_kernel_names(self) -> list[str]:
         kernels_to_furnish = MAPPING_TOOL_KERNEL_TYPES.copy()
-        if self.use_predicted_ephemeris:
+        if self.include_predicted_ephemeris:
             kernels_to_furnish.append(SpiceKernelTypes.EphemerisPredicted)
         return [
             Path(name).name for name in get_spice_kernels_file_names(

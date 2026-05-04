@@ -40,7 +40,7 @@ class TestCli(unittest.TestCase):
 
         mock_configuration.get_map_descriptor.return_value = hi_descriptor
         mock_configuration.raw_config = "config: something \n another_thing: something_2"
-        mock_configuration.use_predicted_ephemeris = sentinel.use_predicted_ephemeris
+        mock_configuration.include_predicted_ephemeris = sentinel.include_predicted_ephemeris
 
         generated_cdf_path_1 = Path('path/to/cdf/imap_hi_l3_h90-ena-h-sf-sp-ram-hae-2deg-6mo_20250101_v000.cdf')
         generated_cdf_path_2 = Path('path/to/cdf/imap_hi_l3_h90-ena-h-sf-sp-ram-hae-2deg-6mo_20260101_v000.cdf')
@@ -120,13 +120,13 @@ class TestCli(unittest.TestCase):
                 call(
                     hi_descriptor,
                     map_date_ranges[0],
-                    sentinel.use_predicted_ephemeris,
+                    sentinel.include_predicted_ephemeris,
                     sentinel.ultra_energy_bin_group_edges,
                 ),
                 call(
                     hi_descriptor,
                     map_date_ranges[1],
-                    sentinel.use_predicted_ephemeris,
+                    sentinel.include_predicted_ephemeris,
                     sentinel.ultra_energy_bin_group_edges,
                 ),
             ]

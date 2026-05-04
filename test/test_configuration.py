@@ -45,7 +45,7 @@ class TestConfiguration(TestCase):
                         yaml.safe_load(example_config_path.read_text())
                     ),
                     combine_data_across_time_ranges=None,
-                    use_predicted_ephemeris=False,
+                    include_predicted_ephemeris=False,
                 )
 
                 self.assertEqual(expected_config, config)
@@ -79,7 +79,7 @@ class TestConfiguration(TestCase):
                         yaml.safe_load(example_config_path.read_text())
                     ),
                     combine_data_across_time_ranges=False,
-                    use_predicted_ephemeris=False,
+                    include_predicted_ephemeris=False,
                 )
 
                 self.assertEqual(expected_config, config)
@@ -114,7 +114,7 @@ class TestConfiguration(TestCase):
                     ultra_energy_bin_group_edges="0,4,8,12,16,20,24,28,32,36,40,44,46",
                     spectral_index_energy_step_range=(1, 4),
                     combine_data_across_time_ranges=True,
-                    use_predicted_ephemeris=False,
+                    include_predicted_ephemeris=False,
                 )
 
                 self.assertEqual(expected_config, config)
@@ -143,7 +143,7 @@ class TestConfiguration(TestCase):
                     "map_data_type": "ENA Intensity",
                     "kernel_path": Path("path/to/another_kernel"),
                     "output_directory": Path("path/to/output"),
-                    "use_predicted_ephemeris": False,
+                    "include_predicted_ephemeris": False,
                 }
 
                 mock_validate.assert_called_with(expected_config, config_schema.schema)
@@ -187,7 +187,7 @@ class TestConfiguration(TestCase):
             "pixel_parameter",
             "map_data_type",
             "output_directory",
-            "use_predicted_ephemeris"
+            "include_predicted_ephemeris"
         ]
         for field in validation_error_cases:
             with self.subTest(field):

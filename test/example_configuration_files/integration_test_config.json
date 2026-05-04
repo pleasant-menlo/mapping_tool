@@ -17,5 +17,5 @@
   "lo_species": "h",
   "output_directory": ".",
   "quantity_suffix": "test",
-  "use_predicted_ephemeris": false
+  "include_predicted_ephemeris": false
 }

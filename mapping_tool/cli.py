@@ -62,7 +62,7 @@ def do_mapping_tool(config: Configuration):
             print(f"Generating map {i}/{len(map_date_ranges)}...")
             logger.info(f"Generating map: {map_details}")
             dependency_collector = DependencyCollector(
-                descriptor, map_date_range, config.use_predicted_ephemeris, config.ultra_energy_bin_group_edges
+                descriptor, map_date_range, config.include_predicted_ephemeris, config.ultra_energy_bin_group_edges
             )
             generated_map_path = generate_map(dependency_collector)
             output_map_paths.append(generated_map_path)

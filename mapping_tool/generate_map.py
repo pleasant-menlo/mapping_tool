@@ -112,7 +112,7 @@ def generate_map(dependency_collector: DependencyCollector) -> Path:
             dependency_collector_for_intermediate_map = DependencyCollector(
                 dependency,
                 dependency_collector.time_ranges,
-                dependency_collector.use_predicted_ephemeris,
+                dependency_collector.include_predicted_ephemeris,
             )
             map_deps.append(generate_map(dependency_collector_for_intermediate_map))
         print(f"Generating L3 map {descriptor.to_mapping_tool_string()}")

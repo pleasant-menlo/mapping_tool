@@ -39,7 +39,7 @@ spice_frame_name: hae
 
 ## Boolean value indicating whether to use predicted ephemeris data
 # If false is passed, only reconstructed ephemeris data will be used
-use_predicted_ephemeris: true
+include_predicted_ephemeris: true
 
 ## The pixelation scheme to be used for map generation.
 # Valid options are "square" or "healpix"

@@ -128,17 +128,17 @@ class TestGenerateMap(unittest.TestCase):
         l2_ram_dependency_collector = Mock(
             descriptor=l2_ram_descriptor,
             time_ranges=time_ranges,
-            use_predicted_ephemeris=True,
+            include_predicted_ephemeris=True,
         )
         l2_antiram_dependency_collector = Mock(
             descriptor=l2_antiram_map_descriptor,
             time_ranges=time_ranges,
-            use_predicted_ephemeris=True,
+            include_predicted_ephemeris=True,
         )
         l3_ena_dependency_collector = Mock(
             descriptor=l3_ena_map_descriptor,
             time_ranges=time_ranges,
-            use_predicted_ephemeris=True,
+            include_predicted_ephemeris=True,
         )
 
         mock_dependency_collector_class.side_effect = [

@@ -78,7 +78,7 @@ class Configuration:
     reference_frame_type: str
     survival_corrected: bool
     spice_frame_name: str
-    use_predicted_ephemeris: bool
+    include_predicted_ephemeris: bool
     pixelation_scheme: str
     pixel_parameter: int
     map_data_type: str

@@ -859,7 +859,7 @@ class TestDependencyCollector(unittest.TestCase):
     def test_furnish_spice_kernels_uses_predicted_ephemeris_when_flag_is_set(self, mock_furnish):
         start = datetime(2025, 1, 1, tzinfo=timezone.utc)
         end = datetime(2025, 3, 1, tzinfo=timezone.utc)
-        dc = DependencyCollector(create_map_descriptor(), [(start, end)], use_predicted_ephemeris=True)
+        dc = DependencyCollector(create_map_descriptor(), [(start, end)], include_predicted_ephemeris=True)
         dc.furnish_spice_kernels()
 
         mock_furnish.assert_called_once_with(
@@ -920,7 +920,7 @@ class TestDependencyCollector(unittest.TestCase):
     def test_get_spice_kernel_names_uses_predicted_ephemeris_when_flag_is_set(self, mock_get_spice_kernels_file_names):
         start = datetime(2025, 1, 1, tzinfo=timezone.utc)
         end = datetime(2025, 3, 1, tzinfo=timezone.utc)
-        dc = DependencyCollector(create_map_descriptor(), [(start, end)], use_predicted_ephemeris=True)
+        dc = DependencyCollector(create_map_descriptor(), [(start, end)], include_predicted_ephemeris=True)
         dc.get_spice_kernel_names()
 
         mock_get_spice_kernels_file_names.assert_called_once_with(
