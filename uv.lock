@@ -746,7 +746,7 @@ dependencies = [
 
 [[package]]
 name = "imap-processing"
-version = "1.0.31"
+version = "1.0.32"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "astropy-healpix" },
@@ -761,9 +761,9 @@ dependencies = [
     { name = "spiceypy" },
     { name = "xarray" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/68/e6/0f6ffb9c54bbfb117d74020bd88c509c20cf0c11198ac083ac984eeedccf/imap_processing-1.0.31.tar.gz", hash = "sha256:24d83bd3c4ed56e1b0474c8618c6fc2bda73cd00386f9f817faa0c2098bcf809", size = 1064202, upload-time = "2026-05-13T16:34:17.636Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/c6/b6/3e840a8cc3d4cbbbdf3ff30f34f9ede14ec35fdcb9ba1ebf67fd62cfd18c/imap_processing-1.0.32.tar.gz", hash = "sha256:c6dc7e945d8118e2ad5b48cc2ba98aadfe80c4b26d641b8255172aaebf28b77b", size = 1061726, upload-time = "2026-05-15T18:52:06.443Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/7a/49/fce147e50d5e1191277aa216b292a9a62716af350cf11400d9718bcaaee8/imap_processing-1.0.31-py3-none-any.whl", hash = "sha256:5ee80710b58c72f4d57212e1eb22f3d4eebb8475aef8dc36a8f7d8b8bbb2d961", size = 1218254, upload-time = "2026-05-13T16:34:15.952Z" },
+    { url = "https://files.pythonhosted.org/packages/cb/8c/df5a9e5c2ce7f3341cac5c1042f45d198c3b21c0ae65e2439460eafd64d8/imap_processing-1.0.32-py3-none-any.whl", hash = "sha256:d53ca85c1ca111354074949e479fd082e518416194817bd094513ca048bdf17b", size = 1213442, upload-time = "2026-05-15T18:52:04.616Z" },
 ]
 
 [[package]]
@@ -1119,7 +1119,7 @@ requires-dist = [
     { name = "argparse", specifier = ">=1.4.0" },
     { name = "hatchling" },
     { name = "imap-l3-processing", git = "https://github.com/IMAP-Science-Operations-Center/imap_L3_processing" },
-    { name = "imap-processing", specifier = ">=1.0.31" },
+    { name = "imap-processing", specifier = ">=1.0.32" },
     { name = "jsonschema", specifier = ">=4.25.0" },
     { name = "pyyaml", specifier = ">=6.0.2" },
     { name = "uv-dynamic-versioning" },
