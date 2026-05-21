@@ -105,6 +105,7 @@ def generate_map(dependency_collector: DependencyCollector, memo: dict[Dependenc
     descriptor = dependency_collector.descriptor
 
     if dependency_collector in memo:
+        print("Map to generate already exists: ", dependency_collector.descriptor)
         return memo[dependency_collector]
 
     logger.info("preparing to generate map %s", descriptor.to_string())
