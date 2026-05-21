@@ -101,19 +101,20 @@ def get_data_level_for_descriptor(descriptor: MapDescriptor):
         return DataLevel.L2
 
 
-def generate_map(dependency_collector: DependencyCollector, memo: dict[DependencyCollector, Path]) -> Path:
+def generate_map(dependency_collector: DependencyCollector, memo: dict[str, Path]) -> Path:
     descriptor = dependency_collector.descriptor
+    descriptor_str = descriptor.to_string()
 
-    if dependency_collector in memo:
-        print("Map to generate already exists: ", dependency_collector.descriptor)
-        return memo[dependency_collector]
+    if descriptor_str in memo:
+        print("Map to generate already exists: ", descriptor_str)
+        return memo[descriptor_str]
 
-    logger.info("preparing to generate map %s", descriptor.to_string())
+    logger.info("preparing to generate map %s", descriptor_str)
     data_level = get_data_level_for_descriptor(descriptor)
     if data_level == DataLevel.L2:
-        print(f"Generating L2 map {descriptor.to_string()}")
-        memo[dependency_collector] = generate_l2_map(dependency_collector)
-        return memo[dependency_collector]
+        print(f"Generating L2 map {descriptor_str}")
+        memo[descriptor_str] = generate_l2_map(dependency_collector)
+        return memo[descriptor_str]
     elif data_level == DataLevel.L3:
         map_deps = []
         deps = get_dependencies_for_l3_map(descriptor)
@@ -125,9 +126,9 @@ def generate_map(dependency_collector: DependencyCollector, memo: dict[Dependenc
                 dependency_collector.include_predicted_ephemeris,
             )
             map_deps.append(generate_map(dependency_collector_for_intermediate_map, memo))
-        print(f"Generating L3 map {descriptor.to_string()}")
-        memo[dependency_collector] = generate_l3_map(dependency_collector, map_deps)
-        return memo[dependency_collector]
+        print(f"Generating L3 map {descriptor_str}")
+        memo[descriptor_str] = generate_l3_map(dependency_collector, map_deps)
+        return memo[descriptor_str]
     else:
         raise ValueError(f"Cannot produce map for instrument: {descriptor.instrument_descriptor}")
 
