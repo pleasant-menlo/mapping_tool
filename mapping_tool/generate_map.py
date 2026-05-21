@@ -16,14 +16,13 @@ from imap_processing.cli import Hi, Lo, Ultra
 from imap_data_access import ProcessingInputCollection, ScienceInput, SPICEInput
 
 from mapping_tool.dependency_collector import DependencyCollector
-import spiceypy
 
 from mapping_tool.mapping_tool_descriptor import MappingToolDescriptor
 
 logger = logging.getLogger(__name__)
 
 
-def get_dependencies_for_l3_map(map_descriptor: MappingToolDescriptor) -> list[MappingToolDescriptor]:
+def get_dependencies_for_l3_map(map_descriptor: MapDescriptor) -> list[MappingToolDescriptor]:
     match map_descriptor.instrument:
         case MappableInstrumentShortName.HI:
             return get_dependencies_for_hi_l3_map(map_descriptor)
@@ -86,24 +85,34 @@ def get_dependencies_for_lo_l3_map(map_descriptor: MappingToolDescriptor) -> lis
             raise ValueError("Don't know correct dependencies for", map_descriptor)
 
 
-def get_data_level_for_descriptor(descriptor: MappingToolDescriptor):
-    if descriptor.instrument == MappableInstrumentShortName.GLOWS or descriptor.instrument == MappableInstrumentShortName.IDEX:
+def get_data_level_for_descriptor(descriptor: MapDescriptor):
+    if (
+        descriptor.instrument == MappableInstrumentShortName.GLOWS
+        or descriptor.instrument == MappableInstrumentShortName.IDEX
+    ):
         return DataLevel.NA
-    elif descriptor.survival_corrected == "sp" or "combined" == descriptor.sensor or descriptor.principal_data in (
-            "spx", "spxnbs"):
+    elif (
+        descriptor.survival_corrected == "sp"
+        or "combined" == descriptor.sensor
+        or descriptor.principal_data in ("spx", "spxnbs")
+    ):
         return DataLevel.L3
     else:
         return DataLevel.L2
 
 
-def generate_map(dependency_collector: DependencyCollector) -> Path:
+def generate_map(dependency_collector: DependencyCollector, memo: dict[DependencyCollector, Path]) -> Path:
     descriptor = dependency_collector.descriptor
 
-    logger.info("preparing to generate map %s", descriptor.to_mapping_tool_string())
+    if dependency_collector in memo:
+        return memo[dependency_collector]
+
+    logger.info("preparing to generate map %s", descriptor.to_string())
     data_level = get_data_level_for_descriptor(descriptor)
     if data_level == DataLevel.L2:
-        print(f"Generating L2 map {descriptor.to_mapping_tool_string()}")
-        return generate_l2_map(dependency_collector)
+        print(f"Generating L2 map {descriptor.to_string()}")
+        memo[dependency_collector] = generate_l2_map(dependency_collector)
+        return memo[dependency_collector]
     elif data_level == DataLevel.L3:
         map_deps = []
         deps = get_dependencies_for_l3_map(descriptor)
@@ -114,9 +123,10 @@ def generate_map(dependency_collector: DependencyCollector) -> Path:
                 dependency_collector.time_ranges,
                 dependency_collector.include_predicted_ephemeris,
             )
-            map_deps.append(generate_map(dependency_collector_for_intermediate_map))
-        print(f"Generating L3 map {descriptor.to_mapping_tool_string()}")
-        return generate_l3_map(dependency_collector, map_deps)
+            map_deps.append(generate_map(dependency_collector_for_intermediate_map, memo))
+        print(f"Generating L3 map {descriptor.to_string()}")
+        memo[dependency_collector] = generate_l3_map(dependency_collector, map_deps)
+        return memo[dependency_collector]
     else:
         raise ValueError(f"Cannot produce map for instrument: {descriptor.instrument_descriptor}")
 
@@ -130,41 +140,33 @@ def generate_l3_map(dependency_collector: DependencyCollector, input_maps: list[
 
     input_metadata = InputMetadata(
         instrument=dependency_collector.descriptor.instrument.name.lower(),
-        data_level='l3',
+        data_level="l3",
         start_date=dependency_collector.start_date,
         end_date=dependency_collector.end_date,
-        version='v000',
-        descriptor=dependency_collector.descriptor.to_l3_input_string(),
+        version="v000",
+        descriptor=dependency_collector.descriptor.to_string(),
     )
 
     dependency_collector.furnish_spice_kernels()
     sp_inputs = dependency_collector.get_survival_probability_dependencies(input_maps)
     ancillary_inputs = dependency_collector.get_ancillary_dependencies()
-    if dependency_collector.descriptor.kernel_path is not None:
-        spiceypy.furnsh(str(dependency_collector.descriptor.kernel_path))
 
-    processing_input_collection = ProcessingInputCollection(*[ScienceInput(dep.name) for dep in input_maps],
-                                                            *sp_inputs,
-                                                            *ancillary_inputs)
-
-    print(f"Processing {dependency_collector.descriptor.instrument.name.capitalize()} L3 map...")
-    processor = processor_class(
-        processing_input_collection,
-        input_metadata
+    processing_input_collection = ProcessingInputCollection(
+        *[ScienceInput(dep.name) for dep in input_maps], *sp_inputs, *ancillary_inputs
     )
 
-    with patch('imap_processing.ena_maps.utils.naming.MapDescriptor.get_map_coord_frame') as mock_coord_frame:
-        mock_coord_frame.return_value = dependency_collector.descriptor.spice_frame
+    print(f"Processing {dependency_collector.descriptor.instrument.name.capitalize()} L3 map...")
+    processor = processor_class(processing_input_collection, input_metadata)
 
-        try:
-            processed_files = processor.process(dependency_collector.descriptor.spice_frame)
-        except Exception as e:
-            note = f"Processing for {dependency_collector.descriptor.to_l3_input_string()} failed"
-            if hasattr(e, "add_note"):
-                e.add_note(note)
-            else:
-                e.__notes__ = [note]
-            raise e
+    try:
+        processed_files = processor.process()
+    except Exception as e:
+        note = f"Processing for {dependency_collector.descriptor.to_string()} failed"
+        if hasattr(e, "add_note"):
+            e.add_note(note)
+        else:
+            e.__notes__ = [note]
+        raise e
 
     if len(processed_files) < 1:
         raise ValueError("L3 processing did not return any files!")
@@ -180,7 +182,7 @@ def generate_l2_map(dependency_collector: DependencyCollector) -> Path:
     end_date = dependency_collector.end_date
     spice_kernel_names = dependency_collector.get_spice_kernel_names()
 
-    map_details = f'{descriptor.to_string()} {start_date.strftime("%Y-%m-%d")} to {end_date.strftime("%Y-%m-%d")}'
+    map_details = f"{descriptor.to_string()} {start_date.strftime('%Y-%m-%d')} to {end_date.strftime('%Y-%m-%d')}"
     psets = dependency_collector.get_pointing_sets()
     if len(psets) == 0:
         raise ValueError(f"No pointing sets found for {map_details}")
@@ -195,7 +197,8 @@ def generate_l2_map(dependency_collector: DependencyCollector) -> Path:
     processing_input_collection = ProcessingInputCollection(
         *[ScienceInput(pset) for pset in psets],
         *[SPICEInput(kernel) for kernel in spice_kernel_names],
-        *ancillary_inputs)
+        *ancillary_inputs,
+    )
 
     processor_classes = {
         MappableInstrumentShortName.HI: Hi,
@@ -204,33 +207,29 @@ def generate_l2_map(dependency_collector: DependencyCollector) -> Path:
     }
     processor_class = processor_classes[descriptor.instrument]
 
-    with patch('imap_processing.ena_maps.utils.naming.MapDescriptor.get_map_coord_frame') as mock_coord_frame:
-        mock_coord_frame.return_value = descriptor.spice_frame
+    processor = processor_class(
+        data_level="l2",
+        data_descriptor=descriptor.to_string(),
+        dependency_str=processing_input_collection.serialize(),
+        start_date=start_date.strftime("%Y%m%d"),
+        repointing=None,
+        version="0",
+        upload_to_sdc=False,
+    )
 
-        processor = processor_class(
-            data_level="l2", data_descriptor=descriptor.to_string(),
-            dependency_str=processing_input_collection.serialize(),
-            start_date=start_date.strftime("%Y%m%d"),
-            repointing=None,
-            version="0",
-            upload_to_sdc=False
-        )
-
-        downloaded_deps = processor.pre_processing()
-        if descriptor.kernel_path:
-            spiceypy.furnsh(str(descriptor.kernel_path))
-        try:
-            results = processor.do_processing(downloaded_deps)
-            paths = processor.post_processing(results, downloaded_deps)
-        except Exception as e:
-            note = f"Processing for {descriptor.to_string()} failed"
-            if hasattr(e, "add_note"):
-                e.add_note(note)
-            else:
-                e.__notes__ = [note]
-            raise e
-        finally:
-            processor.cleanup()
+    downloaded_deps = processor.pre_processing()
+    try:
+        results = processor.do_processing(downloaded_deps)
+        paths = processor.post_processing(results, downloaded_deps)
+    except Exception as e:
+        note = f"Processing for {descriptor.to_string()} failed"
+        if hasattr(e, "add_note"):
+            e.add_note(note)
+        else:
+            e.__notes__ = [note]
+        raise e
+    finally:
+        processor.cleanup()
 
     if len(paths) > 1:
         raise ValueError("L2 processing returned too many files!")

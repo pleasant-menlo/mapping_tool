@@ -32,12 +32,12 @@ MAPPING_TOOL_KERNEL_TYPES = [
 
 class DependencyCollector:
     def __init__(
-            self,
-            descriptor: MappingToolDescriptor,
-            time_ranges: list[tuple[datetime, datetime]],
-            include_predicted_ephemeris: bool,
-            ultra_energy_ranges: Optional[str] = None,
-        ):
+        self,
+        descriptor: MapDescriptor,
+        time_ranges: list[tuple[datetime, datetime]],
+        include_predicted_ephemeris: bool,
+        ultra_energy_ranges: Optional[str] = None,
+    ):
         self.descriptor = descriptor
         self.time_ranges = time_ranges
         self.start_date = min([start for start, _end in time_ranges])
@@ -89,14 +89,14 @@ class DependencyCollector:
         for pset in query_results:
             pset_date = datetime.strptime(pset["start_date"], "%Y%m%d").replace(tzinfo=timezone.utc)
             if any(range_start <= pset_date <= range_end for range_start, range_end in self.time_ranges):
-                psets.append(Path(pset['file_path']).name)
+                psets.append(Path(pset["file_path"]).name)
         return psets
 
     def get_survival_probability_dependencies(self, input_maps: list[Path]) -> list[ScienceInput]:
         hi_nsp_combined = (
-                self.descriptor.instrument == MappableInstrumentShortName.HI
-                and self.descriptor.sensor == "combined"
-                and self.descriptor.survival_corrected == "nsp"
+            self.descriptor.instrument == MappableInstrumentShortName.HI
+            and self.descriptor.sensor == "combined"
+            and self.descriptor.survival_corrected == "nsp"
         )
         spectral_index = "spx" in self.descriptor.principal_data
         not_requiring_pointing_sets = hi_nsp_combined or spectral_index
@@ -114,9 +114,21 @@ class DependencyCollector:
         if self.descriptor.survival_corrected == "nsp":
             return []
 
+        glows_descriptor = f"survival-probability-{self.descriptor.instrument.name.lower()[:2]}"
+        if self.descriptor.instrument == MappableInstrumentShortName.HI:
+            if self.descriptor.sensor == "45":
+                glows_descriptor = "survival-probability-hi-45"
+            elif self.descriptor.sensor == "90":
+                glows_descriptor = "survival-probability-hi-90"
+        elif self.descriptor.instrument == MappableInstrumentShortName.ULTRA:
+            if self.descriptor.frame_descriptor == "hf":
+                glows_descriptor = "survival-probability-ul-hf"
+            if self.descriptor.frame_descriptor == "sf":
+                glows_descriptor = "survival-probability-ul-sf"
+
         query_results = imap_data_access.query(
             instrument="glows",
-            descriptor=self.descriptor.get_descriptor_for_query("glows"),
+            descriptor=glows_descriptor,
             start_date=self.start_date.strftime("%Y%m%d"),
             end_date=self.end_date.strftime("%Y%m%d"),
             version="latest",
@@ -144,15 +156,15 @@ class DependencyCollector:
         if self.include_predicted_ephemeris:
             kernels_to_furnish.append(SpiceKernelTypes.EphemerisPredicted)
         return [
-            Path(name).name for name in get_spice_kernels_file_names(
+            Path(name).name
+            for name in get_spice_kernels_file_names(
                 self.start_date.replace(tzinfo=None),
                 self.end_date.replace(tzinfo=None),
                 kernels_to_furnish,
             )
         ]
 
-    def _filter_ancillary_dependencies(self, files: list[dict[str, str]]) -> list[
-        dict[str, str]]:
+    def _filter_ancillary_dependencies(self, files: list[dict[str, str]]) -> list[dict[str, str]]:
         match self.descriptor:
             case MapDescriptor(instrument=MappableInstrumentShortName.HI, sensor="90", survival_corrected="nsp"):
                 relevant_descriptors = ["90sensor-cal-prod", "90sensor-esa-energies", "90sensor-esa-eta-fit-factors"]
@@ -196,8 +208,7 @@ class DependencyCollector:
             return dates_to_files.values()
 
         latest_ancillary_inputs = [
-            AncillaryInput(Path(file["file_path"]).name)
-            for file in filter_files_by_highest_version(ancillaries)
+            AncillaryInput(Path(file["file_path"]).name) for file in filter_files_by_highest_version(ancillaries)
         ]
 
         if self.descriptor.instrument == MappableInstrumentShortName.ULTRA:
@@ -208,8 +219,11 @@ class DependencyCollector:
 
                 new_energy_ranges_path.write_text(self.ultra_energy_ranges.replace(" ", ""))
 
-                latest_ancillary_inputs = [ancillary for ancillary in latest_ancillary_inputs if
-                                           "l2-energy-bin-group-sizes" != ancillary.descriptor]
+                latest_ancillary_inputs = [
+                    ancillary
+                    for ancillary in latest_ancillary_inputs
+                    if "l2-energy-bin-group-sizes" != ancillary.descriptor
+                ]
                 latest_ancillary_inputs.append(AncillaryInput(new_energy_ranges_path.name))
 
         return latest_ancillary_inputs
