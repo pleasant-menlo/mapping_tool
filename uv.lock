@@ -1,5 +1,5 @@
 version = 1
-revision = 3
+revision = 2
 requires-python = ">=3.10"
 resolution-markers = [
     "python_full_version >= '3.12' and platform_machine == 'ARM64' and sys_platform == 'win32'",
@@ -197,15 +197,15 @@ wheels = [
 
 [[package]]
 name = "cdflib"
-version = "1.3.8"
+version = "1.3.12"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "numpy", version = "2.2.6", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.11'" },
     { name = "numpy", version = "2.3.5", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.11'" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/6e/e5/596a248e9d399db32be39c3f5299f0dbd6cab4464a4b2f18c0aab37a14b1/cdflib-1.3.8.tar.gz", hash = "sha256:9674f5c1615fb836b1a2193ee751f42a5d227c05686ee60ab8bdc97d39f3e52f", size = 240366, upload-time = "2026-01-09T19:10:13.224Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/66/98/2148d50084c6c40373b07ac0cf715123a03037680276e95916d97897344f/cdflib-1.3.12.tar.gz", hash = "sha256:b74fbbeac4c26e7a32a4aff678c7ae249682d77898c9674654e1a038c8c2624c", size = 284892, upload-time = "2026-06-01T15:37:54.165Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/a5/a1/06dca623be76280d0b5dbf5e0911abd3271d07476ed256a0d268bbbdcc0a/cdflib-1.3.8-py3-none-any.whl", hash = "sha256:38abd71fb6a14794ba2ff22c12cc0b77e09d06686f94c8157f814f7c1c20761a", size = 79651, upload-time = "2026-01-09T19:10:11.374Z" },
+    { url = "https://files.pythonhosted.org/packages/03/5c/5f0c71662b0202b1c4d013073ca69aa9fd12cb05727af78f808a2a4c9c95/cdflib-1.3.12-py3-none-any.whl", hash = "sha256:ef3df6e7ea918223059c7c8384802d52d9a1f655d5db677b7b8d29fd9f3d2381", size = 80708, upload-time = "2026-06-01T15:37:52.984Z" },
 ]
 
 [[package]]
@@ -703,20 +703,16 @@ wheels = [
 
 [[package]]
 name = "imap-data-access"
-version = "0.37.1"
-source = { registry = "https://pypi.org/simple" }
+version = "0.41.0"
+source = { git = "https://github.com/pleasant-menlo/imap-data-access?branch=version-latest-considers-instrument-data-level-descriptor-repoint#b72c6742bd5b15b67e561182f61ad5f62a522c8e" }
 dependencies = [
     { name = "requests" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/76/30/6f12289cd162aef048178d6a8900aa99afb2f452139e14c773335ce8ff06/imap_data_access-0.37.1.tar.gz", hash = "sha256:25743a180993f740cfcfc6805275feba9590324dd3fd6b88ab9cdb8d0731d13c", size = 50095, upload-time = "2026-01-21T21:02:38.246Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/10/4e/b96cc8657cf34ce56f7bac45b648805f172bba0139f7ef61f64493b1e11e/imap_data_access-0.37.1-py3-none-any.whl", hash = "sha256:aebd68f8f20e85535ae651a7145468596e975dd194e661b1b1dc212326cbb88e", size = 35846, upload-time = "2026-01-21T21:02:37.06Z" },
 ]
 
 [[package]]
 name = "imap-l3-processing"
-version = "1.0.9"
-source = { git = "https://github.com/IMAP-Science-Operations-Center/imap_L3_processing#5b8b544f176160fb5b140ff7fb38eede8b4166de" }
+version = "1.0.11.post41.dev0+d53edfc9"
+source = { git = "https://github.com/IMAP-Science-Operations-Center/imap_L3_processing?branch=3235-more-descriptive-map-metadata#d53edfc99bf38011dea15933261069aecb31a4fd" }
 dependencies = [
     { name = "astropy" },
     { name = "astropy-healpix" },
@@ -746,8 +742,8 @@ dependencies = [
 
 [[package]]
 name = "imap-processing"
-version = "1.0.32"
-source = { registry = "https://pypi.org/simple" }
+version = "1.0.33.post4.dev0+605bfab0"
+source = { git = "https://github.com/IMAP-Science-Operations-Center/imap_processing?branch=dev#605bfab049cb0a323c297442f99cfb83d34e9fce" }
 dependencies = [
     { name = "astropy-healpix" },
     { name = "cdflib" },
@@ -760,10 +756,6 @@ dependencies = [
     { name = "space-packet-parser" },
     { name = "spiceypy" },
     { name = "xarray" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/c6/b6/3e840a8cc3d4cbbbdf3ff30f34f9ede14ec35fdcb9ba1ebf67fd62cfd18c/imap_processing-1.0.32.tar.gz", hash = "sha256:c6dc7e945d8118e2ad5b48cc2ba98aadfe80c4b26d641b8255172aaebf28b77b", size = 1061726, upload-time = "2026-05-15T18:52:06.443Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/cb/8c/df5a9e5c2ce7f3341cac5c1042f45d198c3b21c0ae65e2439460eafd64d8/imap_processing-1.0.32-py3-none-any.whl", hash = "sha256:d53ca85c1ca111354074949e479fd082e518416194817bd094513ca048bdf17b", size = 1213442, upload-time = "2026-05-15T18:52:04.616Z" },
 ]
 
 [[package]]
@@ -1118,8 +1110,8 @@ dev = [
 requires-dist = [
     { name = "argparse", specifier = ">=1.4.0" },
     { name = "hatchling" },
-    { name = "imap-l3-processing", git = "https://github.com/IMAP-Science-Operations-Center/imap_L3_processing" },
-    { name = "imap-processing", specifier = ">=1.0.32" },
+    { name = "imap-l3-processing", git = "https://github.com/IMAP-Science-Operations-Center/imap_L3_processing?branch=3235-more-descriptive-map-metadata" },
+    { name = "imap-processing" },
     { name = "jsonschema", specifier = ">=4.25.0" },
     { name = "pyyaml", specifier = ">=6.0.2" },
     { name = "uv-dynamic-versioning" },
