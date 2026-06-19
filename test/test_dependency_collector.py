@@ -606,20 +606,96 @@ class TestDependencyCollector(unittest.TestCase):
                     )
 
                     expected_inputs = [
-                        ScienceInput(
-                            f"imap_glows_l3e_{expected_glows_descriptor}_20250101_v000.cdf"
-                        ),
-                        ScienceInput(
-                            f"imap_{instrument_name}_l1c_pset_20250615_v001.cdf"
-                        ),
-                        ScienceInput(
-                            f"imap_{instrument_name}_l1c_pset_20250616_v001.cdf"
-                        ),
+                        ScienceInput(f"imap_glows_l3e_{expected_glows_descriptor}_20250101_v000.cdf"),
+                        ScienceInput(f"imap_{instrument_name}_l1c_pset_20250615_v001.cdf"),
+                        ScienceInput(f"imap_{instrument_name}_l1c_pset_20250616_v001.cdf"),
                     ]
 
-                    test_helpers.assert_imap_processing_inputs_match(
-                        expected_inputs, sp_deps, any_order=True
-                    )
+                    test_helpers.assert_imap_processing_inputs_match(expected_inputs, sp_deps, any_order=True)
+
+    @patch(f"{MODULE}.imap_data_access.query")
+    def test_get_sp_dependencies_for_combined_hi_maps(self, mock_query):
+        hi_combined_descriptor = create_map_descriptor(
+            instrument=MappableInstrumentShortName.HI,
+            sensor="combined",
+        )
+
+        expected_glows_descriptor = ["survival-probability-hi-45", "survival-probability-hi-90"]
+
+        start_date = datetime(2025, 1, 1, tzinfo=timezone.utc)
+        end_date = datetime(2025, 2, 1, tzinfo=timezone.utc)
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            tmpdir = Path(tmpdir)
+
+            l2_map_inputs = []
+            for sensor in ["45", "90"]:
+                l2_map_inputs.append(tmpdir / f"imap_hi_l2_{sensor}-map_20250101_v000.cdf")
+                with CDF(str(l2_map_inputs[-1]), masterpath="") as cdf:
+                    cdf.attrs["Parents"] = [
+                        f"imap_hi_l1c_{sensor}sensor-pset_20250615_v001.cdf",
+                        f"imap_hi_l1c_{sensor}sensor-pset_20250616_v001.cdf",
+                    ]
+
+            mock_query.side_effect = [
+                [
+                    {
+                        "file_path": f"imap_glows_l3e_{expected_glows_descriptor[0]}_20250101_v000.cdf",
+                        "start_date": "20250101",
+                    },
+                    {
+                        "file_path": f"imap_glows_l3e_{expected_glows_descriptor[0]}_20250102_v000.cdf",
+                        "start_date": "20250102",
+                    },
+                ],
+                [
+                    {
+                        "file_path": f"imap_glows_l3e_{expected_glows_descriptor[1]}_20250101_v000.cdf",
+                        "start_date": "20250101",
+                    },
+                    {
+                        "file_path": f"imap_glows_l3e_{expected_glows_descriptor[1]}_20250102_v000.cdf",
+                        "start_date": "20250102",
+                    },
+                ],
+            ]
+
+            dependency_collector = DependencyCollector(hi_combined_descriptor, [(start_date, end_date)], False)
+            sp_deps = dependency_collector.get_survival_probability_dependencies(l2_map_inputs)
+
+            mock_query.assert_has_calls(
+                [
+                    call(
+                        instrument="glows",
+                        descriptor=expected_glows_descriptor[0],
+                        start_date="20250101",
+                        end_date="20250201",
+                        version="latest",
+                    ),
+                    call(
+                        instrument="glows",
+                        descriptor=expected_glows_descriptor[1],
+                        start_date="20250101",
+                        end_date="20250201",
+                        version="latest",
+                    ),
+                ]
+            )
+
+            expected_inputs = [
+                ScienceInput(f"imap_glows_l3e_{expected_glows_descriptor[0]}_20250101_v000.cdf"),
+                ScienceInput(f"imap_glows_l3e_{expected_glows_descriptor[0]}_20250102_v000.cdf"),
+                ScienceInput(f"imap_glows_l3e_{expected_glows_descriptor[1]}_20250101_v000.cdf"),
+                ScienceInput(f"imap_glows_l3e_{expected_glows_descriptor[1]}_20250102_v000.cdf"),
+                ScienceInput(f"imap_hi_l1c_45sensor-pset_20250615_v001.cdf"),
+                ScienceInput(f"imap_hi_l1c_45sensor-pset_20250616_v001.cdf"),
+                ScienceInput(f"imap_hi_l1c_90sensor-pset_20250615_v001.cdf"),
+                ScienceInput(f"imap_hi_l1c_90sensor-pset_20250616_v001.cdf"),
+            ]
+
+            test_helpers.assert_imap_processing_inputs_match(
+                expected_inputs, sp_deps, any_order=True
+            )
 
     @patch(f"{MODULE}.imap_data_access.query")
     def test_get_sp_dependencies_for_combine_data_across_time_ranges(self, mock_query):

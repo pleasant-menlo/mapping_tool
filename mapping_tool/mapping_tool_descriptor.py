@@ -55,19 +55,16 @@ class MappingToolDescriptor(MapDescriptor):
             ]
         )
 
-    def get_descriptor_for_query(self, query_type=None, sensor=None):
-        if query_type == "glows":
-            if self.instrument == MappableInstrumentShortName.HI:
-                if self.sensor == "45":
-                    return "survival-probability-hi-45"
-                elif self.sensor == "90":
-                    return "survival-probability-hi-90"
-            elif self.instrument == MappableInstrumentShortName.ULTRA:
-                if self.frame_descriptor == 'hf':
-                    return "survival-probability-ul-hf"
-                if self.frame_descriptor == 'sf':
-                    return "survival-probability-ul-sf"
-            else:
-                return f"survival-probability-{self.instrument.name.lower()[:2]}"
-        elif query_type == "l1c":
-            pass
+    def get_glows_input_descriptors(self) -> list[str]:
+        map_details = (self.instrument, self.sensor, self.frame_descriptor)
+        match map_details:
+            case (MappableInstrumentShortName.HI, "45" | "90" as sensor, _):
+                return [f"survival-probability-hi-{sensor}"]
+            case (MappableInstrumentShortName.HI, "combined", _):
+                return ["survival-probability-hi-45", "survival-probability-hi-90"]
+            case (MappableInstrumentShortName.ULTRA, _, "hf" | "sf" as frame):
+                return [f"survival-probability-ul-{frame}"]
+            case (MappableInstrumentShortName.LO, _, _):
+                return [f"survival-probability-{self.instrument.name.lower()[:2]}"]
+            case _:
+                raise ValueError(f"Unsupported instrument, sensor, or frame descriptor for finding GLOWS SP dependencies: {map_details}")

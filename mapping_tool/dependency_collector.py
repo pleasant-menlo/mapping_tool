@@ -114,15 +114,17 @@ class DependencyCollector:
         if self.descriptor.survival_corrected == "nsp":
             return []
 
-        query_results = imap_data_access.query(
-            instrument="glows",
-            descriptor=self.descriptor.get_descriptor_for_query("glows"),
-            start_date=self.start_date.strftime("%Y%m%d"),
-            end_date=self.end_date.strftime("%Y%m%d"),
-            version="latest",
-        )
-
-        return [ScienceInput(f) for f in self._find_psets_in_time_ranges(query_results)]
+        science_inputs = []
+        for descriptor in self.descriptor.get_glows_input_descriptors():
+            query_results = imap_data_access.query(
+                instrument="glows",
+                descriptor=descriptor,
+                start_date=self.start_date.strftime("%Y%m%d"),
+                end_date=self.end_date.strftime("%Y%m%d"),
+                version="latest",
+            )
+            science_inputs.extend([ScienceInput(f) for f in self._find_psets_in_time_ranges(query_results)])
+        return science_inputs
 
     @staticmethod
     def _get_l1c_parents(input_map: Path) -> set[str]:
