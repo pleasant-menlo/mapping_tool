@@ -172,26 +172,21 @@ class DependencyCollector:
         return [f for f in files if f["descriptor"] in relevant_descriptors]
 
     def get_ancillary_dependencies(self) -> list[AncillaryInput]:
-        ancillaries = imap_data_access.query(table="ancillary", instrument=self.descriptor.instrument.name.lower())
+        ancillaries = imap_data_access.query(
+            table="ancillary",
+            instrument=self.descriptor.instrument.name.lower(),
+            version="latest",
+            end_date=self.end_date.strftime("%Y%m%d"),
+        )
         ancillaries = self._filter_ancillary_dependencies(ancillaries)
 
-        def filter_files_by_highest_version(files: list):
+        def filter_files_by_latest_start_date(files: list):
             dates_to_files = {}
-            valid_files = []
-            for f in files:
-                utc_start_time = datetime.strptime(f["start_date"], "%Y%m%d").replace(tzinfo=timezone.utc)
-                if utc_start_time < self.end_date:
-                    valid_files.append(f)
-
-            for file in valid_files:
+            for file in files:
                 file_descriptor = file["descriptor"]
                 if file_descriptor not in dates_to_files:
                     dates_to_files[file_descriptor] = file
                 else:
-                    if dates_to_files[file_descriptor]["start_date"] == file["start_date"]:
-                        if dates_to_files[file_descriptor]["version"] < file["version"]:
-                            dates_to_files[file_descriptor] = file
-
                     if dates_to_files[file_descriptor]["start_date"] < file["start_date"]:
                         dates_to_files[file_descriptor] = file
 
@@ -199,7 +194,7 @@ class DependencyCollector:
 
         latest_ancillary_inputs = [
             AncillaryInput(Path(file["file_path"]).name)
-            for file in filter_files_by_highest_version(ancillaries)
+            for file in filter_files_by_latest_start_date(ancillaries)
         ]
 
         if self.descriptor.instrument == MappableInstrumentShortName.ULTRA:

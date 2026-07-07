@@ -319,71 +319,11 @@ class TestDependencyCollector(unittest.TestCase):
         self.assertEqual(expected_pointing_sets, pointing_sets)
 
     @patch(f"{MODULE}.imap_data_access.query")
-    def test_get_latest_version_of_ancillary_dependencies(self, mock_query):
-        sensors = ["90", "45"]
-
-        for sensor in sensors:
-            with self.subTest(sensor):
-                mock_query.side_effect = [
-                    [
-                        create_imap_query_response_item(descriptor="45sensor-cal-prod", version="v002"),
-                        create_imap_query_response_item(descriptor="45sensor-cal-prod", version="v001"),
-                        create_imap_query_response_item(descriptor="45sensor-esa-energies", version="v002"),
-                        create_imap_query_response_item(descriptor="45sensor-esa-energies", version="v001"),
-                        create_imap_query_response_item(descriptor="45sensor-esa-eta-fit-factors", version="v002"),
-                        create_imap_query_response_item(descriptor="45sensor-esa-eta-fit-factors", version="v001"),
-                        create_imap_query_response_item(descriptor="90sensor-cal-prod", version="v001"),
-                        create_imap_query_response_item(descriptor="90sensor-cal-prod", version="v002"),
-                        create_imap_query_response_item(descriptor="90sensor-esa-energies", version="v001"),
-                        create_imap_query_response_item(descriptor="90sensor-esa-energies", version="v002"),
-                        create_imap_query_response_item(descriptor="90sensor-esa-eta-fit-factors", version="v001"),
-                        create_imap_query_response_item(descriptor="90sensor-esa-eta-fit-factors", version="v002"),
-                    ]
-                ]
-
-                end_date = datetime(2026, 2, 1, tzinfo=timezone.utc)
-                descriptor = create_map_descriptor(
-                    frame_descriptor="sf",
-                    resolution_str="6",
-                    duration="2",
-                    instrument=MappableInstrumentShortName.HI,
-                    sensor=sensor,
-                    principal_data="ena",
-                    species="h",
-                    survival_corrected="nsp",
-                    spin_phase="ram",
-                    coordinate_system="hae",
-                )
-
-                dependency_collector = DependencyCollector(descriptor, [(Mock(), end_date)], False)
-                ancillary_dependencies = dependency_collector.get_ancillary_dependencies()
-
-                mock_query.assert_called_with(table="ancillary", instrument="hi")
-                expected_ancillary_dependencies = [AncillaryInput(f"imap_hi_{sensor}sensor-cal-prod_20240101_v002.csv"),
-                                                   AncillaryInput(
-                                                       f"imap_hi_{sensor}sensor-esa-energies_20240101_v002.csv"),
-                                                   AncillaryInput(
-                                                       f"imap_hi_{sensor}sensor-esa-eta-fit-factors_20240101_v002.csv")]
-
-                test_helpers.assert_imap_processing_inputs_match(expected_ancillary_dependencies,
-                                                                 ancillary_dependencies)
-
-    @patch(f"{MODULE}.imap_data_access.query")
     def test_get_ancillary_dependencies_finds_nearest_files_to_map_end_date(
             self, mock_query
     ):
         mock_query.side_effect = [
             [
-                create_imap_query_response_item(
-                    descriptor="45sensor-cal-prod",
-                    version="v001",
-                    start_date="20270101",
-                ),
-                create_imap_query_response_item(
-                    descriptor="45sensor-cal-prod",
-                    version="v001",
-                    start_date="20250101",
-                ),
                 create_imap_query_response_item(
                     descriptor="45sensor-cal-prod",
                     version="v002",
@@ -414,7 +354,12 @@ class TestDependencyCollector(unittest.TestCase):
         dependency_collector = DependencyCollector(descriptor, [(Mock(), end_date)], False)
         ancillary_dependencies = dependency_collector.get_ancillary_dependencies()
 
-        mock_query.assert_called_with(table="ancillary", instrument="hi")
+        mock_query.assert_called_with(
+            table="ancillary",
+            instrument="hi",
+            end_date="20260201",
+            version="latest"
+        )
         expected_ancillary_dependencies = [
             AncillaryInput("imap_hi_45sensor-cal-prod_20250101_v002.csv")
         ]
@@ -481,7 +426,12 @@ class TestDependencyCollector(unittest.TestCase):
                 dependency_collector = DependencyCollector(descriptor, [(Mock(), end_date)], False)
                 ancillary_dependencies = dependency_collector.get_ancillary_dependencies()
 
-                mock_query.assert_called_with(table="ancillary", instrument=descriptor.instrument.name.lower())
+                mock_query.assert_called_with(
+                    table="ancillary",
+                    instrument=descriptor.instrument.name.lower(),
+                    end_date="20260201",
+                    version="latest"
+                )
                 self.assertEqual(set(expected_ancillary_descriptors), {d.descriptor for d in ancillary_dependencies})
 
     @patch(f'{MODULE}.imap_data_access.query')
@@ -530,7 +480,10 @@ class TestDependencyCollector(unittest.TestCase):
                 self.assertTrue(ultra_dep.is_file())
                 self.assertEqual("0,10,20,40", ultra_dep.read_text())
                 mock_query.assert_called_once_with(
-                    table="ancillary", instrument="ultra"
+                    table="ancillary",
+                    instrument="ultra",
+                    end_date="20260201",
+                    version="latest",
                 )
                 expected_ancillary_dependencies = [
                     AncillaryInput(
