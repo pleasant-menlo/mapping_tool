@@ -10,7 +10,7 @@ readme = "README.md"
 requires-python = ">=3.10"
 dependencies = [
     "argparse>=1.4.0",
-    "imap-l3-processing>=1.0.11",
+    "imap-l3-processing>=1.0.13",
     "imap-processing>=1.0.32",
     "jsonschema>=4.25.0",
     "pyyaml>=6.0.2",
