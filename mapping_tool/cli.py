@@ -24,7 +24,7 @@ import imap_data_access
 
 def get_output_filename(descriptor: MappingToolDescriptor, start_date: datetime):
     data_level = get_data_level_for_descriptor(descriptor)
-    return f"imap_{descriptor.instrument.name.lower()}_{data_level.value}_{descriptor.to_mapping_tool_string()}_{start_date.strftime('%Y%m%d')}_v000.cdf"
+    return f"imap_{descriptor.instrument.name.lower()}_{data_level.value}_{descriptor.to_mapping_tool_string()}_{start_date.strftime('%Y%m%d')}_v000.0000.cdf"
 
 
 def cleanup_l2_l3_dependencies(descriptor: MappingToolDescriptor):

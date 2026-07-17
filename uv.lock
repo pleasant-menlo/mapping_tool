@@ -388,7 +388,7 @@ resolution-markers = [
     "(python_full_version < '3.11' and platform_machine != 'ARM64') or (python_full_version < '3.11' and sys_platform != 'win32')",
 ]
 dependencies = [
-    { name = "numpy", version = "2.2.6", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.11'" },
+    { name = "numpy", version = "2.2.6", source = { registry = "https://pypi.org/simple" } },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/66/54/eb9bfc647b19f2009dd5c7f5ec51c4e6ca831725f1aea7a993034f483147/contourpy-1.3.2.tar.gz", hash = "sha256:b6945942715a034c671b7fc54f9588126b0b8bf23db2696e3ca8328f3ff0ab54", size = 13466130, upload-time = "2025-04-15T17:47:53.79Z" }
 wheels = [
@@ -461,7 +461,7 @@ resolution-markers = [
     "(python_full_version == '3.11.*' and platform_machine != 'ARM64') or (python_full_version == '3.11.*' and sys_platform != 'win32')",
 ]
 dependencies = [
-    { name = "numpy", version = "2.3.5", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.11'" },
+    { name = "numpy", version = "2.3.5", source = { registry = "https://pypi.org/simple" } },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/58/01/1253e6698a07380cd31a736d248a3f2a50a7c88779a1813da27503cadc2a/contourpy-1.3.3.tar.gz", hash = "sha256:083e12155b210502d0bca491432bb04d56dc3432f95a979b429f2848c3dbe880", size = 13466174, upload-time = "2025-07-26T12:03:12.549Z" }
 wheels = [
@@ -703,20 +703,20 @@ wheels = [
 
 [[package]]
 name = "imap-data-access"
-version = "0.42.0.dev0"
+version = "0.42.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "requests" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/1b/9a/9a8efafcbf985fbf0b50dff4ec29593b2468d6d93de95d59531811a60ca4/imap_data_access-0.42.0.dev0.tar.gz", hash = "sha256:d75b5f2df51fb220d58c5fb009fd5d2eec24c22abdeac5035bc32df55ee2c338", size = 59535, upload-time = "2026-06-18T16:02:19.287Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/be/6c/c5ce62fb26b911dc39f958fed2aa06a37602da5ec2c6da5f2042a438087f/imap_data_access-0.42.0.tar.gz", hash = "sha256:64dbd378dbe57e35eee157b513ee4929b279056983c19bd1481eeb90dac07fbf", size = 60568, upload-time = "2026-07-13T17:34:11.288Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/7c/7b/be7b42051f060016417b1aedf84994a87b506cca1cb86b08d735fb86e8bf/imap_data_access-0.42.0.dev0-py3-none-any.whl", hash = "sha256:ba6618e809033cf8effa1ed0a63add082ff32ce5cde239a59530ec7065237da2", size = 41593, upload-time = "2026-06-18T16:02:17.989Z" },
+    { url = "https://files.pythonhosted.org/packages/15/d9/322a4a104ec4bffcbc5e41b4d0d01e1708ae713b79d4ee68aa5877d6c0eb/imap_data_access-0.42.0-py3-none-any.whl", hash = "sha256:5eb6081dd9e6bcac2be60d5bb288a66d8d52922124d52e6d1ac7020beff2bc4b", size = 42345, upload-time = "2026-07-13T17:34:09.912Z" },
 ]
 
 [[package]]
 name = "imap-l3-processing"
-version = "1.0.13"
-source = { git = "https://github.com/IMAP-Science-Operations-Center/imap_L3_processing#34b922e72eb01d757dcf8667a90a9a302d4e0e39" }
+version = "1.0.14"
+source = { git = "https://github.com/IMAP-Science-Operations-Center/imap_L3_processing#984e02f326723dd8d6e4246eb4740bd6580d79ab" }
 dependencies = [
     { name = "astropy" },
     { name = "astropy-healpix" },
@@ -746,7 +746,7 @@ dependencies = [
 
 [[package]]
 name = "imap-processing"
-version = "1.0.34"
+version = "1.0.35"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "astropy-healpix" },
@@ -761,9 +761,9 @@ dependencies = [
     { name = "spiceypy" },
     { name = "xarray" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/25/f6/ddcb637ee658f5398debedb891d1e1599a00236fa2d7367800d3dfeff0a8/imap_processing-1.0.34.tar.gz", hash = "sha256:d47baf8e1debb562cd62214b16b5163f8c232be271c9b0b459e74fefd1d92ad1", size = 1075800, upload-time = "2026-06-16T18:53:00.8Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/79/d4/7d6e317f24f42a1971ba6c807e3c97ec40692c168cd01b6fb4c0b993835d/imap_processing-1.0.35.tar.gz", hash = "sha256:1e4605da3d3ac453a7d667e3f94cfe5355935b6a81541873e5914a9f3ee1455c", size = 1079065, upload-time = "2026-07-15T21:55:18.323Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/33/d5/9b4e5a8ec1b00d73d8acd7e9232d62278a9a13a163706ca32d43a0aabe23/imap_processing-1.0.34-py3-none-any.whl", hash = "sha256:ad2a2c4c2f0a868afb9bdf41c74d54ec0b8bdfb2828b7fb97c564ef8db73b3dd", size = 1225177, upload-time = "2026-06-16T18:52:58.425Z" },
+    { url = "https://files.pythonhosted.org/packages/9c/dd/9ff2137b068317c3c1e1f5e83224579870445d3e65f86cf518d8dbb40d1d/imap_processing-1.0.35-py3-none-any.whl", hash = "sha256:21f344b2d2783764be8de5575e7097917912973d1a1a4e5714a05c3e9035a45f", size = 1229173, upload-time = "2026-07-15T21:55:16.37Z" },
 ]
 
 [[package]]
@@ -1119,9 +1119,9 @@ dev = [
 requires-dist = [
     { name = "argparse", specifier = ">=1.4.0" },
     { name = "hatchling" },
-    { name = "imap-data-access", specifier = "==0.42.0.dev0" },
+    { name = "imap-data-access", specifier = "==0.42.0" },
     { name = "imap-l3-processing", git = "https://github.com/IMAP-Science-Operations-Center/imap_L3_processing" },
-    { name = "imap-processing", specifier = ">=1.0.32" },
+    { name = "imap-processing", specifier = ">=1.0.35" },
     { name = "jsonschema", specifier = ">=4.25.0" },
     { name = "pyyaml", specifier = ">=6.0.2" },
     { name = "uv-dynamic-versioning" },
@@ -1319,9 +1319,9 @@ resolution-markers = [
     "python_full_version < '3.11' and platform_machine == 'ARM64' and sys_platform == 'win32'",
 ]
 dependencies = [
-    { name = "certifi", marker = "python_full_version < '3.11' and platform_machine == 'ARM64' and sys_platform == 'win32'" },
-    { name = "cftime", marker = "python_full_version < '3.11' and platform_machine == 'ARM64' and sys_platform == 'win32'" },
-    { name = "numpy", version = "2.2.6", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.11' and platform_machine == 'ARM64' and sys_platform == 'win32'" },
+    { name = "certifi" },
+    { name = "cftime" },
+    { name = "numpy", version = "2.2.6", source = { registry = "https://pypi.org/simple" } },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/0e/76/7bc801796dee752c1ce9cd6935564a6ee79d5c9d9ef9192f57b156495a35/netcdf4-1.7.3.tar.gz", hash = "sha256:83f122fc3415e92b1d4904fd6a0898468b5404c09432c34beb6b16c533884673", size = 836095, upload-time = "2025-10-13T18:38:00.76Z" }
 
@@ -1337,8 +1337,8 @@ resolution-markers = [
     "(python_full_version < '3.11' and platform_machine != 'ARM64') or (python_full_version < '3.11' and sys_platform != 'win32')",
 ]
 dependencies = [
-    { name = "certifi", marker = "python_full_version >= '3.11' or platform_machine != 'ARM64' or sys_platform != 'win32'" },
-    { name = "cftime", marker = "python_full_version >= '3.11' or platform_machine != 'ARM64' or sys_platform != 'win32'" },
+    { name = "certifi" },
+    { name = "cftime" },
     { name = "numpy", version = "2.2.6", source = { registry = "https://pypi.org/simple" }, marker = "(python_full_version < '3.11' and platform_machine != 'ARM64') or (python_full_version < '3.11' and sys_platform != 'win32')" },
     { name = "numpy", version = "2.3.5", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.11'" },
 ]
@@ -2115,7 +2115,7 @@ resolution-markers = [
     "(python_full_version < '3.11' and platform_machine != 'ARM64') or (python_full_version < '3.11' and sys_platform != 'win32')",
 ]
 dependencies = [
-    { name = "numpy", version = "2.2.6", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.11'" },
+    { name = "numpy", version = "2.2.6", source = { registry = "https://pypi.org/simple" } },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/0f/37/6964b830433e654ec7485e45a00fc9a27cf868d622838f6b6d9c5ec0d532/scipy-1.15.3.tar.gz", hash = "sha256:eae3cf522bc7df64b42cad3925c876e1b0b6c35c1337c93e12c0f366f55b0eaf", size = 59419214, upload-time = "2025-05-08T16:13:05.955Z" }
 wheels = [
@@ -2177,7 +2177,7 @@ resolution-markers = [
     "(python_full_version == '3.11.*' and platform_machine != 'ARM64') or (python_full_version == '3.11.*' and sys_platform != 'win32')",
 ]
 dependencies = [
-    { name = "numpy", version = "2.3.5", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.11'" },
+    { name = "numpy", version = "2.3.5", source = { registry = "https://pypi.org/simple" } },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/56/3e/9cca699f3486ce6bc12ff46dc2031f1ec8eb9ccc9a320fdaf925f1417426/scipy-1.17.0.tar.gz", hash = "sha256:2591060c8e648d8b96439e111ac41fd8342fdeff1876be2e19dea3fe8930454e", size = 30396830, upload-time = "2026-01-10T21:34:23.009Z" }
 wheels = [

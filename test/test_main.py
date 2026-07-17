@@ -5,7 +5,7 @@ import tempfile
 import unittest
 from datetime import timedelta
 from pathlib import Path
-from unittest import SkipTest
+from unittest import skip
 
 import main
 from test.test_helpers import run_periodically, get_example_config_path
@@ -13,7 +13,7 @@ from test.test_helpers import run_periodically, get_example_config_path
 
 class TestMain(unittest.TestCase):
 
-    @SkipTest
+    @skip("Integration test")
     @run_periodically(timedelta(days=1))
     def test_main_integration(self):
         with tempfile.TemporaryDirectory() as temporary_directory:
@@ -29,4 +29,4 @@ class TestMain(unittest.TestCase):
                 self.fail("Process failed:\n" + process_result.stderr)
 
             self.assertTrue(
-                (tmp_dir / "imap_hi_l3_h90-enatest-h-sf-sp-ram-imaphae-4deg-3mo-mapper_20250702_v000.cdf").exists())
+                (tmp_dir / "imap_hi_l3_h90-enatest-h-sf-sp-ram-imaphae-4deg-3mo-mapper_20250702_v000.0000.cdf").exists())

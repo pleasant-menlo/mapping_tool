@@ -5,10 +5,11 @@ from pathlib import Path
 from unittest.mock import patch
 
 import imap_data_access
+from imap_data_access.file_validation import Version
 
 from mapping_tool.configuration import DataLevel
 from imap_processing.ena_maps.utils.naming import MapDescriptor, MappableInstrumentShortName
-from imap_l3_processing.models import InputMetadata
+from imap_l3_processing.models import InputMetadata, VersionMap
 from imap_l3_processing.hi.hi_processor import HiProcessor
 from imap_l3_processing.ultra.ultra_processor import UltraProcessor
 from imap_l3_processing.lo.lo_processor import LoProcessor
@@ -133,7 +134,7 @@ def generate_l3_map(dependency_collector: DependencyCollector, input_maps: list[
         data_level='l3',
         start_date=dependency_collector.start_date,
         end_date=dependency_collector.end_date,
-        version='v000',
+        version=VersionMap({dependency_collector.descriptor.to_l3_input_string():Version(0,0)}),
         descriptor=dependency_collector.descriptor.to_l3_input_string(),
     )
 
@@ -212,7 +213,7 @@ def generate_l2_map(dependency_collector: DependencyCollector) -> Path:
             dependency_str=processing_input_collection.serialize(),
             start_date=start_date.strftime("%Y%m%d"),
             repointing=None,
-            version="0",
+            version="v000.0000",
             upload_to_sdc=False
         )
 

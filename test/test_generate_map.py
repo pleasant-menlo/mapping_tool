@@ -5,9 +5,10 @@ from datetime import datetime, timezone
 from pathlib import Path
 from unittest.mock import patch, Mock, call, MagicMock
 
+from imap_data_access.file_validation import Version
 from imap_l3_processing.utils import FurnishMetakernelOutput
 from imap_processing.ena_maps.utils.naming import MappableInstrumentShortName, MapDescriptor
-from imap_l3_processing.models import InputMetadata
+from imap_l3_processing.models import InputMetadata, VersionMap
 from imap_data_access import ProcessingInputCollection, ScienceInput, SPICEInput, AncillaryInput
 from imap_processing.spice.geometry import SpiceFrame
 
@@ -255,7 +256,7 @@ class TestGenerateMap(unittest.TestCase):
                     data_level='l3',
                     start_date=start_date,
                     end_date=end_date,
-                    version='v000',
+                    version=VersionMap({expected_descriptor_string:Version(0,0)}),
                     descriptor=expected_descriptor_string,
                 )
 
@@ -435,7 +436,7 @@ class TestGenerateMap(unittest.TestCase):
                     dependency_str=expected_dependency_str,
                     start_date=start_date.strftime("%Y%m%d"),
                     repointing=None,
-                    version="0",
+                    version="v000.0000",
                     upload_to_sdc=False
                 )
 

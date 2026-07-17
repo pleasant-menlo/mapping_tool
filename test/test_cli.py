@@ -99,7 +99,7 @@ class TestCli(unittest.TestCase):
         mock_sort_cdfs_by_epoch.assert_called_once_with([generated_cdf_path_1, generated_cdf_path_2])
 
         output_map_path = str(
-            Path("some/output/path") / 'imap_hi_l3_h90-enaTEST-h-sf-sp-ram-hae-2deg-6mo-mapper_20250101_v000.cdf')
+            Path("some/output/path") / 'imap_hi_l3_h90-enaTEST-h-sf-sp-ram-hae-2deg-6mo-mapper_20250101_v000.0000.cdf')
         mock_cdf.assert_has_calls([
             call(output_map_path, str(generated_cdf_path_1), readonly=False),
             call().__enter__(),
@@ -139,7 +139,7 @@ class TestCli(unittest.TestCase):
 
         self.assertEqual('h90-enaTEST-h-sf-sp-ram-hae-2deg-6mo-mapper', mock_cdf_file_1.attrs["Logical_source"])
         self.assertEqual(mock_configuration.raw_config, mock_cdf_file_1.attrs.get("Mapper_tool_configuration"))
-        self.assertEqual('imap_hi_l3_h90-enaTEST-h-sf-sp-ram-hae-2deg-6mo-mapper_20250101_v000',
+        self.assertEqual('imap_hi_l3_h90-enaTEST-h-sf-sp-ram-hae-2deg-6mo-mapper_20250101_v000.0000',
                          mock_cdf_file_1.attrs["Logical_file_id"])
         self.assertEqual('L3_h90-enaTEST-h-sf-sp-ram-hae-2deg-6mo-mapper>other_stuff',
                          mock_cdf_file_1.attrs["Data_type"])
@@ -216,12 +216,12 @@ class TestCli(unittest.TestCase):
 
             generated_cdf = next(tmp_path.glob('*.cdf'))
 
-            self.assertEqual("imap_hi_l2_h90-ena-h-sf-nsp-ram-eclipj2000-4deg-custom-mapper_20250820_v000.cdf",
+            self.assertEqual("imap_hi_l2_h90-ena-h-sf-nsp-ram-eclipj2000-4deg-custom-mapper_20250820_v000.0000.cdf",
                              generated_cdf.name)
 
             with CDF(str(generated_cdf)) as cdf:
                 self.assertEqual("h90-ena-h-sf-nsp-ram-eclipj2000-4deg-custom-mapper", str(cdf.attrs["Logical_source"]))
-                self.assertEqual("imap_hi_l2_h90-ena-h-sf-nsp-ram-eclipj2000-4deg-custom-mapper_20250820_v000",
+                self.assertEqual("imap_hi_l2_h90-ena-h-sf-nsp-ram-eclipj2000-4deg-custom-mapper_20250820_v000.0000",
                                  str(cdf.attrs["Logical_file_id"]))
                 self.assertEqual(
                     "L2_h90-ena-h-sf-nsp-ram-eclipj2000-4deg-custom-mapper>Level-2 ENA Intensity Map for Hi90",
@@ -304,7 +304,7 @@ class TestCli(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmpdir:
             config = create_configuration(output_directory=Path(tmpdir))
             existing_file = Path(
-                tmpdir) / f"imap_hi_l2_{config.get_map_descriptor().to_mapping_tool_string()}_20250101_v000.cdf"
+                tmpdir) / f"imap_hi_l2_{config.get_map_descriptor().to_mapping_tool_string()}_20250101_v000.0000.cdf"
             existing_file.write_text("text")
 
             output_file = do_mapping_tool(config)

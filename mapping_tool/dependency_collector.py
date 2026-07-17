@@ -14,7 +14,7 @@ from imap_l3_processing.utils import (
 )
 from imap_processing.ena_maps.utils.naming import MappableInstrumentShortName, MapDescriptor
 from imap_data_access.processing_input import AncillaryInput, ScienceInput
-from imap_data_access.file_validation import AncillaryFilePath
+from imap_data_access.file_validation import AncillaryFilePath, Version
 
 from mapping_tool.mapping_tool_descriptor import MappingToolDescriptor
 
@@ -73,14 +73,15 @@ class DependencyCollector:
         query_results = []
         for pset_descriptor in pset_descriptors:
             query_results.extend(
+                temporary_workaround_for_version_latest(
                 imap_data_access.query(
                     instrument=self.descriptor.instrument.name.lower(),
                     start_date=self.start_date.strftime("%Y%m%d"),
                     end_date=self.end_date.strftime("%Y%m%d"),
                     data_level="l1c",
                     descriptor=pset_descriptor,
-                    version="latest",
-                )
+                    major_version=1
+                ))
             )
         return query_results
 
@@ -116,13 +117,13 @@ class DependencyCollector:
 
         science_inputs = []
         for descriptor in self.descriptor.get_glows_input_descriptors():
-            query_results = imap_data_access.query(
+            query_results = temporary_workaround_for_version_latest(imap_data_access.query(
                 instrument="glows",
                 descriptor=descriptor,
                 start_date=self.start_date.strftime("%Y%m%d"),
                 end_date=self.end_date.strftime("%Y%m%d"),
-                version="latest",
-            )
+                major_version=1,
+            ))
             science_inputs.extend([ScienceInput(f) for f in self._find_psets_in_time_ranges(query_results)])
         return science_inputs
 
@@ -210,3 +211,19 @@ class DependencyCollector:
                 latest_ancillary_inputs.append(AncillaryInput(new_energy_ranges_path.name))
 
         return latest_ancillary_inputs
+
+
+def temporary_workaround_for_version_latest(query_results: list[dict]) -> list[dict]:
+    best_results = {}
+    for qr in query_results:
+        data_product_key = _create_data_product_key(qr)
+        version = Version.from_version(qr["version"])
+        if (data_product_key not in best_results
+            or version > Version.from_version(best_results[data_product_key]["version"])):
+            best_results[data_product_key] = qr
+
+    return list(best_results.values())
+
+def _create_data_product_key(query_result: dict) -> (str, str, str, int, str):
+    return query_result["instrument"], query_result["descriptor"], query_result["data_level"], query_result["repointing"], query_result["start_date"]
+
