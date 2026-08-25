@@ -715,8 +715,8 @@ wheels = [
 
 [[package]]
 name = "imap-l3-processing"
-version = "1.0.15"
-source = { git = "https://github.com/IMAP-Science-Operations-Center/imap_L3_processing#58ebf24b67e565f537355c177a2eba8402b2d625" }
+version = "1.0.16"
+source = { git = "https://github.com/IMAP-Science-Operations-Center/imap_L3_processing#f89e6dd5812ea0686e89afc674f3cb5ae5f46e2a" }
 dependencies = [
     { name = "astropy" },
     { name = "astropy-healpix" },

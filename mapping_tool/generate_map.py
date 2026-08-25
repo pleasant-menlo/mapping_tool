@@ -68,7 +68,7 @@ def get_dependencies_for_ultra_l3_map(map_descriptor: MappingToolDescriptor) -> 
         case MapDescriptor(principal_data="spx"):
             return [replace(map_descriptor, principal_data="ena")]
         case MapDescriptor(sensor="combined"):
-            return [replace(map_descriptor, sensor="45"), replace(map_descriptor, sensor="90")]
+            return [replace(map_descriptor, sensor="45", survival_corrected="nsp"), replace(map_descriptor, sensor="90", survival_corrected="nsp")]
         case MapDescriptor(sensor="90" | "45", survival_corrected="sp"):
             return [replace(map_descriptor, survival_corrected="nsp")]
         case _:

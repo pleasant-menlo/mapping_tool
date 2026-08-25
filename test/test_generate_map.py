@@ -37,8 +37,6 @@ class TestGenerateMap(unittest.TestCase):
         ultra_90_nsp_descriptor = create_map_descriptor(instrument=MappableInstrumentShortName.ULTRA, sensor='90', spin_phase='full', survival_corrected='nsp')
 
         ultra_combined_sp_descriptor = create_map_descriptor(instrument=MappableInstrumentShortName.ULTRA, sensor='combined', spin_phase='full', survival_corrected='sp')
-        ultra_45_sp_descriptor = create_map_descriptor(instrument=MappableInstrumentShortName.ULTRA, sensor='45', spin_phase='full', survival_corrected='sp')
-        ultra_90_sp_descriptor = create_map_descriptor(instrument=MappableInstrumentShortName.ULTRA, sensor='90', spin_phase='full', survival_corrected='sp')
 
         ultra_spectral_index_sp_descriptor = create_map_descriptor(instrument=MappableInstrumentShortName.ULTRA, spin_phase='full', survival_corrected='sp', principal_data="spx")
         ultra_spectral_index_nsp_descriptor = create_map_descriptor(instrument=MappableInstrumentShortName.ULTRA, spin_phase='full', survival_corrected='nsp', principal_data="spx")
@@ -67,7 +65,7 @@ class TestGenerateMap(unittest.TestCase):
         cases = [
             (ultra_sp_descriptor, [ultra_nsp_descriptor]),
             (ultra_combined_nsp_descriptor, [ultra_45_nsp_descriptor, ultra_90_nsp_descriptor]),
-            (ultra_combined_sp_descriptor, [ultra_45_sp_descriptor, ultra_90_sp_descriptor]),
+            (ultra_combined_sp_descriptor, [ultra_45_nsp_descriptor, ultra_90_nsp_descriptor]),
             (ultra_spectral_index_sp_descriptor, [ultra_sp_descriptor]),
             (ultra_spectral_index_nsp_descriptor, [ultra_nsp_descriptor]),
             (lo_sp_descriptor, [lo_nsp_descriptor]),
