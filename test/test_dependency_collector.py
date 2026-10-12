@@ -12,7 +12,6 @@ from imap_l3_processing.utils import FurnishMetakernelOutput, SpiceKernelTypes
 from mapping_tool.dependency_collector import (
     DependencyCollector,
     MAPPING_TOOL_KERNEL_TYPES,
-    temporary_workaround_for_version_latest,
 )
 from test import test_helpers
 from test.test_builders import create_map_descriptor
@@ -24,14 +23,13 @@ MODULE = "mapping_tool.dependency_collector"
 
 
 class TestDependencyCollector(unittest.TestCase):
-    @patch(f"{MODULE}.temporary_workaround_for_version_latest")
     @patch(f"{MODULE}.imap_data_access.query")
-    def test_get_pointing_sets(self, mock_query, mock_temporary_workaround_for_version_latest):
+    def test_get_pointing_sets(self, mock_query):
         day_one = datetime(2025, 1, 1, tzinfo=timezone.utc)
         day_two = datetime(2025, 1, 2, tzinfo=timezone.utc)
         day_three = datetime(2025, 1, 3, tzinfo=timezone.utc)
         final_day = datetime(2025, 2, 1, tzinfo=timezone.utc)
-        mock_temporary_workaround_for_version_latest.return_value = [
+        mock_query.return_value = [
             {
                 "file_path": "path/to/pset_1",
                 "start_date": day_one.strftime("%Y%m%d"),
@@ -69,7 +67,6 @@ class TestDependencyCollector(unittest.TestCase):
         for frame_descriptor, instrument, sensor, expected_descriptor in cases:
             with self.subTest(f"{frame_descriptor} {instrument} {sensor}"):
                 mock_query.reset_mock()
-                mock_temporary_workaround_for_version_latest.reset_mock()
                 descriptor = create_map_descriptor(
                     frame_descriptor=frame_descriptor,
                     resolution_str="2deg",
@@ -92,9 +89,8 @@ class TestDependencyCollector(unittest.TestCase):
                     end_date=final_day.strftime("%Y%m%d"),
                     data_level="l1c",
                     descriptor=expected_descriptor,
-                    major_version=1,
+                    version="latest",
                 )
-                mock_temporary_workaround_for_version_latest.assert_called_once_with(mock_query.return_value)
                 self.assertEqual(expected_pointing_sets, pointing_sets)
 
     @patch(f"{MODULE}.imap_data_access.query")
@@ -145,7 +141,7 @@ class TestDependencyCollector(unittest.TestCase):
             end_date=day_three.strftime("%Y%m%d"),
             data_level="l1c",
             descriptor=expected_descriptor,
-            major_version=1,
+            version="latest",
         )
         self.assertEqual(expected_pointing_sets, pointing_sets)
 
@@ -194,7 +190,7 @@ class TestDependencyCollector(unittest.TestCase):
                     descriptor="45sensor-spacecraftpset",
                     start_date="20250101",
                     end_date="20250201",
-                    major_version=1,
+                    version="latest",
                 ),
                 call(
                     instrument="ultra",
@@ -202,7 +198,7 @@ class TestDependencyCollector(unittest.TestCase):
                     descriptor="90sensor-spacecraftpset",
                     start_date="20250101",
                     end_date="20250201",
-                    major_version=1,
+                    version="latest",
                 ),
             ]
         )
@@ -259,7 +255,7 @@ class TestDependencyCollector(unittest.TestCase):
                     descriptor="45sensor-pset",
                     start_date="20250101",
                     end_date="20250201",
-                    major_version=1,
+                    version="latest",
                 ),
                 call(
                     instrument="hi",
@@ -267,7 +263,7 @@ class TestDependencyCollector(unittest.TestCase):
                     descriptor="90sensor-pset",
                     start_date="20250101",
                     end_date="20250201",
-                    major_version=1,
+                    version="latest",
                 ),
             ]
         )
@@ -317,7 +313,7 @@ class TestDependencyCollector(unittest.TestCase):
                     descriptor="pset",
                     start_date="20250101",
                     end_date="20250201",
-                    major_version=1,
+                    version="latest",
                 )
             ]
         )
@@ -496,9 +492,8 @@ class TestDependencyCollector(unittest.TestCase):
         finally:
             imap_data_access.config["DATA_DIR"] = original_imap_data_dir
 
-    @patch(f"{MODULE}.temporary_workaround_for_version_latest")
     @patch(f"{MODULE}.imap_data_access.query")
-    def test_get_sp_dependencies(self, mock_query, mock_temporary_workaround_for_version_latest):
+    def test_get_sp_dependencies(self, mock_query):
         hi90_descriptor = create_map_descriptor(
             instrument=MappableInstrumentShortName.HI,
             sensor="90",
@@ -525,7 +520,6 @@ class TestDependencyCollector(unittest.TestCase):
 
         for descriptor, instrument_name, expected_glows_descriptor in test_cases:
             mock_query.reset_mock()
-            mock_temporary_workaround_for_version_latest.reset_mock()
 
             with self.subTest(str(descriptor)):
                 start_date = datetime(2025, 1, 1, tzinfo=timezone.utc)
@@ -542,7 +536,7 @@ class TestDependencyCollector(unittest.TestCase):
                             f"imap_{instrument_name}_l1c_pset_20250616_v001.cdf",
                         ]
 
-                    mock_temporary_workaround_for_version_latest.return_value = [
+                    mock_query.return_value = [
                         {
                             "file_path": f"imap_glows_l3e_{expected_glows_descriptor}_20250101_v000.cdf",
                             "start_date": "20250101",
@@ -557,9 +551,8 @@ class TestDependencyCollector(unittest.TestCase):
                         descriptor=expected_glows_descriptor,
                         start_date="20250101",
                         end_date="20250201",
-                        major_version=1,
+                        version="latest",
                     )
-                    mock_temporary_workaround_for_version_latest.assert_called_once_with(mock_query.return_value)
 
                     expected_inputs = [
                         ScienceInput(f"imap_glows_l3e_{expected_glows_descriptor}_20250101_v000.cdf"),
@@ -614,14 +607,14 @@ class TestDependencyCollector(unittest.TestCase):
                         descriptor=expected_glows_descriptor[0],
                         start_date="20250101",
                         end_date="20250201",
-                        major_version=1,
+                        version="latest",
                     ),
                     call(
                         instrument="glows",
                         descriptor=expected_glows_descriptor[1],
                         start_date="20250101",
                         end_date="20250201",
-                        major_version=1,
+                        version="latest",
                     ),
                 ]
             )
@@ -706,7 +699,7 @@ class TestDependencyCollector(unittest.TestCase):
                         descriptor=expected_glows_descriptor,
                         start_date="20250101",
                         end_date="20250103",
-                        major_version=1,
+                        version="latest",
                     )
 
                     expected_inputs = [
@@ -940,41 +933,6 @@ class TestDependencyCollector(unittest.TestCase):
         )
         with self.assertRaises(ConnectionError):
             dc.get_spice_kernel_names()
-
-    def test_temporary_workaround_for_version_latest(self):
-        day_1_higher_version = create_imap_query_response_item(start_date="20260501", version="v001.0002")
-        day_1_lower_version = create_imap_query_response_item(start_date="20260501", version="v001.0001")
-        day_2_lower_version = create_imap_query_response_item(start_date="20260502", version="v001.0001")
-        day_2_higher_version = create_imap_query_response_item(start_date="20260502", version="v001.0003")
-        day_1_old_version_format = create_imap_query_response_item(start_date="20260501", version="v002")
-        alt_descriptor_v1 = create_imap_query_response_item(
-            descriptor="different", start_date="20260501", version="v001.0001"
-        )
-        alt_descriptor_v2 = create_imap_query_response_item(
-            descriptor="different", start_date="20260501", version="v001.0002"
-        )
-        alt_repointing_v1 = create_imap_query_response_item(repointing=2, start_date="20260501", version="v001.0001")
-        alt_repointing_v2 = create_imap_query_response_item(repointing=2, start_date="20260501", version="v001.0002")
-        no_repointing_v1 = create_imap_query_response_item(repointing=None, start_date="20260501", version="v001.0001")
-        no_repointing_v2 = create_imap_query_response_item(repointing=None, start_date="20260501", version="v001.0002")
-        unique_data_level = create_imap_query_response_item(data_level="l2", start_date="20260501", version="v001.0002")
-        unique_instrument = create_imap_query_response_item(instrument="idex", start_date="20260501", version="v001.0002")
-
-        input_query_results = [
-            day_1_lower_version, day_1_higher_version,
-            day_2_lower_version, day_2_higher_version,
-            alt_descriptor_v1, alt_descriptor_v2,
-            alt_repointing_v1, alt_repointing_v2,
-            no_repointing_v1, no_repointing_v2,
-            unique_data_level, unique_instrument,
-            day_1_old_version_format
-        ]
-        output_query_results = [
-            day_1_higher_version, day_2_higher_version, alt_descriptor_v2, alt_repointing_v2, no_repointing_v2,
-            unique_data_level, unique_instrument,
-        ]
-
-        self.assertEqual(output_query_results, temporary_workaround_for_version_latest(input_query_results))
 
 def create_imap_query_response_item(file_path=None,instrument="hi", data_level="l3", descriptor="descriptor", version="v001", start_date="20240101", repointing:int|None=1):
     return {"file_path": file_path or f"imap_{instrument}_{descriptor}_{start_date}_{version}.csv",
