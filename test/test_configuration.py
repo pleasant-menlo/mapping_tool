@@ -105,7 +105,7 @@ class TestConfiguration(TestCase):
                     survival_corrected=True,
                     spice_frame_name="IMAP_HNU",
                     pixelation_scheme="square",
-                    pixel_parameter=2,
+                    pixel_parameter=1,
                     map_data_type="ENA Intensity",
                     lo_species="h",
                     output_directory=Path("path/to/output"),
